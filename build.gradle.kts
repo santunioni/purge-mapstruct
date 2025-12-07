@@ -13,8 +13,8 @@ plugins {
 }
 
 // Set as appropriate for your organization
-group = "com.yourorg"
-description = "Rewrite recipes."
+group = "com.santunioni.recipes"
+description = "Remove Mapstruct"
 
 recipeDependencies {
     parserClasspath("org.jspecify:jspecify:1.0.0")
@@ -41,6 +41,9 @@ dependencies {
         exclude("com.google.auto.service", "auto-service-annotations")
         exclude("io.github.eisop","dataflow-errorprone")
     }
+
+    // For IntelliJ Plugin to work
+    runtimeOnly("org.openrewrite.recipe:rewrite-rewrite")
 
     // The RewriteTest class needed for testing recipes
     testImplementation("org.openrewrite:rewrite-test") {
