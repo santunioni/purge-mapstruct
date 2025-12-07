@@ -15,7 +15,6 @@ import org.openrewrite.java.tree.TypeUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -165,7 +164,7 @@ public class ReplaceMapstructWithImpl extends Recipe {
             private Path getGeneratedClassPath(J.CompilationUnit originalCu, String pkg, String implClassName) {
                 // Fallback: use project directory resolution
                 Path projectDir = getProjectDir(originalCu);
-                Path generatedPath = projectDir.resolve(GENERATED_SOURCES_PATH)
+                Path generatedPath = projectDir.resolve(GRADLE_RELATIVE_GENERATED_SOURCES_PATH)
                         .resolve(pkg.replace('.', '/'))
                         .resolve(implClassName + ".java");
 
@@ -202,5 +201,5 @@ public class ReplaceMapstructWithImpl extends Recipe {
         };
     }
 
-    String GENERATED_SOURCES_PATH = "build/generated/sources/annotationProcessor/java/main";
+    String GRADLE_RELATIVE_GENERATED_SOURCES_PATH = "build/generated/sources/annotationProcessor/java/main";
 }
