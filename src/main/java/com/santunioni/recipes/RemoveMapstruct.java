@@ -201,7 +201,7 @@ public class RemoveMapstruct extends Recipe {
                 Path searchPath = currentPath.toAbsolutePath();
                 while (true) {
                     Path fileName = searchPath.getFileName();
-                    if (fileName != null && "sales-flow".equals(fileName.toString())) {
+                    if (fileName != null && "src".equals(fileName.toString())) {
                         return searchPath.getParent().toAbsolutePath();
                     }
                     Path next = searchPath.getParent();
