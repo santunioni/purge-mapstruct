@@ -4,7 +4,7 @@ package com.santunioni.recipes;
 import lombok.extern.java.Log;
 import org.jspecify.annotations.NullMarked;
 import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
+import org.openrewrite.ScanningRecipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -45,7 +45,7 @@ import java.util.Map;
  */
 @Log
 @NullMarked
-public class RemoveMapstruct extends Recipe {
+public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator> {
 
     /**
      * Constructor for the ReplaceMapstructWithImpl class.
@@ -64,21 +64,22 @@ public class RemoveMapstruct extends Recipe {
     }
 
     @Override
-    public TreeVisitor<?, ExecutionContext> getVisitor() {
-        Accumulator acc = new Accumulator();
-        return new JavaVisitor<ExecutionContext>() {
-            @Override
-            public J visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
-                // First, scan this file for generated implementation classes
-                new ImplementationScanner(acc).visitCompilationUnit(cu, ctx);
-                // Then, process this file for mapper interfaces
-                return new MapperProcessor(acc).visitCompilationUnit(cu, ctx);
-            }
-        };
+    public Accumulator getInitialValue(ExecutionContext ctx) {
+        return new Accumulator();
+    }
+
+    @Override
+    public TreeVisitor<?, ExecutionContext> getScanner(Accumulator acc) {
+        return new ImplementationScanner(acc);
+    }
+
+    @Override
+    public TreeVisitor<?, ExecutionContext> getVisitor(Accumulator acc) {
+        return new MapperProcessor(acc);
     }
 
     @NullMarked
-    private static class Accumulator {
+    public static class Accumulator {
         // Maps interface FQN to its generated implementation compilation unit
         Map<String, List<J.CompilationUnit>> implClasses = new HashMap<>();
     }

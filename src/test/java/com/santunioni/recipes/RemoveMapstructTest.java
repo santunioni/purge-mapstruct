@@ -125,7 +125,7 @@ public class SimpleDtoMapperImpl implements SimpleDtoMapper {
     }
 }
             """,
-          spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoMapperImpl.java")
+          spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoMapperImpl.java")
         );
 
         // Act - Assert
