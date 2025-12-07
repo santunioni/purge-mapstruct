@@ -4,7 +4,6 @@ import org.jspecify.annotations.NullMarked;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.SourceFile;
-import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaParser;
@@ -86,7 +85,7 @@ public class ReplaceMapstructWithImpl extends Recipe {
                     // We use a basic parser here. Since we are just moving AST nodes,
                     // we don't strictly need the full classpath for the *generated* file parsing
                     // if we rely on string matching for simple things like "Override".
-                    J.CompilationUnit implCu = (J.CompilationUnit) getGeneratedClass(originalCu, originalInterface, ctx);
+                    J.CompilationUnit implCu = (J.CompilationUnit) getGeneratedClass(originalCu, originalInterface);
                     J.ClassDeclaration implClass = implCu.getClasses().get(0);
 
                     // ==========================================================
@@ -144,85 +143,33 @@ public class ReplaceMapstructWithImpl extends Recipe {
                 }
             }
 
-            private SourceFile getGeneratedClass(J.CompilationUnit originalCu, J.ClassDeclaration originalInterface, ExecutionContext ctx) throws IOException {
+            private SourceFile getGeneratedClass(J.CompilationUnit originalCu, J.ClassDeclaration originalInterface) throws IOException {
                 String className = originalInterface.getName().getSimpleName();
-                String pkg = originalCu.getPackageDeclaration() != null ?
-                        originalCu.getPackageDeclaration().getExpression().printTrimmed(getCursor()) : "";
+                if (originalCu.getPackageDeclaration() == null) {
+                    throw new IllegalArgumentException("Original compilation unit must have a package declaration");
+                }
+                String pkg = originalCu.getPackageDeclaration().getExpression().printTrimmed(getCursor());
                 String implClassName = className + "Impl";
-                
+
                 // Note: Generated files from MapStruct are NOT accessible through ExecutionContext.
                 // ExecutionContext only contains source files being processed, not build artifacts.
                 // Generated files must be read from the file system where they were created by the annotation processor.
                 // This works for both real projects (where files are on disk) and tests (where files are in temp directories).
-                
                 Path resolvedPath = getGeneratedClassPath(originalCu, pkg, implClassName);
-                
-                // Check if file exists before trying to read
-                if (!Files.exists(resolvedPath)) {
-                    String generatedPathStr = "build/generated/sources/annotationProcessor/java/main/" + 
-                            pkg.replace('.', '/') + "/" + implClassName + ".java";
-                    throw new IllegalStateException("Generated file does not exist: " + resolvedPath + 
-                            " (source path: " + originalCu.getSourcePath() + ", looking for: " + generatedPathStr + 
-                            "). Make sure the project has been compiled with MapStruct annotation processor.");
-                }
-                
+
                 JavaParser parser = JavaParser.fromJavaVersion().build();
                 return parser.parse(new String(Files.readAllBytes(resolvedPath))).findFirst()
                         .orElseThrow(() -> new IllegalStateException("Could not parse generated class: " + resolvedPath));
             }
 
             private Path getGeneratedClassPath(J.CompilationUnit originalCu, String pkg, String implClassName) {
-                // 2. Locate the generated file on disk
-                Path originalPath = originalCu.getSourcePath();
-                if (originalPath == null) {
-                    throw new IllegalStateException("Source path is null");
-                }
-                
-                // Try relative path first (for test framework)
-                Path relativeGeneratedPath = Paths.get("build/generated/sources/annotationProcessor/java/main")
-                        .resolve(pkg.replace('.', '/'))
-                        .resolve(implClassName + ".java");
-                
-                // If original path is relative, try resolving relative to it
-                if (!originalPath.isAbsolute()) {
-                    // Try to resolve relative to the source file's directory structure
-                    // If source is at src/main/java/com/example/MyMapper.java
-                    // and we need build/generated/..., go up to project root first
-                    Path sourceDir = originalPath.getParent(); // src/main/java/com/example
-                    if (sourceDir != null) {
-                        // Go up to project root: .../example -> .../com -> .../java -> .../main -> .../src -> projectRoot
-                        Path temp = sourceDir;
-                        int depth = 0;
-                        while (temp != null && depth < 10) {
-                            Path fileName = temp.getFileName();
-                            if (fileName != null && "src".equals(fileName.toString())) {
-                                Path projectRoot = temp.getParent();
-                                if (projectRoot != null) {
-                                    Path absPath = projectRoot.resolve(relativeGeneratedPath).toAbsolutePath();
-                                    if (Files.exists(absPath)) {
-                                        return absPath;
-                                    }
-                                }
-                            }
-                            temp = temp.getParent();
-                            depth++;
-                        }
-                    }
-                }
-                
                 // Fallback: use project directory resolution
                 Path projectDir = getProjectDir(originalCu);
-                Path generatedPath = projectDir.resolve("build/generated/sources/annotationProcessor/java/main")
+                Path generatedPath = projectDir.resolve(GENERATED_SOURCES_PATH)
                         .resolve(pkg.replace('.', '/'))
                         .resolve(implClassName + ".java");
 
                 if (!Files.exists(generatedPath)) {
-                    // Try as absolute path from current working directory
-                    Path cwdPath = Paths.get("").toAbsolutePath().resolve(relativeGeneratedPath);
-                    if (Files.exists(cwdPath)) {
-                        return cwdPath;
-                    }
-                    
                     throw new IllegalStateException(String.format("Could not find generated annotations in %s from " +
                             "project %s" +
                             ". Did you compile?", generatedPath, projectDir));
@@ -237,23 +184,11 @@ public class ReplaceMapstructWithImpl extends Recipe {
 
             private Path getProjectDir(J.CompilationUnit originalCu) {
                 Path currentPath = originalCu.getSourcePath();
-                if (currentPath == null) {
-                    throw new IllegalStateException("Source path is null");
-                }
-                
-                // Convert to absolute path to work with file system
-                Path absolutePath = currentPath.toAbsolutePath();
-                
-                // Walk up the path looking for "src" directory
-                Path searchPath = absolutePath;
-                while (searchPath != null) {
+                Path searchPath = currentPath.toAbsolutePath();
+                while (true) {
                     Path fileName = searchPath.getFileName();
                     if (fileName != null && "src".equals(fileName.toString())) {
-                        Path parent = searchPath.getParent();
-                        if (parent != null) {
-                            return parent.toAbsolutePath();
-                        }
-                        break;
+                        return searchPath.getParent().toAbsolutePath();
                     }
                     Path next = searchPath.getParent();
                     if (next == null || next.equals(searchPath)) {
@@ -261,39 +196,11 @@ public class ReplaceMapstructWithImpl extends Recipe {
                     }
                     searchPath = next;
                 }
-                
-                // Fallback: if path structure is src/main/java/..., go up 3 levels from "main"
-                Path fallback = absolutePath;
-                int maxDepth = 20;
-                int depth = 0;
-                while (fallback != null && depth < maxDepth) {
-                    Path fileName = fallback.getFileName();
-                    if (fileName != null) {
-                        String nameStr = fileName.toString();
-                        if ("main".equals(nameStr)) {
-                            // Go up: main -> java -> src -> projectRoot
-                            Path javaDir = fallback.getParent();
-                            if (javaDir != null) {
-                                Path srcDir = javaDir.getParent();
-                                if (srcDir != null) {
-                                    Path projectRoot = srcDir.getParent();
-                                    if (projectRoot != null) {
-                                        return projectRoot.toAbsolutePath();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    Path next = fallback.getParent();
-                    if (next == null || next.equals(fallback)) {
-                        break;
-                    }
-                    fallback = next;
-                    depth++;
-                }
-                
+
                 throw new IllegalStateException("Could not determine project directory from source path: " + originalCu.getSourcePath());
             }
         };
     }
+
+    String GENERATED_SOURCES_PATH = "build/generated/sources/annotationProcessor/java/main";
 }
