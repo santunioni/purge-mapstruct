@@ -1,10 +1,13 @@
 package com.santunioni.recipes;
 
 
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import lombok.extern.java.Log;
-import lombok.extern.log4j.Log4j2;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Option;
 import org.openrewrite.Recipe;
 import org.openrewrite.SourceFile;
 import org.openrewrite.TreeVisitor;
@@ -16,7 +19,6 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -195,21 +197,20 @@ public class RemoveMapstruct extends Recipe {
             }
 
             private Path getProjectDir(J.CompilationUnit originalCu) {
-                Path currentPath = originalCu.getSourcePath();
-                Path searchPath = currentPath.toAbsolutePath();
-                while (true) {
-                    Path fileName = searchPath.getFileName();
-                    if (fileName != null && "src".equals(fileName.toString())) {
-                        return searchPath.getParent().toAbsolutePath();
-                    }
-                    Path next = searchPath.getParent();
-                    if (next == null || next.equals(searchPath)) {
-                        break;
-                    }
-                    searchPath = next;
+                // Use the current working directory as the project root
+                // This works because OpenRewrite is typically run from the project root
+                Path userDir = Paths.get(System.getProperty("user.dir"));
+
+                // Verify this is a valid project directory
+                if (Files.exists(userDir.resolve("build.gradle")) ||
+                    Files.exists(userDir.resolve("build.gradle.kts")) ||
+                    Files.exists(userDir.resolve("pom.xml")) ||
+                    Files.exists(userDir.resolve("src"))) {
+                    return userDir;
                 }
 
-                throw new IllegalStateException("Could not determine project directory from source path: " + originalCu.getSourcePath());
+                throw new IllegalStateException("Could not determine project directory. Current directory: " +
+                        userDir + ", source path: " + originalCu.getSourcePath());
             }
         };
     }

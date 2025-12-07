@@ -15,7 +15,7 @@ plugins {
 // Set as appropriate for your organization
 group = "com.santunioni.recipes"
 description = "Remove Mapstruct"
-version = "0.4.0-SNAPSHOT"
+version = "0.5.0-SNAPSHOT"
 
 recipeDependencies {
     parserClasspath("org.jspecify:jspecify:1.0.0")
