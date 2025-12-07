@@ -17,6 +17,7 @@ package com.santunioni.recipes;
 
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
@@ -190,5 +191,13 @@ public class SimpleDtoMapperImpl implements SimpleDtoMapper {
         Files.createDirectories(generatedDir);
 
         Files.writeString(generatedDir.resolve(Arrays.stream(classFqn.split("\\.")).toList().getLast() + ".java"), generatedImpl);
+    }
+
+    @TempDir
+    private Path dir;
+
+    @Test
+    void shouldReturnTheProjectFullPath() throws IOException {
+
     }
 }
