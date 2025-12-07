@@ -4,7 +4,7 @@ plugins {
     // This uses the nexus publishing plugin to publish to the moderne-dev repository
     // Remove it if you prefer to publish by other means, such as the maven-publish plugin
     id("org.openrewrite.build.publish") version "latest.release"
-    id("nebula.release") version "latest.release"
+//    id("nebula.release") version "latest.release"
 
     // Configures artifact repositories used for dependency resolution to include maven central and nexus snapshots.
     // If you are operating in an environment where public repositories are not accessible, we recommend using a
@@ -20,6 +20,7 @@ version = "0.6.0-SNAPSHOT"
 recipeDependencies {
     parserClasspath("org.jspecify:jspecify:1.0.0")
 }
+
 
 dependencies {
     // The bom version can also be set to a specific version
@@ -78,17 +79,17 @@ signing {
 }
 
 // Use maven-style "SNAPSHOT" versioning for non-release builds
-configure<nebula.plugin.release.git.base.ReleasePluginExtension> {
-    defaultVersionStrategy = nebula.plugin.release.NetflixOssStrategies.SNAPSHOT(project)
-}
+//configure<nebula.plugin.release.git.base.ReleasePluginExtension> {
+//    defaultVersionStrategy = nebula.plugin.release.NetflixOssStrategies.SNAPSHOT(project)
+//}
 
-configure<PublishingExtension> {
-    publications {
-        named("nebula", MavenPublication::class.java) {
-            suppressPomMetadataWarningsFor("runtimeElements")
-        }
-    }
-}
+//configure<PublishingExtension> {
+//    publications {
+//        named("nebula", MavenPublication::class.java) {
+//            suppressPomMetadataWarningsFor("runtimeElements")
+//        }
+//    }
+//}
 
 tasks.register("licenseFormat") {
     println("License format task not implemented for rewrite-recipe-starter")
