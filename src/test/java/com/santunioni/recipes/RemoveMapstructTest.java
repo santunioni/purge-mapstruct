@@ -101,7 +101,7 @@ import javax.annotation.processing.Generated;
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17"
 )
 public class SimpleDtoMapperImpl implements SimpleDtoMapper {
-    
+
     @Override
     public SimpleDtoOut toSimpleDtoOut(SimpleDtoIn simpleDtoIn) {
         if (simpleDtoIn == null) {
@@ -113,7 +113,7 @@ public class SimpleDtoMapperImpl implements SimpleDtoMapper {
 
         return new SimpleDtoOut(id, name);
     }
-    
+
     @Override
     public SimpleDtoIn toSimpleDtoIn(SimpleDtoOut simpleDtoOut) {
         if (simpleDtoOut == null) {
@@ -150,45 +150,43 @@ public class SimpleDtoMapperImpl implements SimpleDtoMapper {
               }
               """,
             // language=java
-            """
-package com.santunioni.fixtures.dtoMappers;
-
-import javax.annotation.processing.Generated;
-
-import org.mapstruct.Mapper;
-
-@Generated(
-    value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-01-01T00:00:00Z",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17"
-)
-public class SimpleDtoMapper {
-
-
-    public SimpleDtoOut toSimpleDtoOut(SimpleDtoIn simpleDtoIn) {
-        if (simpleDtoIn == null) {
-            return null;
-        }
-
-        Long id = simpleDtoIn.getId();
-        String name = simpleDtoIn.getName();
-
-        return new SimpleDtoOut(id, name);
-    }
-
-
-    public SimpleDtoIn toSimpleDtoIn(SimpleDtoOut simpleDtoOut) {
-        if (simpleDtoOut == null) {
-            return null;
-        }
-
-        Long id = simpleDtoOut.getId();
-        String name = simpleDtoOut.getName();
-
-        return new SimpleDtoIn(id, name);
-    }
-}
-""",
+"package com.santunioni.fixtures.dtoMappers;\n" +
+  "\n" +
+  "import javax.annotation.processing.Generated;\n" +
+  "\n" +
+  "import org.mapstruct.Mapper;\n" +
+  "\n" +
+  "@Generated(\n" +
+  "    value = \"org.mapstruct.ap.MappingProcessor\",\n" +
+  "    date = \"2025-01-01T00:00:00Z\",\n" +
+  "    comments = \"version: 1.5.5.Final, compiler: javac, environment: Java 17\"\n" +
+  ")\n" +
+  "public class SimpleDtoMapper {\n" +
+  "\n" +
+  "    \n" +
+  "    public SimpleDtoOut toSimpleDtoOut(SimpleDtoIn simpleDtoIn) {\n" +
+  "        if (simpleDtoIn == null) {\n" +
+  "            return null;\n" +
+  "        }\n" +
+  "\n" +
+  "        Long id = simpleDtoIn.getId();\n" +
+  "        String name = simpleDtoIn.getName();\n" +
+  "\n" +
+  "        return new SimpleDtoOut(id, name);\n" +
+  "    }\n" +
+  "\n" +
+  "    \n" +
+  "    public SimpleDtoIn toSimpleDtoIn(SimpleDtoOut simpleDtoOut) {\n" +
+  "        if (simpleDtoOut == null) {\n" +
+  "            return null;\n" +
+  "        }\n" +
+  "\n" +
+  "        Long id = simpleDtoOut.getId();\n" +
+  "        String name = simpleDtoOut.getName();\n" +
+  "\n" +
+  "        return new SimpleDtoIn(id, name);\n" +
+  "    }\n" +
+  "}",
             spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoMapper.java")
           )
         );
