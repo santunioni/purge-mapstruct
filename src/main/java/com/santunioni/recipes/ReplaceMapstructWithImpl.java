@@ -149,23 +149,21 @@ public class ReplaceMapstructWithImpl extends Recipe {
                 String pkg = originalCu.getPackageDeclaration() != null ?
                         originalCu.getPackageDeclaration().getExpression().printTrimmed(getCursor()) : "";
                 String implClassName = className + "Impl";
-                String generatedPathStr = "build/generated/sources/annotationProcessor/java/main/" + 
-                        pkg.replace('.', '/') + "/" + implClassName + ".java";
                 
-                // First, try to find the file in the current source set (for test framework)
-                Path generatedPath = Paths.get(generatedPathStr);
-                
-                // Try to find it as a SourceFile in the execution context
-                // Note: This is a simplified approach - in a real scenario, you'd want to access
-                // the SourceFile set from ExecutionContext, but that's not directly available.
-                // For now, we'll try to read from disk, which works for real projects.
+                // Note: Generated files from MapStruct are NOT accessible through ExecutionContext.
+                // ExecutionContext only contains source files being processed, not build artifacts.
+                // Generated files must be read from the file system where they were created by the annotation processor.
+                // This works for both real projects (where files are on disk) and tests (where files are in temp directories).
                 
                 Path resolvedPath = getGeneratedClassPath(originalCu, pkg, implClassName);
                 
                 // Check if file exists before trying to read
                 if (!Files.exists(resolvedPath)) {
+                    String generatedPathStr = "build/generated/sources/annotationProcessor/java/main/" + 
+                            pkg.replace('.', '/') + "/" + implClassName + ".java";
                     throw new IllegalStateException("Generated file does not exist: " + resolvedPath + 
-                            " (source path: " + originalCu.getSourcePath() + ", looking for: " + generatedPathStr + ")");
+                            " (source path: " + originalCu.getSourcePath() + ", looking for: " + generatedPathStr + 
+                            "). Make sure the project has been compiled with MapStruct annotation processor.");
                 }
                 
                 JavaParser parser = JavaParser.fromJavaVersion().build();
