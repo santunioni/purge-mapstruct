@@ -195,8 +195,6 @@ public class RemoveMapstruct extends Recipe {
             }
 
             private Path getProjectDir(J.CompilationUnit originalCu) {
-//                return Paths.get("/Users/vinicius.vargas/Projects/quintoandar/backend-services/applications/sales-flow");
-
                 Path currentPath = originalCu.getSourcePath();
                 Path searchPath = currentPath.toAbsolutePath();
                 while (true) {
