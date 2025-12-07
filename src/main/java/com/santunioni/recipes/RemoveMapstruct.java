@@ -191,6 +191,39 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                     }
                 }
 
+                // Copy default methods from the interface
+                for (Statement s : originalInterface.getBody().getStatements()) {
+                    if (s instanceof J.MethodDeclaration) {
+                        J.MethodDeclaration method = (J.MethodDeclaration) s;
+                        if (method.getModifiers().stream()
+                                .anyMatch(mod -> mod.getType() == J.Modifier.Type.Default)) {
+                            // Remove default modifier
+                            List<J.Modifier> modifiers = ListUtils.map(method.getModifiers(), mod -> {
+                                if (mod.getType() == J.Modifier.Type.Default) {
+                                    return null;
+                                }
+                                return mod;
+                            });
+                            // Add public if missing (use the first method's public modifier as a template)
+                            boolean hasPublic = modifiers.stream()
+                                    .anyMatch(mod -> mod.getType() == J.Modifier.Type.Public);
+                            if (!hasPublic && !classStatements.isEmpty() && classStatements.get(0) instanceof J.MethodDeclaration) {
+                                J.Modifier publicMod = ((J.MethodDeclaration) classStatements.get(0)).getModifiers().stream()
+                                        .filter(mod -> mod.getType() == J.Modifier.Type.Public)
+                                        .findFirst()
+                                        .orElse(null);
+                                if (publicMod != null) {
+                                    List<J.Modifier> modifiersWithPublic = new ArrayList<>();
+                                    modifiersWithPublic.add(publicMod);
+                                    modifiersWithPublic.addAll(modifiers);
+                                    modifiers = modifiersWithPublic;
+                                }
+                            }
+                            classStatements.add(method.withModifiers(modifiers));
+                        }
+                    }
+                }
+
                 // ==========================================================
                 // STEP C: FINALIZE CLASS STRUCTURE
                 // ==========================================================

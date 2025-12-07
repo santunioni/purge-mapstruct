@@ -191,4 +191,154 @@ public class SimpleDtoMapperImpl implements SimpleDtoMapper {
           )
         );
     }
+
+    @Test
+    void replaceMapperWithDefaultMethod() {
+        SourceSpecs makeAvailableUserDto = java(
+          // language=java
+          """
+package com.santunioni.fixtures.dtoMappers;
+
+public class UserDto {
+    private final String firstName;
+    private final String lastName;
+
+    public UserDto(String firstName, String lastName) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+}
+            """,
+          spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/UserDto.java")
+        );
+        SourceSpecs makeAvailableUserEntity = java(
+          // language=java
+          """
+package com.santunioni.fixtures.dtoMappers;
+
+public class UserEntity {
+    private final String fullName;
+
+    public UserEntity(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+}
+            """,
+          spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/UserEntity.java")
+        );
+
+        // Include the generated implementation class that includes the default method implementation
+        SourceSpecs makeAvailableGeneratedClass = java(
+          // language=java
+          """
+package com.santunioni.fixtures.dtoMappers;
+
+import javax.annotation.processing.Generated;
+
+@Generated(
+    value = "org.mapstruct.ap.MappingProcessor",
+    date = "2025-01-01T00:00:00Z",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17"
+)
+public class UserMapperImpl implements UserMapper {
+
+    @Override
+    public UserEntity toUserEntity(UserDto userDto) {
+        if (userDto == null) {
+            return null;
+        }
+
+        String fullName = formatFullName(userDto.getFirstName(), userDto.getLastName());
+        return new UserEntity(fullName);
+    }
+}
+            """,
+          spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/UserMapperImpl.java")
+        );
+
+        // Act - Assert
+        rewriteRun(
+          makeAvailableUserDto,
+          makeAvailableUserEntity,
+          makeAvailableGeneratedClass,
+          // The mapper interface with default method (before) should be replaced with the implementation class (after)
+          java(
+            // language=java
+            """
+              package com.santunioni.fixtures.dtoMappers;
+
+              import org.mapstruct.Mapper;
+
+              @Mapper
+              public interface UserMapper {
+                  UserEntity toUserEntity(UserDto userDto);
+
+                  default String formatFullName(String firstName, String lastName) {
+                      if (firstName == null && lastName == null) {
+                          return "";
+                      }
+                      if (firstName == null) {
+                          return lastName;
+                      }
+                      if (lastName == null) {
+                          return firstName;
+                      }
+                      return firstName + " " + lastName;
+                  }
+              }
+              """,
+            // language=java
+"package com.santunioni.fixtures.dtoMappers;\n" +
+  "\n" +
+  "import javax.annotation.processing.Generated;\n" +
+  "\n" +
+  "import org.mapstruct.Mapper;\n" +
+  "\n" +
+  "@Generated(\n" +
+  "    value = \"org.mapstruct.ap.MappingProcessor\",\n" +
+  "    date = \"2025-01-01T00:00:00Z\",\n" +
+  "    comments = \"version: 1.5.5.Final, compiler: javac, environment: Java 17\"\n" +
+  ")\n" +
+  "public class UserMapper {\n" +
+  "\n" +
+  "    \n" +
+  "    public UserEntity toUserEntity(UserDto userDto) {\n" +
+  "        if (userDto == null) {\n" +
+  "            return null;\n" +
+  "        }\n" +
+  "\n" +
+  "        String fullName = formatFullName(userDto.getFirstName(), userDto.getLastName());\n" +
+  "        return new UserEntity(fullName);\n" +
+  "    }\n" +
+  "\n" +
+  "    \n" +
+  "    public String formatFullName(String firstName, String lastName) {\n" +
+  "        if (firstName == null && lastName == null) {\n" +
+  "            return \"\";\n" +
+  "        }\n" +
+  "        if (firstName == null) {\n" +
+  "            return lastName;\n" +
+  "        }\n" +
+  "        if (lastName == null) {\n" +
+  "            return firstName;\n" +
+  "        }\n" +
+  "        return firstName + \" \" + lastName;\n" +
+  "    }\n" +
+  "}",
+            spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/UserMapper.java")
+          )
+        );
+    }
 }
