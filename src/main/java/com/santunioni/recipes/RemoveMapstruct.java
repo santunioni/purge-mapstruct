@@ -1,8 +1,6 @@
 package com.santunioni.recipes;
 
 
-import lombok.EqualsAndHashCode;
-import lombok.Value;
 import lombok.extern.java.Log;
 import org.jspecify.annotations.NullMarked;
 import org.openrewrite.ExecutionContext;
@@ -45,10 +43,8 @@ import java.util.Map;
  * It is recommended to run supplementary cleanup tools or recipes (e.g., RemoveUnusedImports)
  * following this recipe to handle any redundant imports or formatting inconsistencies introduced during the process.
  */
-@NullMarked
 @Log
-@Value
-@EqualsAndHashCode(callSuper = false)
+@NullMarked
 public class RemoveMapstruct extends Recipe {
 
     /**
@@ -59,7 +55,7 @@ public class RemoveMapstruct extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Replace Mapstruct Interface with Implementation";
+        return "Replace mapstruct interface with implementation";
     }
 
     @Override
@@ -81,11 +77,10 @@ public class RemoveMapstruct extends Recipe {
         };
     }
 
-    @Value
-    @EqualsAndHashCode(callSuper = false)
+    @NullMarked
     private static class Accumulator {
         // Maps interface FQN to its generated implementation compilation unit
-        Map<String, J.CompilationUnit> implClasses = new HashMap<>();
+        Map<String, List<J.CompilationUnit>> implClasses = new HashMap<>();
     }
 
     private static class ImplementationScanner extends JavaIsoVisitor<ExecutionContext> {
@@ -104,12 +99,17 @@ public class RemoveMapstruct extends Recipe {
                 if (className.endsWith("Impl") && classDecl.getImplements() != null && !classDecl.getImplements().isEmpty()) {
                     // Extract the interface name (remove "Impl" suffix)
                     String interfaceName = className.substring(0, className.length() - 4);
-                    String packageName = cu.getPackageDeclaration() != null 
-                        ? cu.getPackageDeclaration().getExpression().printTrimmed(getCursor())
-                        : "";
+                    if (cu.getPackageDeclaration() == null) {
+                        continue;
+                    }
+                    String packageName = cu.getPackageDeclaration().getExpression().printTrimmed(getCursor());
                     String interfaceFqn = packageName.isEmpty() ? interfaceName : packageName + "." + interfaceName;
-                    
-                    acc.implClasses.put(interfaceFqn, cu);
+
+                    if (!acc.implClasses.containsKey(interfaceFqn)) {
+                        acc.implClasses.put(interfaceFqn, new ArrayList<>());
+                    }
+
+                    acc.implClasses.get(interfaceFqn).add(cu);
                 }
             }
             return super.visitCompilationUnit(cu, ctx);
@@ -133,13 +133,13 @@ public class RemoveMapstruct extends Recipe {
                     });
             if (isImpl) {
                 // Return null to delete the implementation file (it's been merged into the mapper interface)
-                return null;
+                return originalCu;
             }
 
             // 1. Identify if this is a Mapstruct Mapper interface
             boolean isMapper = originalCu.getClasses().stream()
                     .anyMatch(cd -> cd.getAllAnnotations().stream()
-                            .anyMatch(a -> isMapstructMapper(a)));
+                            .anyMatch(this::isMapstructMapper));
 
             if (!isMapper) {
                 return super.visitCompilationUnit(originalCu, ctx);
@@ -150,29 +150,30 @@ public class RemoveMapstruct extends Recipe {
             try {
                 // 2. Find the generated implementation class from the accumulator
                 String interfaceFqn = getInterfaceFqn(originalCu, originalInterface);
-                J.CompilationUnit implCu = acc.implClasses.get(interfaceFqn);
-
-                if (implCu == null) {
-                    log.warning("Could not find generated implementation for " + interfaceFqn + ". Skipping.");
+                List<J.CompilationUnit> implClasses = acc.implClasses.get(interfaceFqn);
+                if (implClasses == null || implClasses.size() != 1) {
+                    log.severe("Multiple or no generated implementations found for " + interfaceFqn + ". Skipping.");
                     return super.visitCompilationUnit(originalCu, ctx);
                 }
 
-                J.ClassDeclaration implClass = implCu.getClasses().get(0);
+                J.CompilationUnit mapperImplementationFile = implClasses.get(0);
+                J.ClassDeclaration mapperImplementationClass = mapperImplementationFile.getClasses().get(0);
 
                 // ==========================================================
                 // STEP A: COPY IMPORTS
                 // ==========================================================
                 // We append original imports to the implementation imports.
                 // Duplicates will be handled by a subsequent "RemoveUnusedImports" recipe run.
-                List<J.Import> mergedImports = ListUtils.concatAll(implCu.getImports(), originalCu.getImports());
-                implCu = implCu.withImports(mergedImports);
+                List<J.Import> mergedImports = ListUtils.concatAll(
+                        mapperImplementationFile.getImports(), originalCu.getImports());
+                mapperImplementationFile = mapperImplementationFile.withImports(mergedImports);
 
                 // ==========================================================
                 // STEP B: PREPARE GENERATED METHODS (Remove @Override)
                 // ==========================================================
                 List<Statement> classStatements = new ArrayList<>();
 
-                for (Statement s : implClass.getBody().getStatements()) {
+                for (Statement s : mapperImplementationClass.getBody().getStatements()) {
                     if (s instanceof J.MethodDeclaration) {
                         J.MethodDeclaration m = (J.MethodDeclaration) s;
                         // Filter out annotations that look like Override
@@ -193,19 +194,19 @@ public class RemoveMapstruct extends Recipe {
                 // STEP C: FINALIZE CLASS STRUCTURE
                 // ==========================================================
                 // Update body with combined statements
-                implClass = implClass.withBody(implClass.getBody().withStatements(classStatements));
+                mapperImplementationClass = mapperImplementationClass.withBody(mapperImplementationClass.getBody().withStatements(classStatements));
 
                 // Rename class: MyMapperImpl -> MyMapper
-                implClass = implClass.withName(implClass.getName().withSimpleName(originalInterface.getName().getSimpleName()));
+                mapperImplementationClass = mapperImplementationClass.withName(mapperImplementationClass.getName().withSimpleName(originalInterface.getName().getSimpleName()));
 
                 // Remove "implements MyMapper"
-                implClass = implClass.withImplements(null);
+                mapperImplementationClass = mapperImplementationClass.withImplements(null);
 
                 // Replace the class in the CU
-                implCu = implCu.withClasses(Collections.singletonList(implClass));
+                mapperImplementationFile = mapperImplementationFile.withClasses(Collections.singletonList(mapperImplementationClass));
 
                 // Return the new CU, masquerading as the old file (preserving ID and Path)
-                return implCu
+                return mapperImplementationFile
                         .withId(originalCu.getId())
                         .withSourcePath(originalCu.getSourcePath());
 

@@ -15,20 +15,12 @@
  */
 package com.santunioni.recipes;
 
-import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpecs;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -43,9 +35,62 @@ class RemoveMapstructTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void replaceSimpleDtoMapper() throws IOException {
-        // Given
-        generateMapstructClass("com.santunioni.fixtures.dtoMappers.SimpleDtoMapperImpl", """
+    void replaceSimpleDtoMapper() {
+        SourceSpecs makeAvailableSimpleDtoIn = java(
+          // language=java
+          """
+package com.santunioni.fixtures.dtoMappers;
+
+public class SimpleDtoIn {
+    private final Long id;
+    private final String name;
+
+    public SimpleDtoIn(Long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+}
+            """,
+          spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoIn.java")
+        );
+        SourceSpecs makeAvailableSimpleDtoOut = java(
+          // language=java
+          """
+package com.santunioni.fixtures.dtoMappers;
+
+public class SimpleDtoOut {
+    private final Long id;
+    private final String name;
+
+    public SimpleDtoOut(Long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+}
+            """,
+          spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoOut.java")
+        );
+
+        // Include the generated implementation class as a source file (simulating gradle plugin including it in context)
+        SourceSpecs makeAvailableGeneratedClass = java(
+          // language=java
+          """
 package com.santunioni.fixtures.dtoMappers;
 
 import javax.annotation.processing.Generated;
@@ -78,68 +123,30 @@ public class SimpleDtoMapperImpl implements SimpleDtoMapper {
 
         return new SimpleDtoIn(id, name);
     }
-}""");
-
-        SourceSpecs makeAvailableSimpleDtoIn = java(
-          // language=java
-          """
-            package com.santunioni.fixtures.dtoMappers;
-            
-            public class SimpleDtoIn {
-                private final Long id;
-                private final String name;
-            
-                public SimpleDtoIn(Long id, String name) {
-                    this.id = id;
-                    this.name = name;
-                }
-            
-                public Long getId() {
-                    return id;
-                }
-            
-                public String getName() {
-                    return name;
-                }
-            }
+}
             """,
-          spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoIn.java")
-        );
-        SourceSpecs makeAvailableSimpleDtoOut = java(
-          // language=java
-          """
-            package com.santunioni.fixtures.dtoMappers;
-            
-            public class SimpleDtoOut {
-                private final Long id;
-                private final String name;
-            
-                public SimpleDtoOut(Long id, String name) {
-                    this.id = id;
-                    this.name = name;
-                }
-            
-                public Long getId() {
-                    return id;
-                }
-            
-                public String getName() {
-                    return name;
-                }
-            }
-            """,
-          spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoOut.java")
+          spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoMapperImpl.java")
         );
 
         // Act - Assert
         rewriteRun(
-          // Include the DTO classes so types are available
           makeAvailableSimpleDtoIn,
           makeAvailableSimpleDtoOut,
-          // Test using the actual SimpleDtoMapper interface from fixtures
-          // The recipe should find the generated SimpleDtoMapperImpl in build/generated/sources/annotationProcessor/java/main
-          // and replace the interface with the implementation class
+          makeAvailableGeneratedClass,
+          // The mapper interface (before) should be replaced with the implementation class (after)
           java(
+            // language=java
+            """
+              package com.santunioni.fixtures.dtoMappers;
+
+              import org.mapstruct.Mapper;
+
+              @Mapper
+              public interface SimpleDtoMapper {
+                  SimpleDtoOut toSimpleDtoOut(SimpleDtoIn simpleDtoIn);
+                  SimpleDtoIn toSimpleDtoIn(SimpleDtoOut simpleDtoOut);
+              }
+              """,
             // language=java
             """
  package com.santunioni.fixtures.dtoMappers;
@@ -180,24 +187,5 @@ public class SimpleDtoMapperImpl implements SimpleDtoMapper {
             spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoMapper.java")
           )
         );
-    }
-
-    private static void generateMapstructClass(String classFqn, @Language("java") String generatedImpl) throws IOException {
-        // Create the generated implementation file that MapStruct would generate
-        // This simulates the annotation processor output
-        Path projectRoot = Paths.get("").toAbsolutePath();
-        Path classPath = Path.of(classFqn.replace('.', '/'));
-        Path generatedDir = projectRoot.resolve("build/generated/sources/annotationProcessor/java/main/").resolve(classPath.getParent());
-        Files.createDirectories(generatedDir);
-
-        Files.writeString(generatedDir.resolve(Arrays.stream(classFqn.split("\\.")).toList().getLast() + ".java"), generatedImpl);
-    }
-
-    @TempDir
-    private Path dir;
-
-    @Test
-    void shouldReturnTheProjectFullPath() throws IOException {
-
     }
 }
