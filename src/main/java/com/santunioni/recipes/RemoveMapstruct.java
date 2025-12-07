@@ -1,5 +1,8 @@
 package com.santunioni.recipes;
 
+
+import lombok.extern.java.Log;
+import lombok.extern.log4j.Log4j2;
 import org.jspecify.annotations.NullMarked;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -13,8 +16,10 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,13 +50,14 @@ import java.util.List;
  * following this recipe to handle any redundant imports or formatting inconsistencies introduced during the process.
  */
 @NullMarked
-public class ReplaceMapstructWithImpl extends Recipe {
+@Log
+public class RemoveMapstruct extends Recipe {
 
     /**
      * Constructor for the ReplaceMapstructWithImpl class.
      * This method initializes an instance of the ReplaceMapstructWithImpl recipe.
      */
-    public ReplaceMapstructWithImpl() {}
+    public RemoveMapstruct() {}
 
     @Override
     public String getDisplayName() {
@@ -138,6 +144,7 @@ public class ReplaceMapstructWithImpl extends Recipe {
                             .withSourcePath(originalCu.getSourcePath());
 
                 } catch (Exception e) {
+                    log.severe("Error processing @Mapper class " + originalCu.getClasses().get(0).getName() + " ");
                     throw new RuntimeException("Failed to migrate Mapstruct Mapper: " + originalInterface.getName().getSimpleName(), e);
                 }
             }
@@ -157,8 +164,14 @@ public class ReplaceMapstructWithImpl extends Recipe {
                 Path resolvedPath = getGeneratedClassPath(originalCu, pkg, implClassName);
 
                 JavaParser parser = JavaParser.fromJavaVersion().build();
-                return parser.parse(new String(Files.readAllBytes(resolvedPath))).findFirst()
-                        .orElseThrow(() -> new IllegalStateException("Could not parse generated class: " + resolvedPath));
+
+                try {
+                    return parser.parse(new String(Files.readAllBytes(resolvedPath))).findFirst()
+                            .orElseThrow(() -> new IllegalStateException("Could not parse generated class: " + resolvedPath));
+                } catch (IllegalStateException e) {
+                    log.severe("Could not parse generated class: " + resolvedPath + "\n" + e.getMessage());
+                    throw e;
+                }
             }
 
             private Path getGeneratedClassPath(J.CompilationUnit originalCu, String pkg, String implClassName) {
@@ -182,11 +195,13 @@ public class ReplaceMapstructWithImpl extends Recipe {
             }
 
             private Path getProjectDir(J.CompilationUnit originalCu) {
+//                return Paths.get("/Users/vinicius.vargas/Projects/quintoandar/backend-services/applications/sales-flow");
+
                 Path currentPath = originalCu.getSourcePath();
                 Path searchPath = currentPath.toAbsolutePath();
                 while (true) {
                     Path fileName = searchPath.getFileName();
-                    if (fileName != null && "src".equals(fileName.toString())) {
+                    if (fileName != null && "sales-flow".equals(fileName.toString())) {
                         return searchPath.getParent().toAbsolutePath();
                     }
                     Path next = searchPath.getParent();

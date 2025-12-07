@@ -31,11 +31,11 @@ import java.util.Arrays;
 
 import static org.openrewrite.java.Assertions.java;
 
-class ReplaceMapstructWithImplTest implements RewriteTest {
+class RemoveMapstructTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new ReplaceMapstructWithImpl())
+        spec.recipe(new RemoveMapstruct())
           .parser(JavaParser.fromJavaVersion()
             .classpath("mapstruct"));
     }
