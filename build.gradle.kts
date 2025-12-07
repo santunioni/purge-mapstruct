@@ -63,6 +63,10 @@ dependencies {
     testRuntimeOnly("org.apache.commons:commons-lang3:latest.release")
     testRuntimeOnly("org.springframework:spring-core:latest.release")
     testRuntimeOnly("org.springframework:spring-context:latest.release")
+    
+    // MapStruct for testing ReplaceMapstructWithImpl recipe
+    testImplementation("org.mapstruct:mapstruct:latest.release")
+    testAnnotationProcessor("org.mapstruct:mapstruct-processor:latest.release")
 }
 
 signing {

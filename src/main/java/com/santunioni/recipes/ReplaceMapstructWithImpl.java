@@ -10,39 +10,36 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
-import org.openrewrite.marker.Markers;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
  * ReplaceMapstructWithImpl is a recipe designed to refactor Mapstruct mapper interfaces.
  * <p>
  * It replaces @Mapper interfaces with their associated generated implementation. This process
- * includes copying default methods from the interface to the implementation class, managing
- * necessary imports, removing @Override annotations from methods, and renaming the generated
- * implementation class to match the original mapper interface name.
+ * includes managing necessary imports, removing @Override annotations from methods, and renaming
+ * the generated implementation class to match the original mapper interface name.
  * <p>
  * The recipe performs the following key steps:
  * 1. Identifies classes annotated with Mapstruct's @Mapper annotation.
  * 2. Locates the corresponding Mapstruct-generated implementation class (e.g., `MyMapperImpl`).
  * 3. Merges imports from the original interface into the implementation class.
- * 4. Copies default methods declared in the interface to the implementation class, adapting
- *    method modifiers as needed.
- * 5. Removes unnecessary annotations (such as @Override) from the implementation class.
- * 6. Renames the implementation class to match the original interface name and removes
+ * 4. Removes unnecessary annotations (such as @Override) from the implementation class.
+ * 5. Renames the implementation class to match the original interface name and removes
  *    "implements" declarations.
  * <p>
  * This recipe assumes that the generated implementation is available on the project's file system
  * and verifies its existence during execution. If the generated implementation cannot be found,
  * an exception is raised.
+ * <p>
+ * Note: This recipe does not copy default methods from the interface. It only works with
+ * interfaces that do not have default methods.
  * <p>
  * It is recommended to run supplementary cleanup tools or recipes (e.g., RemoveUnusedImports)
  * following this recipe to handle any redundant imports or formatting inconsistencies introduced during the process.
@@ -63,7 +60,7 @@ public class ReplaceMapstructWithImpl extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Replaces @Mapper interfaces with their generated implementation. Moves default methods to the class, copies imports, and removes @Override annotations.";
+        return "Replaces @Mapper interfaces with their generated implementation. Copies imports and removes @Override annotations. Only supports interfaces without default methods.";
     }
 
     @Override
@@ -120,39 +117,7 @@ public class ReplaceMapstructWithImpl extends Recipe {
                     }
 
                     // ==========================================================
-                    // STEP C: HARVEST & TRANSFORM DEFAULT METHODS
-                    // ==========================================================
-                    List<J.MethodDeclaration> defaultMethods = originalInterface.getBody().getStatements().stream()
-                            .filter(J.MethodDeclaration.class::isInstance)
-                            .map(J.MethodDeclaration.class::cast)
-                            .filter(m -> m.hasModifier(J.Modifier.Type.Default))
-                            .toList();
-
-                    for (J.MethodDeclaration defMethod : defaultMethods) {
-                        // 1. Remove 'default' modifier
-                        List<J.Modifier> newModifiers = ListUtils.map(defMethod.getModifiers(), mod ->
-                                mod.getType() == J.Modifier.Type.Default ? null : mod
-                        );
-
-                        // 2. Ensure 'public' modifier exists
-                        boolean hasPublic = newModifiers.stream()
-                                .anyMatch(m -> m.getType() == J.Modifier.Type.Public);
-
-                        if (!hasPublic) {
-                            // Create a public modifier.
-                            // Note: In a real recipe, getting the whitespace/ID right is easier with JavaTemplate,
-                            // but simpler manual construction works for bulk refactoring.
-                            J.Modifier publicMod = new J.Modifier(
-                                    Tree.randomId(), Space.EMPTY, Markers.EMPTY, J.Modifier.Type.Public, Collections.emptyList());
-                            newModifiers = ListUtils.concat(publicMod, newModifiers);
-                        }
-
-                        // 3. Add to class statements
-                        classStatements.add(defMethod.withModifiers(newModifiers));
-                    }
-
-                    // ==========================================================
-                    // STEP D: FINALIZE CLASS STRUCTURE
+                    // STEP C: FINALIZE CLASS STRUCTURE
                     // ==========================================================
                     // Update body with combined statements
                     implClass = implClass.withBody(implClass.getBody().withStatements(classStatements));
@@ -188,13 +153,10 @@ public class ReplaceMapstructWithImpl extends Recipe {
 
             private Path getGeneratedClassPath(J.CompilationUnit originalCu, String pkg, String implClassName) {
                 // 2. Locate the generated file on disk
-                // ctx is the ExecutionContext passed to visitCompilationUnit
                 Path projectDir = getProjectDir(originalCu);
-                System.out.println("projectDir = " + projectDir);
                 Path generatedPath = projectDir.resolve("build/generated/sources/annotationProcessor/java/main")
                         .resolve(pkg.replace('.', '/'))
                         .resolve(implClassName + ".java");
-                System.out.println("generatedPath = " + generatedPath);
 
                 if (!Files.exists(generatedPath)) {
                     throw new IllegalStateException(String.format("Could not find generated annotations in %s from " +
@@ -212,10 +174,8 @@ public class ReplaceMapstructWithImpl extends Recipe {
             private Path getProjectDir(J.CompilationUnit originalCu) {
                 Path currentPath = originalCu.getSourcePath();
                 while (currentPath != null && !currentPath.endsWith("src")) {
-                    System.out.println("currentPath = " + currentPath);
                     currentPath = currentPath.getParent();
                 }
-                System.out.println("currentPath = " + currentPath);
 
                 if (currentPath != null && currentPath.endsWith("src")) {
                     return currentPath.getParent().toAbsolutePath();
