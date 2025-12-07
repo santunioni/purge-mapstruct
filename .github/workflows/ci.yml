@@ -33,6 +33,4 @@ jobs:
           java-version: 25
       - uses: gradle/actions/setup-gradle@v5
       - name: build
-        run: ./gradlew ${{ env.GRADLE_SWITCHES }} build test
-      - name: verify
-        run: mvn --show-version --no-transfer-progress --update-snapshots --fail-at-end --batch-mode -Dstyle.color=always verify
+        run: ./gradlew ${{ env.GRADLE_SWITCHES }} test build
