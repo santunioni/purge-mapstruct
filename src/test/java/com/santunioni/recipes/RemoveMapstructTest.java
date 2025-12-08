@@ -185,4 +185,39 @@ class RemoveMapstructTest implements RewriteTest {
         );
     }
 
+    @DocumentExample
+    @Test
+    void shouldReplaceMapperImplReferences() throws IOException {
+        SourceSpecs makeAvailableSimpleDtoIn = java(
+          readResource("fixtures/replaceMapperImplReferences/context/SimpleDtoIn.java"),
+          spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoIn.java")
+        );
+
+        SourceSpecs makeAvailableSimpleDtoOut = java(
+          readResource("fixtures/replaceMapperImplReferences/context/SimpleDtoOut.java"),
+          spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoOut.java")
+        );
+
+        SourceSpecs makeAvailableGeneratedClass = java(
+          readResource("fixtures/replaceMapperImplReferences/context/SimpleDtoMapperImpl.java"),
+          spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoMapperImpl.java")
+        );
+
+        rewriteRun(
+          makeAvailableSimpleDtoIn,
+          makeAvailableSimpleDtoOut,
+          makeAvailableGeneratedClass,
+          java(
+            readResource("fixtures/replaceMapperImplReferences/before/SimpleDtoMapper.java"),
+            readResource("fixtures/replaceMapperImplReferences/after/SimpleDtoMapper.java"),
+            spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoMapper.java")
+          ),
+          java(
+            readResource("fixtures/replaceMapperImplReferences/before/SimpleService.java"),
+            readResource("fixtures/replaceMapperImplReferences/after/SimpleService.java"),
+            spec -> spec.path("src/main/java/com/santunioni/fixtures/services/SimpleService.java")
+          )
+        );
+    }
+
 }
