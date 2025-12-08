@@ -13,11 +13,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * RemoveMapstruct is a recipe designed to refactor Mapstruct mapper interfaces.
@@ -241,11 +237,11 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 }
 
                 // Copy static and default methods from the interface
-                for (Statement mapperStatement : originalInterface.getBody().getStatements()) {
-                    if (mapperStatement instanceof J.MethodDeclaration) {
-                        J.MethodDeclaration mapperMethod = (J.MethodDeclaration) mapperStatement;
+                for (Statement interfaceStatement : originalInterface.getBody().getStatements()) {
+                    if (interfaceStatement instanceof J.MethodDeclaration) {
+                        J.MethodDeclaration interfaceMethod = (J.MethodDeclaration) interfaceStatement;
 
-                        mapperMethod = mapperMethod.withModifiers(ListUtils.map(mapperMethod.getModifiers(),
+                        interfaceMethod = interfaceMethod.withModifiers(ListUtils.map(interfaceMethod.getModifiers(),
                                 modifier -> {
                                     if (modifier.getType() == J.Modifier.Type.Default) {
                                         return modifier.withType(J.Modifier.Type.Static);
@@ -253,12 +249,13 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                                     return modifier;
                                 }));
 
-                        if (mapperMethod.getModifiers().stream()
+                        if (interfaceMethod.getModifiers().stream()
                                 .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
-                            copiedClassStatements.add(mapperMethod);
+                            copiedClassStatements.add(interfaceMethod);
                         }
-                    } else if (mapperStatement instanceof J.VariableDeclarations) {
-                        copiedClassStatements.add(mapperStatement);
+                    } else if (interfaceStatement instanceof J.VariableDeclarations) {
+                        J.VariableDeclarations interfaceField = (J.VariableDeclarations) interfaceStatement;
+                        copiedClassStatements.add(interfaceField);
                     }
                 }
 
