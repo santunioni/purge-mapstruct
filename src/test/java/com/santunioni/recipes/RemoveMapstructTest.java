@@ -16,7 +16,6 @@
 package com.santunioni.recipes;
 
 import org.jspecify.annotations.NonNull;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
@@ -156,7 +155,6 @@ class RemoveMapstructTest implements RewriteTest {
         );
     }
 
-    @Disabled
     @DocumentExample
     @Test
     void replaceAbstractMapperWithDecorator() throws IOException {

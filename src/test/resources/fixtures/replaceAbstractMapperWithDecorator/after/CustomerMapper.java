@@ -3,7 +3,6 @@ package com.santunioni.fixtures.dtoMappers;
 import org.mapstruct.Mapper;
 
 public class CustomerMapper {
-
     public CustomerDto toCustomerDto(CustomerEntity customerEntity) {
         if (customerEntity == null) {
             return null;
