@@ -15,7 +15,7 @@ import java.util.Objects;
 
 @Log
 @NullMarked
-class Accumulator {
+public class Accumulator {
     Map<String, List<J.CompilationUnit>> mapSuperToItsImplementers = new HashMap<>();
 
     Map<String, String> mapImplementerToItsSup = new HashMap<>();
