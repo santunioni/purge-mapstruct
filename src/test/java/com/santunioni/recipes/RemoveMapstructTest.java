@@ -157,7 +157,7 @@ class RemoveMapstructTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void replaceAbstractMapperWithDecorator() throws IOException {
+    void replaceAbstractMapperWithImplementation() throws IOException {
         SourceSpecs makeAvailableCustomerDto = java(
           readResource("fixtures/replaceAbstractMapperWithDecorator/context/CustomerDto.java"),
           spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/CustomerDto.java")
