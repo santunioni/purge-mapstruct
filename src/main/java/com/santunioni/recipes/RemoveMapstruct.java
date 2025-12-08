@@ -247,8 +247,8 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                     }));
         }
 
-        private static void captureImplMethod(J.MethodDeclaration implMethod, String mapperImplClassName,
-                                              String mapperDeclClassName, List<Statement> copiedClassStatements) {
+        private static void captureMapperImplMethod(J.MethodDeclaration implMethod, String mapperImplClassName,
+                                                    String mapperDeclClassName, List<Statement> copiedClassStatements) {
             // Rename the constructor
             boolean isConstructor =
                     implMethod.getName().getSimpleName().equals(mapperImplClassName);
@@ -325,9 +325,13 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
                 // Transform methods on Impl class
                 for (Statement implStatement : mapperImplClass.getBody().getStatements()) {
-                    if (implStatement instanceof J.MethodDeclaration implMethod) {
-
-                        captureImplMethod(implMethod, mapperImplClassName, mapperDeclClassName, copiedClassStatements);
+                    if (implStatement instanceof J.MethodDeclaration mapperImplMethod) {
+                        captureMapperImplMethod(
+                                mapperImplMethod,
+                                mapperImplClassName,
+                                mapperDeclClassName,
+                                copiedClassStatements
+                        );
                     } else {
                         copiedClassStatements.add(implStatement);
                     }
