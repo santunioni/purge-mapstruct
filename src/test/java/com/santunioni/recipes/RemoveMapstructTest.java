@@ -39,18 +39,14 @@ class RemoveMapstructTest implements RewriteTest {
             .classpath("mapstruct"));
     }
 
-    private String readFixture(String testName, String fixtureType, String fileName) {
-        try {
-            Path fixturePath = Paths.get("src/test/resources/com/santunioni/fixtures", testName, fixtureType, fileName);
-            return Files.readString(fixturePath);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read fixture file: " + testName + "/" + fixtureType + "/" + fileName, e);
-        }
+    private String readFixture(String testName, String fixtureType, String fileName) throws IOException {
+        Path fixturePath = Paths.get("src/test/resources/com/santunioni/fixtures", testName, fixtureType, fileName);
+        return Files.readString(fixturePath);
     }
 
     @DocumentExample
     @Test
-    void replaceSimpleDtoMapper() {
+    void replaceSimpleDtoMapper() throws IOException {
         String testName = "replaceSimpleDtoMapper";
 
         SourceSpecs makeAvailableSimpleDtoIn = java(
@@ -81,7 +77,7 @@ class RemoveMapstructTest implements RewriteTest {
     }
 
     @Test
-    void replaceMapperWithDefaultMethod() {
+    void replaceMapperWithDefaultMethod() throws IOException {
         String testName = "replaceMapperWithDefaultMethod";
 
         SourceSpecs makeAvailableUserDto = java(
@@ -112,7 +108,7 @@ class RemoveMapstructTest implements RewriteTest {
     }
 
     @Test
-    void replaceMapperWithConstructor() {
+    void replaceMapperWithConstructor() throws IOException {
         String testName = "replaceMapperWithConstructor";
 
         SourceSpecs makeAvailableProductDto = java(
@@ -137,7 +133,7 @@ class RemoveMapstructTest implements RewriteTest {
     }
 
     @Test
-    void replaceMapperWithStaticField() {
+    void replaceMapperWithStaticField() throws IOException {
         String testName = "replaceMapperWithStaticField";
 
         SourceSpecs makeAvailableOrderDto = java(
