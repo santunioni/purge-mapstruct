@@ -216,6 +216,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                         List<J.Annotation> cleanedAnnotations = ListUtils.map(m.getLeadingAnnotations(), a -> {
                             if (a.getSimpleName().equals("Override")
                                     || TypeUtils.isOfClassType(a.getType(), "java.lang.Override")
+                                    || a.getSimpleName().equals("Named")
                                     || TypeUtils.isOfClassType(a.getType(), "org.mapstruct.Named")) {
                                 return null;
                             }
