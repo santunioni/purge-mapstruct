@@ -12,6 +12,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
@@ -20,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -60,14 +62,14 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
     public RemoveMapstruct() {
     }
 
-    private static boolean isMapstructImplementation(J.CompilationUnit originalCu) {
-        return originalCu.getClasses().stream()
+    private static boolean isMapstructImplementation(J.CompilationUnit compilationUnit) {
+        return compilationUnit.getClasses().stream()
                 .anyMatch(cd -> {
                     String className = cd.getName().getSimpleName();
                     return className.endsWith("Impl")
-                            && cd.getImplements() != null
-                            && !cd.getImplements().isEmpty()
-                            && cd.getAllAnnotations().stream().anyMatch(an ->
+                            && ((cd.getImplements() != null
+                            && !cd.getImplements().isEmpty()) || cd.getExtends() != null)
+                            && cd.getLeadingAnnotations().stream().anyMatch(an ->
                             TypeUtils.isOfClassType(an.getType(), "javax.annotation.processing.Generated"));
                 });
     }
@@ -103,6 +105,14 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
     public static class Accumulator {
         Map<String, List<J.CompilationUnit>> implClasses = new HashMap<>();
 
+        private void addLinking(TypeTree classDecl, J.CompilationUnit compilationUnit) {
+            final String superFqn = Objects.requireNonNull(classDecl.getType()).toString();
+            if (!implClasses.containsKey(superFqn)) {
+                implClasses.put(superFqn, new ArrayList<>());
+            }
+            implClasses.get(superFqn).add(compilationUnit);
+        }
+
     }
 
     private static class ImplementationScanner extends JavaIsoVisitor<ExecutionContext> {
@@ -114,27 +124,25 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
         @Override
         public J.CompilationUnit visitCompilationUnit(J.CompilationUnit compilationUnit, ExecutionContext ctx) {
-            // Look for classes that end with "Impl" and implement an interface
-            // These are likely MapStruct generated classes
             if (!isMapstructImplementation(compilationUnit)) {
                 return compilationUnit;
             }
 
             for (J.ClassDeclaration classDecl : compilationUnit.getClasses()) {
-                String className = classDecl.getName().getSimpleName();
-                String interfaceName = className.substring(0, className.length() - 4);
                 if (compilationUnit.getPackageDeclaration() == null) {
                     continue;
                 }
-                String packageName =
-                        compilationUnit.getPackageDeclaration().getExpression().printTrimmed(getCursor());
-                String interfaceFqn = packageName.isEmpty() ? interfaceName : packageName + "." + interfaceName;
 
-                if (!acc.implClasses.containsKey(interfaceFqn)) {
-                    acc.implClasses.put(interfaceFqn, new ArrayList<>());
+                List<TypeTree> implInterfaces = Objects
+                        .requireNonNullElse(classDecl.getImplements(),
+                                Collections.emptyList());
+                for (TypeTree interfaceDecl : implInterfaces) {
+                    acc.addLinking(interfaceDecl, compilationUnit);
                 }
 
-                acc.implClasses.get(interfaceFqn).add(compilationUnit);
+                if (classDecl.getExtends() != null) {
+                    acc.addLinking(classDecl.getExtends(), compilationUnit);
+                }
 
             }
             return super.visitCompilationUnit(compilationUnit, ctx);
@@ -149,7 +157,6 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
             this.acc = acc;
         }
 
-
         @Override
         public J visitCompilationUnit(J.CompilationUnit originalCu, ExecutionContext ctx) {
             if (isMapstructImplementation(originalCu)) {
@@ -159,12 +166,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 return originalCu;
             }
 
-            // 1. Identify if this is a Mapstruct Mapper interface
-            boolean isMapper = originalCu.getClasses().stream()
-                    .anyMatch(cd -> cd.getAllAnnotations().stream()
-                            .anyMatch(this::isMapstructMapper));
-
-            if (!isMapper) {
+            if (!isMapstructDefinition(originalCu)) {
                 return super.visitCompilationUnit(originalCu, ctx);
             }
 
@@ -361,17 +363,20 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
             }
         }
 
+        private boolean isMapstructDefinition(J.CompilationUnit originalCu) {
+            return originalCu.getClasses().stream()
+                    .anyMatch(cd -> cd.getAllAnnotations().stream()
+                            .anyMatch(a -> (a.getType() != null && TypeUtils.isOfClassType(a.getType(), "org" +
+                                    ".mapstruct.Mapper"))
+                                    || a.getSimpleName().equals("Mapper")));
+        }
+
         private String getInterfaceFqn(J.CompilationUnit originalCu, J.ClassDeclaration originalInterface) {
             String className = originalInterface.getName().getSimpleName();
             String packageName = originalCu.getPackageDeclaration() != null
                     ? originalCu.getPackageDeclaration().getExpression().printTrimmed(getCursor())
                     : "";
             return packageName.isEmpty() ? className : packageName + "." + className;
-        }
-
-        private boolean isMapstructMapper(J.Annotation a) {
-            return (a.getType() != null && TypeUtils.isOfClassType(a.getType(), "org.mapstruct.Mapper"))
-                    || a.getSimpleName().equals("Mapper");
         }
 
     }

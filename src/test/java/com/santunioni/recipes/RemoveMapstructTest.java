@@ -16,6 +16,7 @@
 package com.santunioni.recipes;
 
 import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
@@ -151,6 +152,37 @@ class RemoveMapstructTest implements RewriteTest {
             readResource("fixtures/replaceMapperWithStaticField/before/OrderMapper.java"),
             readResource("fixtures/replaceMapperWithStaticField/after/OrderMapper.java"),
             spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/OrderMapper.java")
+          )
+        );
+    }
+
+    @Disabled
+    @DocumentExample
+    @Test
+    void replaceAbstractMapperWithDecorator() throws IOException {
+        SourceSpecs makeAvailableCustomerDto = java(
+          readResource("fixtures/replaceAbstractMapperWithDecorator/context/CustomerDto.java"),
+          spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/CustomerDto.java")
+        );
+
+        SourceSpecs makeAvailableCustomerEntity = java(
+          readResource("fixtures/replaceAbstractMapperWithDecorator/context/CustomerEntity.java"),
+          spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/CustomerEntity.java")
+        );
+
+        SourceSpecs makeAvailableGeneratedClass = java(
+          readResource("fixtures/replaceAbstractMapperWithDecorator/context/CustomerMapperImpl.java"),
+          spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/CustomerMapperImpl.java")
+        );
+
+        rewriteRun(
+          makeAvailableCustomerDto,
+          makeAvailableCustomerEntity,
+          makeAvailableGeneratedClass,
+          java(
+            readResource("fixtures/replaceAbstractMapperWithDecorator/before/CustomerMapper.java"),
+            readResource("fixtures/replaceAbstractMapperWithDecorator/after/CustomerMapper.java"),
+            spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/CustomerMapper.java")
           )
         );
     }
