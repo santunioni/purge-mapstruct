@@ -31,7 +31,7 @@ import java.util.Map;
  * 2. Locates the corresponding Mapstruct-generated implementation class (e.g., `MyMapperImpl`) from the source files
  * in context.
  * 3. Merges imports from the original interface into the implementation class.
- * 4. Removes unnecessary annotations (such as @Override) from the implementation class.
+ * 4. Removes unnecessary annotations (such as @Override from methods and @Generated from classes) from the implementation class.
  * 5. Renames the implementation class to match the original interface name and removes
  * "implements" declarations.
  * <p>
@@ -63,7 +63,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
     @Override
     public String getDescription() {
         return "Replaces @Mapper interfaces with their generated implementation. Copies imports and removes @Override"
-                + " annotations. Only supports interfaces without default methods.";
+                + " annotations from methods and @Generated annotations from classes. Only supports interfaces without default methods.";
     }
 
     @Override
@@ -177,8 +177,19 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 // ==========================================================
                 // We append original imports to the implementation imports.
                 // Duplicates will be handled by a subsequent "RemoveUnusedImports" recipe run.
-                List<J.Import> mergedImports = ListUtils.concatAll(
+                // Filter out Generated imports since we're removing @Generated annotations
+                List<J.Import> allImports = ListUtils.concatAll(
                         mapperImplementationFile.getImports(), originalCu.getImports());
+                List<J.Import> mergedImports = ListUtils.map(allImports, imp -> {
+                    if (imp.getQualid() != null) {
+                        String importName = imp.getQualid().printTrimmed(getCursor());
+                        if (importName.equals("javax.annotation.processing.Generated")
+                                || importName.equals("jakarta.annotation.Generated")) {
+                            return null;
+                        }
+                    }
+                    return imp;
+                });
                 mapperImplementationFile = mapperImplementationFile.withImports(mergedImports);
 
                 // ==========================================================
@@ -243,6 +254,17 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 // Update body with combined statements
                 mapperImplementationClass =
                         mapperImplementationClass.withBody(mapperImplementationClass.getBody().withStatements(classStatements));
+
+                // Remove @Generated annotation from class
+                List<J.Annotation> cleanedClassAnnotations = ListUtils.map(mapperImplementationClass.getLeadingAnnotations(), a -> {
+                    if (a.getSimpleName().equals("Generated")
+                            || TypeUtils.isOfClassType(a.getType(), "javax.annotation.processing.Generated")
+                            || TypeUtils.isOfClassType(a.getType(), "jakarta.annotation.Generated")) {
+                        return null;
+                    }
+                    return a;
+                });
+                mapperImplementationClass = mapperImplementationClass.withLeadingAnnotations(cleanedClassAnnotations);
 
                 // Rename class: MyMapperImpl -> MyMapper
                 mapperImplementationClass =
