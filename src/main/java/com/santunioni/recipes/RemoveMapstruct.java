@@ -123,7 +123,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
             String fqn = compilationUnit.getType().getFullyQualifiedName();
             List<J.CompilationUnit> implementers = implClasses.get(fqn);
-            
+
             if (implementers == null || implementers.size() != 1) {
                 log.severe("Multiple or no generated implementations found for " + fqn + ". Skipping.");
                 return null;
@@ -197,10 +197,8 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 }
 
                 J.ClassDeclaration mapperImplementationClass = mapperImplementationFile.getClasses().get(0);
-
-                // Store old and new class names for constructor renaming
-                String oldClassName = mapperImplementationClass.getName().getSimpleName();
-                String newClassName = originalInterface.getName().getSimpleName();
+                String mapperImplClassName = mapperImplementationClass.getName().getSimpleName();
+                String mapperDeclClassName = originalInterface.getName().getSimpleName();
 
                 // ==========================================================
                 // STEP A: COPY IMPORTS
@@ -232,10 +230,11 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                     if (implStatement instanceof J.MethodDeclaration implMethod) {
 
                         // Rename the constructor
-                        boolean isConstructor = implMethod.getName().getSimpleName().equals(oldClassName);
+                        boolean isConstructor =
+                                implMethod.getName().getSimpleName().equals(mapperImplClassName);
                         if (isConstructor) {
                             implMethod =
-                                    implMethod.withName(implMethod.getName().withSimpleName(newClassName));
+                                    implMethod.withName(implMethod.getName().withSimpleName(mapperDeclClassName));
                         }
 
                         // Filter out annotations that look like Override or Named
@@ -357,7 +356,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
                 // Rename class: MyMapperImpl -> MyMapper
                 mapperImplementationClass =
-                        mapperImplementationClass.withName(mapperImplementationClass.getName().withSimpleName(newClassName));
+                        mapperImplementationClass.withName(mapperImplementationClass.getName().withSimpleName(mapperDeclClassName));
 
                 // Remove "implements MyMapper"
                 mapperImplementationClass = mapperImplementationClass.withImplements(null);
