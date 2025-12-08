@@ -345,29 +345,16 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                     }
                 }
 
-                // ==========================================================
-                // STEP C: FINALIZE CLASS STRUCTURE
-                // ==========================================================
-                // Update body with combined statements
-                mapperImplClass =
-                        mapperImplClass.withBody(mapperImplClass.getBody().withStatements(copiedClassStatements));
-
-                // Remove @Generated annotation from a class
-                mapperImplClass = cleanGeneratedAnnotations(mapperImplClass);
-
-                // Rename class: MyMapperImpl -> MyMapper
-                mapperImplClass =
-                        mapperImplClass.withName(mapperImplClass.getName().withSimpleName(mapperDeclClassName));
-
-                // Remove "implements MyMapper"
-                mapperImplClass = mapperImplClass.withImplements(null);
-
-                // Replace the class in the CU
-                mapperImplFile =
-                        mapperImplFile.withClasses(Collections.singletonList(mapperImplClass));
-
-                // Return the new CU, masquerading as the old file (preserving ID and Path)
+                List<J.ClassDeclaration> classes = Collections.singletonList(cleanGeneratedAnnotations(
+                        mapperImplClass
+                                .withBody(mapperImplClass.getBody().withStatements(copiedClassStatements))
+                                .withName(mapperImplClass.getName().withSimpleName(mapperDeclClassName))
+                                .withImplements(null)
+                                .withExtends(null)
+                ));
+                
                 return mapperImplFile
+                        .withClasses(classes)
                         .withId(mapperDeclFile.getId())
                         .withSourcePath(mapperDeclFile.getSourcePath());
 
