@@ -3,6 +3,7 @@ package com.santunioni.recipes;
 
 import lombok.extern.java.Log;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.ScanningRecipe;
 import org.openrewrite.TreeVisitor;
@@ -113,6 +114,23 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
             implClasses.get(superFqn).add(compilationUnit);
         }
 
+        private J.@Nullable CompilationUnit getImplementer(J.ClassDeclaration compilationUnit) {
+            if (compilationUnit.getType() == null) {
+                log.severe("Could not find fully qualified name for " + compilationUnit +
+                        ". Skipping.");
+                return null;
+            }
+
+            String fqn = compilationUnit.getType().getFullyQualifiedName();
+            List<J.CompilationUnit> implementers = implClasses.get(fqn);
+            
+            if (implementers == null || implementers.size() != 1) {
+                log.severe("Multiple or no generated implementations found for " + fqn + ". Skipping.");
+                return null;
+            }
+            return implementers.get(0);
+        }
+
     }
 
     private static class ImplementationScanner extends JavaIsoVisitor<ExecutionContext> {
@@ -158,30 +176,26 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
         }
 
         @Override
-        public J visitCompilationUnit(J.CompilationUnit originalCu, ExecutionContext ctx) {
-            if (isMapstructImplementation(originalCu)) {
+        public J visitCompilationUnit(J.CompilationUnit originalCompilationUnit, ExecutionContext ctx) {
+            if (isMapstructImplementation(originalCompilationUnit)) {
                 // Ideally, I should return null to make openrewrite delete the file.
                 // However, I still need the file to copy its implementation, and openrewrite
                 // makes it unavailable after I return null
-                return originalCu;
+                return originalCompilationUnit;
             }
 
-            if (!isMapstructDefinition(originalCu)) {
-                return super.visitCompilationUnit(originalCu, ctx);
+            if (!isMapstructDefinition(originalCompilationUnit)) {
+                return super.visitCompilationUnit(originalCompilationUnit, ctx);
             }
 
-            J.ClassDeclaration originalInterface = originalCu.getClasses().get(0);
+            J.ClassDeclaration originalInterface = originalCompilationUnit.getClasses().get(0);
 
             try {
-                // 2. Find the generated implementation class from the accumulator
-                String interfaceFqn = getInterfaceFqn(originalCu, originalInterface);
-                List<J.CompilationUnit> implClasses = acc.implClasses.get(interfaceFqn);
-                if (implClasses == null || implClasses.size() != 1) {
-                    log.severe("Multiple or no generated implementations found for " + interfaceFqn + ". Skipping.");
-                    return super.visitCompilationUnit(originalCu, ctx);
+                J.CompilationUnit mapperImplementationFile = acc.getImplementer(originalInterface);
+                if (mapperImplementationFile == null) {
+                    return super.visitCompilationUnit(originalCompilationUnit, ctx);
                 }
 
-                J.CompilationUnit mapperImplementationFile = implClasses.get(0);
                 J.ClassDeclaration mapperImplementationClass = mapperImplementationFile.getClasses().get(0);
 
                 // Store old and new class names for constructor renaming
@@ -195,7 +209,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 // Duplicates will be handled by a subsequent "RemoveUnusedImports" recipe run.
                 // Filter out Generated imports since we're removing @Generated annotations
                 List<J.Import> allImports = ListUtils.concatAll(
-                        mapperImplementationFile.getImports(), originalCu.getImports());
+                        mapperImplementationFile.getImports(), originalCompilationUnit.getImports());
                 List<J.Import> mergedImports = ListUtils.map(allImports, imp -> {
                     if (imp.getQualid() != null) {
                         String importName = imp.getQualid().printTrimmed(getCursor());
@@ -354,11 +368,11 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
                 // Return the new CU, masquerading as the old file (preserving ID and Path)
                 return mapperImplementationFile
-                        .withId(originalCu.getId())
-                        .withSourcePath(originalCu.getSourcePath());
+                        .withId(originalCompilationUnit.getId())
+                        .withSourcePath(originalCompilationUnit.getSourcePath());
 
             } catch (Exception e) {
-                log.severe("Error processing @Mapper class " + originalCu.getClasses().get(0).getName() + ": " + e.getMessage());
+                log.severe("Error processing @Mapper class " + originalCompilationUnit.getClasses().get(0).getName() + ": " + e.getMessage());
                 throw new RuntimeException("Failed to migrate Mapstruct Mapper: " + originalInterface.getName().getSimpleName(), e);
             }
         }
@@ -369,14 +383,6 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                             .anyMatch(a -> (a.getType() != null && TypeUtils.isOfClassType(a.getType(), "org" +
                                     ".mapstruct.Mapper"))
                                     || a.getSimpleName().equals("Mapper")));
-        }
-
-        private String getInterfaceFqn(J.CompilationUnit originalCu, J.ClassDeclaration originalInterface) {
-            String className = originalInterface.getName().getSimpleName();
-            String packageName = originalCu.getPackageDeclaration() != null
-                    ? originalCu.getPackageDeclaration().getExpression().printTrimmed(getCursor())
-                    : "";
-            return packageName.isEmpty() ? className : packageName + "." + className;
         }
 
     }
