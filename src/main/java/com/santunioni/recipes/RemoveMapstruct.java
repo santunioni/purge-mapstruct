@@ -208,20 +208,20 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 List<Statement> copiedClassStatements = new ArrayList<>();
 
                 // Transform methods on Impl class
-                for (Statement mapstructImplStatement : mapperImplementationClass.getBody().getStatements()) {
-                    if (mapstructImplStatement instanceof J.MethodDeclaration) {
-                        J.MethodDeclaration mapstructImplMethod = (J.MethodDeclaration) mapstructImplStatement;
+                for (Statement implStatement : mapperImplementationClass.getBody().getStatements()) {
+                    if (implStatement instanceof J.MethodDeclaration) {
+                        J.MethodDeclaration implMethod = (J.MethodDeclaration) implStatement;
 
                         // Rename the constructor
-                        boolean isConstructor = mapstructImplMethod.getName().getSimpleName().equals(oldClassName);
+                        boolean isConstructor = implMethod.getName().getSimpleName().equals(oldClassName);
                         if (isConstructor) {
-                            mapstructImplMethod =
-                                    mapstructImplMethod.withName(mapstructImplMethod.getName().withSimpleName(newClassName));
+                            implMethod =
+                                    implMethod.withName(implMethod.getName().withSimpleName(newClassName));
                         }
 
                         // Filter out annotations that look like Override or Named
-                        mapstructImplMethod =
-                                mapstructImplMethod.withLeadingAnnotations(ListUtils.map(mapstructImplMethod.getLeadingAnnotations(),
+                        implMethod =
+                                implMethod.withLeadingAnnotations(ListUtils.map(implMethod.getLeadingAnnotations(),
                                         methodAnnotation -> {
                                             if (methodAnnotation.getSimpleName().equals("Override")
                                                     || TypeUtils.isOfClassType(methodAnnotation.getType(), "java.lang" +
@@ -234,32 +234,31 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                                             return methodAnnotation;
                                         }));
 
-                        copiedClassStatements.add(mapstructImplMethod);
+                        copiedClassStatements.add(implMethod);
                     } else {
-                        copiedClassStatements.add(mapstructImplStatement);
+                        copiedClassStatements.add(implStatement);
                     }
                 }
 
                 // Copy static and default methods from the interface
-                for (Statement mapperInterfaceStatement : originalInterface.getBody().getStatements()) {
-                    if (mapperInterfaceStatement instanceof J.MethodDeclaration) {
-                        J.MethodDeclaration mapperMethod = (J.MethodDeclaration) mapperInterfaceStatement;
-                        if (mapperMethod.getModifiers().stream()
-                                .anyMatch(mod -> mod.getType() == J.Modifier.Type.Default)) {
-                            // Remove default modifier
-                            List<J.Modifier> modifiers = ListUtils.map(mapperMethod.getModifiers(), modifier -> {
-                                if (modifier.getType() == J.Modifier.Type.Default) {
-                                    return null;
-                                }
-                                return modifier;
-                            });
+                for (Statement mapperStatement : originalInterface.getBody().getStatements()) {
+                    if (mapperStatement instanceof J.MethodDeclaration) {
+                        J.MethodDeclaration mapperMethod = (J.MethodDeclaration) mapperStatement;
 
-                            mapperMethod = mapperMethod.withModifiers(modifiers);
-                            copiedClassStatements.add(mapperMethod);
-                        } else if (mapperMethod.getModifiers().stream()
+                        mapperMethod = mapperMethod.withModifiers(ListUtils.map(mapperMethod.getModifiers(),
+                                modifier -> {
+                                    if (modifier.getType() == J.Modifier.Type.Default) {
+                                        return modifier.withType(J.Modifier.Type.Static);
+                                    }
+                                    return modifier;
+                                }));
+
+                        if (mapperMethod.getModifiers().stream()
                                 .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
                             copiedClassStatements.add(mapperMethod);
                         }
+                    } else if (mapperStatement instanceof J.VariableDeclarations) {
+                        copiedClassStatements.add(mapperStatement);
                     }
                 }
 

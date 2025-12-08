@@ -302,8 +302,7 @@ class RemoveMapstructTest implements RewriteTest {
               "        return new UserEntity(fullName);\n" +
               "    }\n" +
               "\n" +
-              "    \n" +
-              "    public String formatFullName(String firstName, String lastName) {\n" +
+              "    static String formatFullName(String firstName, String lastName) {\n" +
               "        return firstName + \" \" + lastName;\n" +
               "    }\n" +
               "\n" +
