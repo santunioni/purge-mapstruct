@@ -10,10 +10,17 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.marker.Markers;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * RemoveMapstruct is a recipe designed to refactor Mapstruct mapper interfaces.
@@ -255,7 +262,19 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                         }
                     } else if (interfaceStatement instanceof J.VariableDeclarations) {
                         J.VariableDeclarations interfaceField = (J.VariableDeclarations) interfaceStatement;
-                        copiedClassStatements.add(interfaceField);
+                        ArrayList<J.Modifier> modifiers = new ArrayList<>(interfaceField.getModifiers());
+
+                        if (!interfaceField.hasModifier(J.Modifier.Type.Static)) {
+                            modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
+                                    Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()));
+                        }
+
+                        if (!interfaceField.hasModifier(J.Modifier.Type.Public)) {
+                            modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
+                                    Markers.EMPTY, null, J.Modifier.Type.Public, Collections.emptyList()));
+                        }
+
+                        copiedClassStatements.add(interfaceField.withModifiers(modifiers));
                     }
                 }
 

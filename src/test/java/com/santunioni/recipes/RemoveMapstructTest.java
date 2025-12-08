@@ -473,8 +473,8 @@ class RemoveMapstructTest implements RewriteTest {
               "        return new OrderDto(id);\n" +
               "    }\n" +
               "\n" +
-              "    static final String DEFAULT_STATUS = \"PENDING\";\n" +
-              "    static final String DEFAULT_SITUATION = \"PENDING\";\n" +
+              "    final static public String DEFAULT_STATUS = \"PENDING\";\n" +
+              "    static final public String DEFAULT_SITUATION = \"PENDING\";\n" +
               "}",
             spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/OrderMapper.java")
           )
