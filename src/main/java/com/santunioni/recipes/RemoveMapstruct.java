@@ -147,6 +147,10 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
             return implementers.get(0);
         }
 
+        private @Nullable String getSuperFqnFromImplFqn(String implFqn) {
+            return mapImplementerToItsSup.get(implFqn);
+        }
+
     }
 
     private static class ImplementationScanner extends JavaIsoVisitor<ExecutionContext> {
