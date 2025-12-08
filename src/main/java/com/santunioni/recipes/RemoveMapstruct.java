@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static java.util.Collections.emptyList;
+
 /**
  * RemoveMapstruct is a recipe designed to refactor Mapstruct mapper interfaces.
  * <p>
@@ -227,11 +229,8 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                                 implMethod.withLeadingAnnotations(ListUtils.map(implMethod.getLeadingAnnotations(),
                                         methodAnnotation -> {
                                             if (methodAnnotation.getSimpleName().equals("Override")
-                                                    || TypeUtils.isOfClassType(methodAnnotation.getType(), "java.lang" +
-                                                    ".Override")
-                                                    || methodAnnotation.getSimpleName().equals("Named")
-                                                    || TypeUtils.isOfClassType(methodAnnotation.getType(), "org" +
-                                                    ".mapstruct.Named")) {
+                                                    || TypeUtils.isOfClassType(methodAnnotation.getType(),
+                                                    "java.lang.Override")) {
                                                 return null;
                                             }
                                             return methodAnnotation;
@@ -254,6 +253,17 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                                     }
                                     return modifier;
                                 }));
+
+                        interfaceMethod =
+                                interfaceMethod.withLeadingAnnotations(ListUtils.map(interfaceMethod.getLeadingAnnotations(),
+                                        methodAnnotation -> {
+                                            if (methodAnnotation.getSimpleName().equals("Named")
+                                                    || TypeUtils.isOfClassType(methodAnnotation.getType(),
+                                                    "org.mapstruct.Named")) {
+                                                return null;
+                                            }
+                                            return methodAnnotation;
+                                        }));
 
                         if (interfaceMethod.getModifiers().stream()
                                 .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
@@ -278,7 +288,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
                         for (J.Modifier modifier : interfaceField.getModifiers()) {
                             if (!modifiersSetManual.contains(modifier.getType())) {
-                                modifiers.add(modifier.withPrefix(Space.SINGLE_SPACE));
+                                modifiers.add(modifier.withPrefix(Space.build("    ", emptyList())));
                             }
                         }
 
@@ -294,16 +304,17 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                         mapperImplementationClass.withBody(mapperImplementationClass.getBody().withStatements(copiedClassStatements));
 
                 // Remove @Generated annotation from class
-                List<J.Annotation> cleanedClassAnnotations =
-                        ListUtils.map(mapperImplementationClass.getLeadingAnnotations(), a -> {
-                            if (a.getSimpleName().equals("Generated")
-                                    || TypeUtils.isOfClassType(a.getType(), "javax.annotation.processing.Generated")
-                                    || TypeUtils.isOfClassType(a.getType(), "jakarta.annotation.Generated")) {
-                                return null;
-                            }
-                            return a;
-                        });
-                mapperImplementationClass = mapperImplementationClass.withLeadingAnnotations(cleanedClassAnnotations);
+                mapperImplementationClass =
+                        mapperImplementationClass.withLeadingAnnotations(
+                                ListUtils.map(mapperImplementationClass.getLeadingAnnotations(), a -> {
+                                    if (a.getSimpleName().equals("Generated")
+                                            || TypeUtils.isOfClassType(a.getType(), "javax.annotation.processing" +
+                                            ".Generated")
+                                            || TypeUtils.isOfClassType(a.getType(), "jakarta.annotation.Generated")) {
+                                        return null;
+                                    }
+                                    return a;
+                                }));
 
                 // Rename class: MyMapperImpl -> MyMapper
                 mapperImplementationClass =
