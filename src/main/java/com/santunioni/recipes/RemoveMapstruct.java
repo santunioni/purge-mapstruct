@@ -262,16 +262,26 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                         }
                     } else if (interfaceStatement instanceof J.VariableDeclarations) {
                         J.VariableDeclarations interfaceField = (J.VariableDeclarations) interfaceStatement;
-                        ArrayList<J.Modifier> modifiers = new ArrayList<>(interfaceField.getModifiers());
+
+                        ArrayList<J.Modifier> modifiers = new ArrayList<>();
+
+                        if (!interfaceField.hasModifier(J.Modifier.Type.Public)) {
+                            modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
+                                    Markers.EMPTY, null, J.Modifier.Type.Public, Collections.emptyList()));
+                        }
 
                         if (!interfaceField.hasModifier(J.Modifier.Type.Static)) {
                             modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
                                     Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()));
                         }
 
-                        if (!interfaceField.hasModifier(J.Modifier.Type.Public)) {
+                        if (!interfaceField.hasModifier(J.Modifier.Type.Final)) {
                             modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
-                                    Markers.EMPTY, null, J.Modifier.Type.Public, Collections.emptyList()));
+                                    Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList()));
+                        }
+
+                        for (J.Modifier modifier : interfaceField.getModifiers()) {
+                            modifiers.add(modifier.withPrefix(Space.SINGLE_SPACE));
                         }
 
                         copiedClassStatements.add(interfaceField.withModifiers(modifiers));
