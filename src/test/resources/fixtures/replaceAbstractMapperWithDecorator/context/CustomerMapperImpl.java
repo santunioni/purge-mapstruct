@@ -31,7 +31,10 @@ public class CustomerMapperImpl extends CustomerMapper {
         String email = customerDto.getEmail();
 
         CustomerEntity customerEntity = new CustomerEntity(name, email);
-        return super.toCustomerEntity(customerDto);
+        if (customerEntity != null && customerEntity.getEmail() != null) {
+            customerEntity.setEmail(customerEntity.getEmail().toLowerCase());
+        }
+        return customerEntity;
     }
 
 }
