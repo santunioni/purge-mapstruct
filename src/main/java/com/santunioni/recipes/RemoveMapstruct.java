@@ -293,17 +293,19 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
         @Override
         public J visitCompilationUnit(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
-            if (isMapstructImplementation(mapperDeclFile)) {
+            if (isMapperDeclaration(mapperDeclFile)) {
+                return processMapperDeclaration(mapperDeclFile, ctx);
+            } else if (isMapstructImplementation(mapperDeclFile)) {
                 // Ideally, I should return null to make openrewrite delete the file.
                 // However, I still need the file to copy its implementation, and openrewrite
                 // makes it unavailable after I return null
                 return mapperDeclFile;
-            }
-
-            if (!isMapstructDefinition(mapperDeclFile)) {
+            } else {
                 return super.visitCompilationUnit(mapperDeclFile, ctx);
             }
+        }
 
+        private J processMapperDeclaration(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
             J.ClassDeclaration mapperDecl = mapperDeclFile.getClasses().get(0);
 
             try {
@@ -352,7 +354,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                                 .withImplements(null)
                                 .withExtends(null)
                 ));
-                
+
                 return mapperImplFile
                         .withClasses(classes)
                         .withId(mapperDeclFile.getId())
@@ -387,7 +389,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
             return mapperImplementationFile;
         }
 
-        private boolean isMapstructDefinition(J.CompilationUnit originalCu) {
+        private boolean isMapperDeclaration(J.CompilationUnit originalCu) {
             return originalCu.getClasses().stream()
                     .anyMatch(cd -> cd.getAllAnnotations().stream()
                             .anyMatch(a -> (a.getType() != null && TypeUtils.isOfClassType(a.getType(), "org" +
