@@ -176,49 +176,31 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
         }
 
         @Override
-        public J visitCompilationUnit(J.CompilationUnit originalCompilationUnit, ExecutionContext ctx) {
-            if (isMapstructImplementation(originalCompilationUnit)) {
+        public J visitCompilationUnit(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
+            if (isMapstructImplementation(mapperDeclFile)) {
                 // Ideally, I should return null to make openrewrite delete the file.
                 // However, I still need the file to copy its implementation, and openrewrite
                 // makes it unavailable after I return null
-                return originalCompilationUnit;
+                return mapperDeclFile;
             }
 
-            if (!isMapstructDefinition(originalCompilationUnit)) {
-                return super.visitCompilationUnit(originalCompilationUnit, ctx);
+            if (!isMapstructDefinition(mapperDeclFile)) {
+                return super.visitCompilationUnit(mapperDeclFile, ctx);
             }
 
-            J.ClassDeclaration originalInterface = originalCompilationUnit.getClasses().get(0);
+            J.ClassDeclaration mapperDecl = mapperDeclFile.getClasses().get(0);
 
             try {
-                J.CompilationUnit mapperImplementationFile = acc.getImplementer(originalInterface);
-                if (mapperImplementationFile == null) {
-                    return super.visitCompilationUnit(originalCompilationUnit, ctx);
+                J.CompilationUnit mapperImplFile = acc.getImplementer(mapperDecl);
+                if (mapperImplFile == null) {
+                    return super.visitCompilationUnit(mapperDeclFile, ctx);
                 }
 
-                J.ClassDeclaration mapperImplementationClass = mapperImplementationFile.getClasses().get(0);
-                String mapperImplClassName = mapperImplementationClass.getName().getSimpleName();
-                String mapperDeclClassName = originalInterface.getName().getSimpleName();
+                J.ClassDeclaration mapperImplClass = mapperImplFile.getClasses().get(0);
+                String mapperImplClassName = mapperImplClass.getName().getSimpleName();
+                String mapperDeclClassName = mapperDecl.getName().getSimpleName();
 
-                // ==========================================================
-                // STEP A: COPY IMPORTS
-                // ==========================================================
-                // We append original imports to the implementation imports.
-                // Duplicates will be handled by a subsequent "RemoveUnusedImports" recipe run.
-                // Filter out Generated imports since we're removing @Generated annotations
-                List<J.Import> allImports = ListUtils.concatAll(
-                        mapperImplementationFile.getImports(), originalCompilationUnit.getImports());
-                List<J.Import> mergedImports = ListUtils.map(allImports, imp -> {
-                    if (imp.getQualid() != null) {
-                        String importName = imp.getQualid().printTrimmed(getCursor());
-                        if (importName.equals("javax.annotation.processing.Generated")
-                                || importName.equals("jakarta.annotation.Generated")) {
-                            return null;
-                        }
-                    }
-                    return imp;
-                });
-                mapperImplementationFile = mapperImplementationFile.withImports(mergedImports);
+                mapperImplFile = copyImports(mapperImplFile, mapperDeclFile);
 
                 // ==========================================================
                 // STEP B: PREPARE GENERATED METHODS (Remove @Override and rename constructors)
@@ -226,7 +208,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 List<Statement> copiedClassStatements = new ArrayList<>();
 
                 // Transform methods on Impl class
-                for (Statement implStatement : mapperImplementationClass.getBody().getStatements()) {
+                for (Statement implStatement : mapperImplClass.getBody().getStatements()) {
                     if (implStatement instanceof J.MethodDeclaration implMethod) {
 
                         // Rename the constructor
@@ -275,7 +257,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 }
 
                 // Copy static and default methods from the interface
-                for (Statement interfaceStatement : originalInterface.getBody().getStatements()) {
+                for (Statement interfaceStatement : mapperDecl.getBody().getStatements()) {
                     if (interfaceStatement instanceof J.MethodDeclaration interfaceMethod) {
 
                         interfaceMethod = interfaceMethod.withModifiers(ListUtils.map(interfaceMethod.getModifiers(),
@@ -338,13 +320,13 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 // STEP C: FINALIZE CLASS STRUCTURE
                 // ==========================================================
                 // Update body with combined statements
-                mapperImplementationClass =
-                        mapperImplementationClass.withBody(mapperImplementationClass.getBody().withStatements(copiedClassStatements));
+                mapperImplClass =
+                        mapperImplClass.withBody(mapperImplClass.getBody().withStatements(copiedClassStatements));
 
                 // Remove @Generated annotation from class
-                mapperImplementationClass =
-                        mapperImplementationClass.withLeadingAnnotations(
-                                ListUtils.map(mapperImplementationClass.getLeadingAnnotations(), a -> {
+                mapperImplClass =
+                        mapperImplClass.withLeadingAnnotations(
+                                ListUtils.map(mapperImplClass.getLeadingAnnotations(), a -> {
                                     if (a.getSimpleName().equals("Generated")
                                             || TypeUtils.isOfClassType(a.getType(), "javax.annotation.processing" +
                                             ".Generated")
@@ -355,25 +337,48 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                                 }));
 
                 // Rename class: MyMapperImpl -> MyMapper
-                mapperImplementationClass =
-                        mapperImplementationClass.withName(mapperImplementationClass.getName().withSimpleName(mapperDeclClassName));
+                mapperImplClass =
+                        mapperImplClass.withName(mapperImplClass.getName().withSimpleName(mapperDeclClassName));
 
                 // Remove "implements MyMapper"
-                mapperImplementationClass = mapperImplementationClass.withImplements(null);
+                mapperImplClass = mapperImplClass.withImplements(null);
 
                 // Replace the class in the CU
-                mapperImplementationFile =
-                        mapperImplementationFile.withClasses(Collections.singletonList(mapperImplementationClass));
+                mapperImplFile =
+                        mapperImplFile.withClasses(Collections.singletonList(mapperImplClass));
 
                 // Return the new CU, masquerading as the old file (preserving ID and Path)
-                return mapperImplementationFile
-                        .withId(originalCompilationUnit.getId())
-                        .withSourcePath(originalCompilationUnit.getSourcePath());
+                return mapperImplFile
+                        .withId(mapperDeclFile.getId())
+                        .withSourcePath(mapperDeclFile.getSourcePath());
 
             } catch (Exception e) {
-                log.severe("Error processing @Mapper class " + originalCompilationUnit.getClasses().get(0).getName() + ": " + e.getMessage());
-                throw new RuntimeException("Failed to migrate Mapstruct Mapper: " + originalInterface.getName().getSimpleName(), e);
+                log.severe("Error processing @Mapper class " + mapperDeclFile.getClasses().get(0).getName() + ": " + e.getMessage());
+                throw new RuntimeException("Failed to migrate Mapstruct Mapper: " + mapperDecl.getName().getSimpleName(), e);
             }
+        }
+
+        /**
+         * STEP A: COPY IMPORTS
+         * <p>
+         * We append original imports to the implementation imports.
+         * Duplicates will be handled by a subsequent "RemoveUnusedImports" recipe run.
+         */
+        private J.CompilationUnit copyImports(J.CompilationUnit mapperImplementationFile,
+                                              J.CompilationUnit originalCompilationUnit
+        ) {
+            List<J.Import> allImports = ListUtils.concatAll(
+                    mapperImplementationFile.getImports(), originalCompilationUnit.getImports());
+            List<J.Import> mergedImports = ListUtils.map(allImports, imp -> {
+                String importName = imp.getQualid().printTrimmed(getCursor());
+                if (importName.equals("javax.annotation.processing.Generated")
+                        || importName.equals("jakarta.annotation.Generated")) {
+                    return null;
+                }
+                return imp;
+            });
+            mapperImplementationFile = mapperImplementationFile.withImports(mergedImports);
+            return mapperImplementationFile;
         }
 
         private boolean isMapstructDefinition(J.CompilationUnit originalCu) {
