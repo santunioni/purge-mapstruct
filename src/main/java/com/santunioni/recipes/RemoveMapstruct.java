@@ -175,6 +175,65 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
             this.acc = acc;
         }
 
+        private static void captureMapperDeclMethod(J.MethodDeclaration mapperDeclMethod,
+                                                    List<Statement> copiedClassStatements) {
+            mapperDeclMethod = mapperDeclMethod.withModifiers(ListUtils.map(mapperDeclMethod.getModifiers(),
+                    modifier -> {
+                        if (modifier.getType() == J.Modifier.Type.Default) {
+                            return modifier.withType(J.Modifier.Type.Static);
+                        }
+                        return modifier;
+                    }));
+
+            mapperDeclMethod =
+                    mapperDeclMethod.withLeadingAnnotations(ListUtils.map(mapperDeclMethod.getLeadingAnnotations(),
+                            methodAnnotation -> {
+                                if (methodAnnotation.getSimpleName().equals("Named")
+                                        || TypeUtils.isOfClassType(methodAnnotation.getType(),
+                                        "org.mapstruct.Named")) {
+                                    return null;
+                                }
+                                return methodAnnotation;
+                            }));
+
+            if (mapperDeclMethod.getModifiers().stream()
+                    .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
+                copiedClassStatements.add(mapperDeclMethod);
+            }
+        }
+
+        private static void captureMapperDeclField(J.VariableDeclarations mapperDeclField,
+                                                   List<Statement> copiedClassStatements) {
+            ArrayList<J.Modifier> modifiers = new ArrayList<>();
+
+            final var modifiersSetManual =
+                    Set.of(J.Modifier.Type.Public, J.Modifier.Type.Static, J.Modifier.Type.Final);
+
+            modifiers.add(new J.Modifier(UUID.randomUUID(), Space.EMPTY,
+                    Markers.EMPTY, null, J.Modifier.Type.Public, Collections.emptyList()));
+
+            modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
+                    Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()));
+
+            modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
+                    Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList()));
+
+            for (J.Modifier modifier : mapperDeclField.getModifiers()) {
+                if (!modifiersSetManual.contains(modifier.getType())) {
+                    modifiers.add(modifier.withPrefix(Space.SINGLE_SPACE));
+                }
+            }
+
+            // Ensure the type expression has proper spacing after modifiers
+            mapperDeclField = mapperDeclField.withModifiers(modifiers);
+            if (mapperDeclField.getTypeExpression() != null) {
+                mapperDeclField = mapperDeclField.withTypeExpression(
+                        mapperDeclField.getTypeExpression().withPrefix(Space.SINGLE_SPACE));
+            }
+
+            copiedClassStatements.add(mapperDeclField);
+        }
+
         @Override
         public J visitCompilationUnit(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
             if (isMapstructImplementation(mapperDeclFile)) {
@@ -256,63 +315,11 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                     }
                 }
 
-                // Copy static and default methods from the interface
-                for (Statement interfaceStatement : mapperDecl.getBody().getStatements()) {
-                    if (interfaceStatement instanceof J.MethodDeclaration interfaceMethod) {
-
-                        interfaceMethod = interfaceMethod.withModifiers(ListUtils.map(interfaceMethod.getModifiers(),
-                                modifier -> {
-                                    if (modifier.getType() == J.Modifier.Type.Default) {
-                                        return modifier.withType(J.Modifier.Type.Static);
-                                    }
-                                    return modifier;
-                                }));
-
-                        interfaceMethod =
-                                interfaceMethod.withLeadingAnnotations(ListUtils.map(interfaceMethod.getLeadingAnnotations(),
-                                        methodAnnotation -> {
-                                            if (methodAnnotation.getSimpleName().equals("Named")
-                                                    || TypeUtils.isOfClassType(methodAnnotation.getType(),
-                                                    "org.mapstruct.Named")) {
-                                                return null;
-                                            }
-                                            return methodAnnotation;
-                                        }));
-
-                        if (interfaceMethod.getModifiers().stream()
-                                .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
-                            copiedClassStatements.add(interfaceMethod);
-                        }
-                    } else if (interfaceStatement instanceof J.VariableDeclarations interfaceField) {
-
-                        ArrayList<J.Modifier> modifiers = new ArrayList<>();
-
-                        final var modifiersSetManual =
-                                Set.of(J.Modifier.Type.Public, J.Modifier.Type.Static, J.Modifier.Type.Final);
-
-                        modifiers.add(new J.Modifier(UUID.randomUUID(), Space.EMPTY,
-                                Markers.EMPTY, null, J.Modifier.Type.Public, Collections.emptyList()));
-
-                        modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
-                                Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()));
-
-                        modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
-                                Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList()));
-
-                        for (J.Modifier modifier : interfaceField.getModifiers()) {
-                            if (!modifiersSetManual.contains(modifier.getType())) {
-                                modifiers.add(modifier.withPrefix(Space.SINGLE_SPACE));
-                            }
-                        }
-
-                        // Ensure the type expression has proper spacing after modifiers
-                        interfaceField = interfaceField.withModifiers(modifiers);
-                        if (interfaceField.getTypeExpression() != null) {
-                            interfaceField = interfaceField.withTypeExpression(
-                                    interfaceField.getTypeExpression().withPrefix(Space.SINGLE_SPACE));
-                        }
-
-                        copiedClassStatements.add(interfaceField);
+                for (Statement mapperDeclStatement : mapperDecl.getBody().getStatements()) {
+                    if (mapperDeclStatement instanceof J.MethodDeclaration mapperDeclMethod) {
+                        captureMapperDeclMethod(mapperDeclMethod, copiedClassStatements);
+                    } else if (mapperDeclStatement instanceof J.VariableDeclarations mapperDeclField) {
+                        captureMapperDeclField(mapperDeclField, copiedClassStatements);
                     }
                 }
 
