@@ -14,6 +14,7 @@ public class SimpleDtoMapper {
 
         return new SimpleDtoOut(id, name);
     }
+
     public SimpleDtoIn toSimpleDtoIn(SimpleDtoOut simpleDtoOut) {
         if (simpleDtoOut == null) {
             return null;
@@ -24,4 +25,5 @@ public class SimpleDtoMapper {
 
         return new SimpleDtoIn(id, name);
     }
+
 }
