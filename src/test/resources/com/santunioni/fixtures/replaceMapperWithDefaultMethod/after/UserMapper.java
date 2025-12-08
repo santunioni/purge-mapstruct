@@ -4,8 +4,6 @@ import org.mapstruct.Mapper;
 
 
 public class UserMapper {
-
-
     public UserEntity toUserEntity(UserDto userDto) {
         if (userDto == null) {
             return null;

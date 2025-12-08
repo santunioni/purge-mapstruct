@@ -4,8 +4,6 @@ import org.mapstruct.Mapper;
 
 
 public class SimpleDtoMapper {
-
-
     public SimpleDtoOut toSimpleDtoOut(SimpleDtoIn simpleDtoIn) {
         if (simpleDtoIn == null) {
             return null;
@@ -16,8 +14,6 @@ public class SimpleDtoMapper {
 
         return new SimpleDtoOut(id, name);
     }
-
-
     public SimpleDtoIn toSimpleDtoIn(SimpleDtoOut simpleDtoOut) {
         if (simpleDtoOut == null) {
             return null;

@@ -4,8 +4,6 @@ import org.mapstruct.Mapper;
 
 
 public class OrderMapper {
-
-
     public OrderDto toOrderDto(String id) {
         return new OrderDto(id);
     }

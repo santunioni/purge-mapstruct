@@ -223,16 +223,35 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                         }
 
                         // Filter out annotations that look like Override or Named
-                        implMethod =
-                                implMethod.withLeadingAnnotations(ListUtils.map(implMethod.getLeadingAnnotations(),
-                                        methodAnnotation -> {
-                                            if (methodAnnotation.getSimpleName().equals("Override")
-                                                    || TypeUtils.isOfClassType(methodAnnotation.getType(),
-                                                    "java.lang.Override")) {
-                                                return null;
-                                            }
-                                            return methodAnnotation;
-                                        }));
+                        // When removing @Override, we need to preserve the spacing before it
+                        List<J.Annotation> originalAnnotations = implMethod.getLeadingAnnotations();
+                        Space prefixToPreserve = null;
+
+                        // Find if we're removing an @Override annotation and capture its prefix
+                        for (J.Annotation annotation : originalAnnotations) {
+                            if (annotation.getSimpleName().equals("Override")
+                                    || TypeUtils.isOfClassType(annotation.getType(), "java.lang.Override")) {
+                                prefixToPreserve = annotation.getPrefix();
+                                break;
+                            }
+                        }
+
+                        List<J.Annotation> filteredAnnotations = ListUtils.map(originalAnnotations,
+                                methodAnnotation -> {
+                                    if (methodAnnotation.getSimpleName().equals("Override")
+                                            || TypeUtils.isOfClassType(methodAnnotation.getType(),
+                                            "java.lang.Override")) {
+                                        return null;
+                                    }
+                                    return methodAnnotation;
+                                });
+
+                        implMethod = implMethod.withLeadingAnnotations(filteredAnnotations);
+
+                        // If we removed annotations and captured the prefix, apply it to the method
+                        if (prefixToPreserve != null && filteredAnnotations.isEmpty()) {
+                            implMethod = implMethod.withPrefix(prefixToPreserve);
+                        }
 
                         copiedClassStatements.add(implMethod);
                     } else {
