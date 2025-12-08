@@ -28,11 +28,12 @@ import java.util.Map;
  * <p>
  * The recipe performs the following key steps:
  * 1. Identifies classes annotated with Mapstruct's @Mapper annotation.
- * 2. Locates the corresponding Mapstruct-generated implementation class (e.g., `MyMapperImpl`) from the source files in context.
+ * 2. Locates the corresponding Mapstruct-generated implementation class (e.g., `MyMapperImpl`) from the source files
+ * in context.
  * 3. Merges imports from the original interface into the implementation class.
  * 4. Removes unnecessary annotations (such as @Override) from the implementation class.
  * 5. Renames the implementation class to match the original interface name and removes
- *    "implements" declarations.
+ * "implements" declarations.
  * <p>
  * This recipe assumes that the generated implementation is available in the source files being processed.
  * The gradle plugin should be configured to include generated sources in the context.
@@ -51,7 +52,8 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
      * Constructor for the ReplaceMapstructWithImpl class.
      * This method initializes an instance of the ReplaceMapstructWithImpl recipe.
      */
-    public RemoveMapstruct() {}
+    public RemoveMapstruct() {
+    }
 
     @Override
     public String getDisplayName() {
@@ -60,7 +62,8 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
     @Override
     public String getDescription() {
-        return "Replaces @Mapper interfaces with their generated implementation. Copies imports and removes @Override annotations. Only supports interfaces without default methods.";
+        return "Replaces @Mapper interfaces with their generated implementation. Copies imports and removes @Override"
+                + " annotations. Only supports interfaces without default methods.";
     }
 
     @Override
@@ -82,6 +85,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
     public static class Accumulator {
         // Maps interface FQN to its generated implementation compilation unit
         Map<String, List<J.CompilationUnit>> implClasses = new HashMap<>();
+
     }
 
     private static class ImplementationScanner extends JavaIsoVisitor<ExecutionContext> {
@@ -97,7 +101,9 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
             // These are likely MapStruct generated classes
             for (J.ClassDeclaration classDecl : cu.getClasses()) {
                 String className = classDecl.getName().getSimpleName();
-                if (className.endsWith("Impl") && classDecl.getImplements() != null && !classDecl.getImplements().isEmpty()) {
+                if (className.endsWith("Impl")
+                        && classDecl.getImplements() != null
+                        && !classDecl.getImplements().isEmpty()) {
                     // Extract the interface name (remove "Impl" suffix)
                     String interfaceName = className.substring(0, className.length() - 4);
                     if (cu.getPackageDeclaration() == null) {
@@ -115,6 +121,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
             }
             return super.visitCompilationUnit(cu, ctx);
         }
+
     }
 
     private static class MapperProcessor extends JavaVisitor<ExecutionContext> {
@@ -129,8 +136,13 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
             // Skip implementation files - they're used to replace mapper interfaces, not processed themselves
             boolean isImpl = originalCu.getClasses().stream()
                     .anyMatch(cd -> {
+
                         String className = cd.getName().getSimpleName();
-                        return className.endsWith("Impl") && cd.getImplements() != null && !cd.getImplements().isEmpty();
+                        return className.endsWith("Impl")
+                                && cd.getImplements() != null
+                                && !cd.getImplements().isEmpty()
+                                && cd.getAllAnnotations().stream().anyMatch(an ->
+                                TypeUtils.isOfClassType(an.getType(), "javax.annotation.processing.Generated"));
                     });
             if (isImpl) {
                 // Return null to delete the implementation file (it's been merged into the mapper interface)
@@ -179,8 +191,8 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                         J.MethodDeclaration m = (J.MethodDeclaration) s;
                         // Filter out annotations that look like Override
                         List<J.Annotation> cleanedAnnotations = ListUtils.map(m.getLeadingAnnotations(), a -> {
-                            if (a.getSimpleName().equals("Override") ||
-                                    TypeUtils.isOfClassType(a.getType(), "java.lang.Override")) {
+                            if (a.getSimpleName().equals("Override")
+                                    || TypeUtils.isOfClassType(a.getType(), "java.lang.Override")) {
                                 return null;
                             }
                             return a;
@@ -208,10 +220,11 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                             boolean hasPublic = modifiers.stream()
                                     .anyMatch(mod -> mod.getType() == J.Modifier.Type.Public);
                             if (!hasPublic && !classStatements.isEmpty() && classStatements.get(0) instanceof J.MethodDeclaration) {
-                                J.Modifier publicMod = ((J.MethodDeclaration) classStatements.get(0)).getModifiers().stream()
-                                        .filter(mod -> mod.getType() == J.Modifier.Type.Public)
-                                        .findFirst()
-                                        .orElse(null);
+                                J.Modifier publicMod =
+                                        ((J.MethodDeclaration) classStatements.get(0)).getModifiers().stream()
+                                                .filter(mod -> mod.getType() == J.Modifier.Type.Public)
+                                                .findFirst()
+                                                .orElse(null);
                                 if (publicMod != null) {
                                     List<J.Modifier> modifiersWithPublic = new ArrayList<>();
                                     modifiersWithPublic.add(publicMod);
@@ -228,16 +241,19 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 // STEP C: FINALIZE CLASS STRUCTURE
                 // ==========================================================
                 // Update body with combined statements
-                mapperImplementationClass = mapperImplementationClass.withBody(mapperImplementationClass.getBody().withStatements(classStatements));
+                mapperImplementationClass =
+                        mapperImplementationClass.withBody(mapperImplementationClass.getBody().withStatements(classStatements));
 
                 // Rename class: MyMapperImpl -> MyMapper
-                mapperImplementationClass = mapperImplementationClass.withName(mapperImplementationClass.getName().withSimpleName(originalInterface.getName().getSimpleName()));
+                mapperImplementationClass =
+                        mapperImplementationClass.withName(mapperImplementationClass.getName().withSimpleName(originalInterface.getName().getSimpleName()));
 
                 // Remove "implements MyMapper"
                 mapperImplementationClass = mapperImplementationClass.withImplements(null);
 
                 // Replace the class in the CU
-                mapperImplementationFile = mapperImplementationFile.withClasses(Collections.singletonList(mapperImplementationClass));
+                mapperImplementationFile =
+                        mapperImplementationFile.withClasses(Collections.singletonList(mapperImplementationClass));
 
                 // Return the new CU, masquerading as the old file (preserving ID and Path)
                 return mapperImplementationFile
@@ -262,5 +278,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
             return (a.getType() != null && TypeUtils.isOfClassType(a.getType(), "org.mapstruct.Mapper"))
                     || a.getSimpleName().equals("Mapper");
         }
+
     }
+
 }
