@@ -258,12 +258,11 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                             }
                             method = method.withModifiers(modifiers);
 
-//                            classStatements.add(method);
+                            classStatements.add(method);
                         } else if (method.getModifiers().stream()
                                 .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
-//                            classStatements.add(method);
+                            classStatements.add(method);
                         }
-                        classStatements.add(method);
                     } else if (s instanceof J.VariableDeclarations) {
                         // Copy static fields from the interface
                         J.VariableDeclarations variableDeclarations = (J.VariableDeclarations) s;
