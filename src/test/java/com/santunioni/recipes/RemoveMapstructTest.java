@@ -456,6 +456,7 @@ class RemoveMapstructTest implements RewriteTest {
               public interface OrderMapper {
                   OrderDto toOrderDto(String id);
               
+                  String STATUS = "PENDING";
                   final String DEFAULT_STATUS = "PENDING";
                   static final String DEFAULT_SITUATION = "PENDING";
               }
@@ -473,6 +474,7 @@ class RemoveMapstructTest implements RewriteTest {
               "        return new OrderDto(id);\n" +
               "    }\n" +
               "\n" +
+              "    public static final String STATUS = \"PENDING\";\n" +
               "    public static final String DEFAULT_STATUS = \"PENDING\";\n" +
               "    public static final String DEFAULT_SITUATION = \"PENDING\";\n" +
               "}",
