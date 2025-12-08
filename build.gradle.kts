@@ -76,15 +76,16 @@ tasks.register("licenseFormat") {
 }
 
 tasks.withType<JavaCompile> {
-    sourceCompatibility = "21"
-    targetCompatibility = "21"
+    options.release.set(17)
+    sourceCompatibility = "17"
+    targetCompatibility = "17"
     options.compilerArgs.add("-Arewrite.javaParserClasspathFrom=resources")
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }

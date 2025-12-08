@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -212,8 +213,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
                 // Transform methods on Impl class
                 for (Statement implStatement : mapperImplementationClass.getBody().getStatements()) {
-                    if (implStatement instanceof J.MethodDeclaration) {
-                        J.MethodDeclaration implMethod = (J.MethodDeclaration) implStatement;
+                    if (implStatement instanceof J.MethodDeclaration implMethod) {
 
                         // Rename the constructor
                         boolean isConstructor = implMethod.getName().getSimpleName().equals(oldClassName);
@@ -245,8 +245,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
                 // Copy static and default methods from the interface
                 for (Statement interfaceStatement : originalInterface.getBody().getStatements()) {
-                    if (interfaceStatement instanceof J.MethodDeclaration) {
-                        J.MethodDeclaration interfaceMethod = (J.MethodDeclaration) interfaceStatement;
+                    if (interfaceStatement instanceof J.MethodDeclaration interfaceMethod) {
 
                         interfaceMethod = interfaceMethod.withModifiers(ListUtils.map(interfaceMethod.getModifiers(),
                                 modifier -> {
@@ -260,28 +259,27 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                                 .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
                             copiedClassStatements.add(interfaceMethod);
                         }
-                    } else if (interfaceStatement instanceof J.VariableDeclarations) {
-                        J.VariableDeclarations interfaceField = (J.VariableDeclarations) interfaceStatement;
+                    } else if (interfaceStatement instanceof J.VariableDeclarations interfaceField) {
 
                         ArrayList<J.Modifier> modifiers = new ArrayList<>();
 
-                        if (!interfaceField.hasModifier(J.Modifier.Type.Public)) {
-                            modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
-                                    Markers.EMPTY, null, J.Modifier.Type.Public, Collections.emptyList()));
-                        }
+                        final var modifiersSetManual =
+                                Set.of(J.Modifier.Type.Public, J.Modifier.Type.Static, J.Modifier.Type.Final);
 
-                        if (!interfaceField.hasModifier(J.Modifier.Type.Static)) {
-                            modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
-                                    Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()));
-                        }
+                        modifiers.add(new J.Modifier(UUID.randomUUID(), Space.EMPTY,
+                                Markers.EMPTY, null, J.Modifier.Type.Public, Collections.emptyList()));
 
-                        if (!interfaceField.hasModifier(J.Modifier.Type.Final)) {
-                            modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
-                                    Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList()));
-                        }
+                        modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
+                                Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()));
+
+
+                        modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
+                                Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList()));
 
                         for (J.Modifier modifier : interfaceField.getModifiers()) {
-                            modifiers.add(modifier.withPrefix(Space.SINGLE_SPACE));
+                            if (!modifiersSetManual.contains(modifier.getType())) {
+                                modifiers.add(modifier.withPrefix(Space.SINGLE_SPACE));
+                            }
                         }
 
                         copiedClassStatements.add(interfaceField.withModifiers(modifiers));
