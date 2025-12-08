@@ -3,7 +3,6 @@ package com.santunioni.recipes;
 
 import lombok.extern.java.Log;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.ScanningRecipe;
 import org.openrewrite.TreeVisitor;
@@ -11,7 +10,6 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeTree;
@@ -20,9 +18,7 @@ import org.openrewrite.marker.Markers;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -55,7 +51,7 @@ import java.util.UUID;
  */
 @Log
 @NullMarked
-public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator> {
+public class RemoveMapstruct extends ScanningRecipe<Accumulator> {
 
     /**
      * Constructor for the RemoveMapstruct class.
@@ -109,48 +105,6 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor(Accumulator acc) {
         return new MapperProcessor(acc);
-    }
-
-    @NullMarked
-    public static class Accumulator {
-        Map<String, List<J.CompilationUnit>> mapSuperToItsImplementers = new HashMap<>();
-
-        Map<String, String> mapImplementerToItsSup = new HashMap<>();
-
-        private void addLinking(TypeTree superDecl, J.CompilationUnit mapperImpl) {
-            final String superFqn = Objects.requireNonNull(superDecl.getType()).toString();
-            if (!mapSuperToItsImplementers.containsKey(superFqn)) {
-                mapSuperToItsImplementers.put(superFqn, new ArrayList<>());
-            }
-            mapSuperToItsImplementers.get(superFqn).add(mapperImpl);
-            JavaType.FullyQualified mapperImplFqn = mapperImpl.getClasses().get(0).getType();
-            if (mapperImplFqn != null) {
-                String implFqn = mapperImplFqn.getFullyQualifiedName();
-                mapImplementerToItsSup.put(implFqn, superFqn);
-            }
-        }
-
-        private J.@Nullable CompilationUnit getImplementer(J.ClassDeclaration compilationUnit) {
-            if (compilationUnit.getType() == null) {
-                log.severe("Could not find fully qualified name for " + compilationUnit +
-                        ". Skipping.");
-                return null;
-            }
-
-            String fqn = compilationUnit.getType().getFullyQualifiedName();
-            List<J.CompilationUnit> implementers = mapSuperToItsImplementers.get(fqn);
-
-            if (implementers == null || implementers.size() != 1) {
-                log.severe("Multiple or no generated implementations found for " + fqn + ". Skipping.");
-                return null;
-            }
-            return implementers.get(0);
-        }
-
-        private @Nullable String getSuperFqnFromImplFqn(String implFqn) {
-            return mapImplementerToItsSup.get(implFqn);
-        }
-
     }
 
     private static class ImplementationScanner extends JavaIsoVisitor<ExecutionContext> {
