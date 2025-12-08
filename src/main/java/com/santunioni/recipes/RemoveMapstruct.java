@@ -289,7 +289,14 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                             }
                         }
 
-                        copiedClassStatements.add(interfaceField.withModifiers(modifiers));
+                        // Ensure the type expression has proper spacing after modifiers
+                        interfaceField = interfaceField.withModifiers(modifiers);
+                        if (interfaceField.getTypeExpression() != null) {
+                            interfaceField = interfaceField.withTypeExpression(
+                                    interfaceField.getTypeExpression().withPrefix(Space.SINGLE_SPACE));
+                        }
+
+                        copiedClassStatements.add(interfaceField);
                     }
                 }
 
