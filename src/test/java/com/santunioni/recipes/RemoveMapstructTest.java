@@ -307,8 +307,7 @@ class RemoveMapstructTest implements RewriteTest {
               "        return firstName + \" \" + lastName;\n" +
               "    }\n" +
               "\n" +
-              "    \n" +
-              "    public static String formatFullName2(String firstName, String lastName) {\n" +
+              "    static String formatFullName2(String firstName, String lastName) {\n" +
               "        return firstName + \" \" + lastName;\n" +
               "    }\n" +
               "}",

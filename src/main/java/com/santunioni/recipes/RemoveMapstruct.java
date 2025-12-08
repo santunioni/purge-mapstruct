@@ -76,7 +76,8 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
     @Override
     public String getDescription() {
         return "Replaces @Mapper interfaces with their generated implementation. Copies imports and removes @Override"
-                + " annotations from methods and @Generated annotations from classes. Copies default methods and static methods from the interface.";
+                + " annotations from methods and @Generated annotations from classes. Copies default methods and " +
+                "static methods from the interface.";
     }
 
     @Override
@@ -258,24 +259,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                         J.MethodDeclaration method = (J.MethodDeclaration) s;
                         if (method.getModifiers().stream()
                                 .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
-                            // Keep static modifier, but ensure public is present
-                            List<J.Modifier> modifiers = method.getModifiers();
-                            boolean hasPublic = modifiers.stream()
-                                    .anyMatch(mod -> mod.getType() == J.Modifier.Type.Public);
-                            if (!hasPublic && !classStatements.isEmpty() && classStatements.get(0) instanceof J.MethodDeclaration) {
-                                J.Modifier publicMod =
-                                        ((J.MethodDeclaration) classStatements.get(0)).getModifiers().stream()
-                                                .filter(mod -> mod.getType() == J.Modifier.Type.Public)
-                                                .findFirst()
-                                                .orElse(null);
-                                if (publicMod != null) {
-                                    List<J.Modifier> modifiersWithPublic = new ArrayList<>();
-                                    modifiersWithPublic.add(publicMod);
-                                    modifiersWithPublic.addAll(modifiers);
-                                    modifiers = modifiersWithPublic;
-                                }
-                            }
-                            classStatements.add(method.withModifiers(modifiers));
+                            classStatements.add(method);
                         }
                     }
                 }
