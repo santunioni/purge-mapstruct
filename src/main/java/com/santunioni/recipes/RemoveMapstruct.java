@@ -39,7 +39,7 @@ import java.util.Map;
  * This recipe assumes that the generated implementation is available in the source files being processed.
  * The gradle plugin should be configured to include generated sources in the context.
  * <p>
- * Note: This recipe copies default methods and static methods from the interface to the
+ * Note: This recipe copies default methods, static methods, and static fields from the interface to the
  * implementation class, removing the default modifier and preserving the static modifier.
  * <p>
  * It is recommended to run supplementary cleanup tools or recipes (e.g., RemoveUnusedImports)
@@ -76,8 +76,8 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
     @Override
     public String getDescription() {
         return "Replaces @Mapper interfaces with their generated implementation. Copies imports and removes @Override"
-                + " annotations from methods and @Generated annotations from classes. Copies default methods and " +
-                "static methods from the interface.";
+                + " annotations from methods and @Generated annotations from classes. Copies default methods, " +
+                "static methods, and static fields from the interface.";
     }
 
     @Override
@@ -263,17 +263,16 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                                 }
                             }
                             classStatements.add(method.withModifiers(modifiers));
-                        }
-                    }
-                }
-
-                // Copy static methods from the interface
-                for (Statement s : originalInterface.getBody().getStatements()) {
-                    if (s instanceof J.MethodDeclaration) {
-                        J.MethodDeclaration method = (J.MethodDeclaration) s;
-                        if (method.getModifiers().stream()
+                        } else if (method.getModifiers().stream()
                                 .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
                             classStatements.add(method);
+                        }
+                    } else if (s instanceof J.VariableDeclarations) {
+                        // Copy static fields from the interface
+                        J.VariableDeclarations variableDeclarations = (J.VariableDeclarations) s;
+                        if (variableDeclarations.getModifiers().stream()
+                                .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
+                            classStatements.add(variableDeclarations);
                         }
                     }
                 }

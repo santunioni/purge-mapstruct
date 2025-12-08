@@ -398,4 +398,85 @@ class RemoveMapstructTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void replaceMapperWithStaticField() {
+        SourceSpecs makeAvailableOrderDto = java(
+          """
+            package com.santunioni.fixtures.dtoMappers;
+            
+            public class OrderDto {
+                private final String id;
+            
+                public OrderDto(String id) {
+                    this.id = id;
+                }
+            
+                public String getId() {
+                    return id;
+                }
+            }
+            """,
+          spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/OrderDto.java")
+        );
+
+        // Include the generated implementation class
+        SourceSpecs makeAvailableGeneratedClass = java(
+          """
+            package com.santunioni.fixtures.dtoMappers;
+            
+            import javax.annotation.processing.Generated;
+            
+            @Generated(
+                value = "org.mapstruct.ap.MappingProcessor",
+                date = "2025-01-01T00:00:00Z",
+                comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17"
+            )
+            public class OrderMapperImpl implements OrderMapper {
+            
+                @Override
+                public OrderDto toOrderDto(String id) {
+                    return new OrderDto(id);
+                }
+            }
+            """,
+          spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/OrderMapperImpl.java")
+        );
+
+        // Act - Assert
+        rewriteRun(
+          makeAvailableOrderDto,
+          makeAvailableGeneratedClass,
+          java(
+            """
+              package com.santunioni.fixtures.dtoMappers;
+              
+              import org.mapstruct.Mapper;
+              
+              @Mapper
+              public interface OrderMapper {
+                  OrderDto toOrderDto(String id);
+              
+                  static final String DEFAULT_STATUS = "PENDING";
+              }
+              """,
+
+            "package com.santunioni.fixtures.dtoMappers;\n" +
+              "\n" +
+              "import org.mapstruct.Mapper;\n" +
+              "\n" +
+              "\n" +
+              "public class OrderMapper {\n" +
+              "\n" +
+              "    \n" +
+              "    public OrderDto toOrderDto(String id) {\n" +
+              "        return new OrderDto(id);\n" +
+              "    }\n" +
+              "\n" +
+              "    static final String DEFAULT_STATUS = \"PENDING\";\n" +
+              "}",
+            spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/OrderMapper.java")
+          )
+        );
+    }
 }
