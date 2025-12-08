@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ReplaceMapstructWithImpl is a recipe designed to refactor Mapstruct mapper interfaces.
+ * RemoveMapstruct is a recipe designed to refactor Mapstruct mapper interfaces.
  * <p>
  * It replaces @Mapper interfaces with their associated generated implementation. This process
  * includes managing necessary imports, removing @Override annotations from methods, and renaming
@@ -50,8 +50,8 @@ import java.util.Map;
 public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator> {
 
     /**
-     * Constructor for the ReplaceMapstructWithImpl class.
-     * This method initializes an instance of the ReplaceMapstructWithImpl recipe.
+     * Constructor for the RemoveMapstruct class.
+     * This method initializes an instance of the RemoveMapstruct recipe.
      */
     public RemoveMapstruct() {
     }
@@ -177,6 +177,10 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 J.CompilationUnit mapperImplementationFile = implClasses.get(0);
                 J.ClassDeclaration mapperImplementationClass = mapperImplementationFile.getClasses().get(0);
 
+                // Store old and new class names for constructor renaming
+                String oldClassName = mapperImplementationClass.getName().getSimpleName();
+                String newClassName = originalInterface.getName().getSimpleName();
+
                 // ==========================================================
                 // STEP A: COPY IMPORTS
                 // ==========================================================
@@ -198,13 +202,16 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 mapperImplementationFile = mapperImplementationFile.withImports(mergedImports);
 
                 // ==========================================================
-                // STEP B: PREPARE GENERATED METHODS (Remove @Override)
+                // STEP B: PREPARE GENERATED METHODS (Remove @Override and rename constructors)
                 // ==========================================================
                 List<Statement> classStatements = new ArrayList<>();
 
                 for (Statement s : mapperImplementationClass.getBody().getStatements()) {
                     if (s instanceof J.MethodDeclaration) {
                         J.MethodDeclaration m = (J.MethodDeclaration) s;
+                        // Check if this is a constructor (name matches old class name)
+                        boolean isConstructor = m.getName().getSimpleName().equals(oldClassName);
+                        
                         // Filter out annotations that look like Override
                         List<J.Annotation> cleanedAnnotations = ListUtils.map(m.getLeadingAnnotations(), a -> {
                             if (a.getSimpleName().equals("Override")
@@ -213,6 +220,12 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                             }
                             return a;
                         });
+                        
+                        // Rename constructor if needed
+                        if (isConstructor) {
+                            m = m.withName(m.getName().withSimpleName(newClassName));
+                        }
+                        
                         classStatements.add(m.withLeadingAnnotations(cleanedAnnotations));
                     } else {
                         classStatements.add(s);
@@ -285,7 +298,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
                 // Rename class: MyMapperImpl -> MyMapper
                 mapperImplementationClass =
-                        mapperImplementationClass.withName(mapperImplementationClass.getName().withSimpleName(originalInterface.getName().getSimpleName()));
+                        mapperImplementationClass.withName(mapperImplementationClass.getName().withSimpleName(newClassName));
 
                 // Remove "implements MyMapper"
                 mapperImplementationClass = mapperImplementationClass.withImplements(null);

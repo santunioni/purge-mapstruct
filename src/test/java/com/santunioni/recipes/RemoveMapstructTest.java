@@ -315,4 +315,87 @@ class RemoveMapstructTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void replaceMapperWithConstructor() {
+        SourceSpecs makeAvailableProductDto = java(
+          """
+            package com.santunioni.fixtures.dtoMappers;
+            
+            public class ProductDto {
+                private final String name;
+            
+                public ProductDto(String name) {
+                    this.name = name;
+                }
+            
+                public String getName() {
+                    return name;
+                }
+            }
+            """,
+          spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/ProductDto.java")
+        );
+
+        // Include the generated implementation class with a constructor
+        SourceSpecs makeAvailableGeneratedClass = java(
+          """
+            package com.santunioni.fixtures.dtoMappers;
+            
+            import javax.annotation.processing.Generated;
+            
+            @Generated(
+                value = "org.mapstruct.ap.MappingProcessor",
+                date = "2025-01-01T00:00:00Z",
+                comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17"
+            )
+            public class ProductMapperImpl implements ProductMapper {
+            
+                public ProductMapperImpl() {
+                }
+            
+                @Override
+                public ProductDto toProductDto(String name) {
+                    return new ProductDto(name);
+                }
+            }
+            """,
+          spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/ProductMapperImpl.java")
+        );
+
+        // Act - Assert
+        rewriteRun(
+          makeAvailableProductDto,
+          makeAvailableGeneratedClass,
+          java(
+            """
+              package com.santunioni.fixtures.dtoMappers;
+              
+              import org.mapstruct.Mapper;
+              
+              @Mapper
+              public interface ProductMapper {
+                  ProductDto toProductDto(String name);
+              }
+              """,
+
+            "package com.santunioni.fixtures.dtoMappers;\n" +
+              "\n" +
+              "import org.mapstruct.Mapper;\n" +
+              "\n" +
+              "\n" +
+              "public class ProductMapper {\n" +
+              "\n" +
+              "    public ProductMapper() {\n" +
+              "    }\n" +
+              "\n" +
+              "    \n" +
+              "    public ProductDto toProductDto(String name) {\n" +
+              "        return new ProductDto(name);\n" +
+              "    }\n" +
+              "}",
+            spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/ProductMapper.java")
+          )
+        );
+    }
 }
