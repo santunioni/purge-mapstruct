@@ -208,48 +208,42 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
                 for (Statement s : mapperImplementationClass.getBody().getStatements()) {
                     if (s instanceof J.MethodDeclaration) {
-                        J.MethodDeclaration m = (J.MethodDeclaration) s;
+                        J.MethodDeclaration method = (J.MethodDeclaration) s;
                         // Check if this is a constructor (name matches old class name)
-                        boolean isConstructor = m.getName().getSimpleName().equals(oldClassName);
+                        boolean isConstructor = method.getName().getSimpleName().equals(oldClassName);
 
-                        // Filter out annotations that look like Override
-                        List<J.Annotation> cleanedAnnotations = ListUtils.map(m.getLeadingAnnotations(), a -> {
-                            if (a.getSimpleName().equals("Override")
-                                    || TypeUtils.isOfClassType(a.getType(), "java.lang.Override")
-                                    || a.getSimpleName().equals("Named")
-                                    || TypeUtils.isOfClassType(a.getType(), "org.mapstruct.Named")) {
-                                return null;
-                            }
-                            return a;
-                        });
+                        // Filter out annotations that look like Override or Named
+                        method = method.withLeadingAnnotations(ListUtils.map(method.getLeadingAnnotations(),
+                                methodAnnotation -> {
+                                    if (methodAnnotation.getSimpleName().equals("Override")
+                                            || TypeUtils.isOfClassType(methodAnnotation.getType(), "java.lang.Override")
+                                            || methodAnnotation.getSimpleName().equals("Named")
+                                            || TypeUtils.isOfClassType(methodAnnotation.getType(), "org.mapstruct" +
+                                            ".Named")) {
+                                        return null;
+                                    }
+                                    return methodAnnotation;
+                                }));
 
-                        // Rename constructor if needed
+                        // Rename the constructor
                         if (isConstructor) {
-                            m = m.withName(m.getName().withSimpleName(newClassName));
+                            method = method.withName(method.getName().withSimpleName(newClassName));
                         }
 
-                        classStatements.add(m.withLeadingAnnotations(cleanedAnnotations));
-                    } else {
-                        classStatements.add(s);
-                    }
-                }
-
-                // Copy default methods from the interface
-                for (Statement s : originalInterface.getBody().getStatements()) {
-                    if (s instanceof J.MethodDeclaration) {
-                        J.MethodDeclaration method = (J.MethodDeclaration) s;
                         if (method.getModifiers().stream()
                                 .anyMatch(mod -> mod.getType() == J.Modifier.Type.Default)) {
                             // Remove default modifier
-                            List<J.Modifier> modifiers = ListUtils.map(method.getModifiers(), mod -> {
-                                if (mod.getType() == J.Modifier.Type.Default) {
+                            List<J.Modifier> modifiers = ListUtils.map(method.getModifiers(), modifier -> {
+                                if (modifier.getType() == J.Modifier.Type.Default) {
                                     return null;
                                 }
-                                return mod;
+                                return modifier;
                             });
+
                             // Add public if missing (use the first method's public modifier as a template)
                             boolean hasPublic = modifiers.stream()
                                     .anyMatch(mod -> mod.getType() == J.Modifier.Type.Public);
+
                             if (!hasPublic && !classStatements.isEmpty() && classStatements.get(0) instanceof J.MethodDeclaration) {
                                 J.Modifier publicMod =
                                         ((J.MethodDeclaration) classStatements.get(0)).getModifiers().stream()
@@ -263,7 +257,9 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                                     modifiers = modifiersWithPublic;
                                 }
                             }
-                            classStatements.add(method.withModifiers(modifiers));
+                            method = method.withModifiers(modifiers);
+
+                            classStatements.add(method);
                         } else if (method.getModifiers().stream()
                                 .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
                             classStatements.add(method);
@@ -271,10 +267,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                     } else if (s instanceof J.VariableDeclarations) {
                         // Copy static fields from the interface
                         J.VariableDeclarations variableDeclarations = (J.VariableDeclarations) s;
-                        if (variableDeclarations.getModifiers().stream()
-                                .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
-                            classStatements.add(variableDeclarations);
-                        }
+                        classStatements.add(variableDeclarations);
                     }
                 }
 
