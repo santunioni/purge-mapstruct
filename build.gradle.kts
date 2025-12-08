@@ -2,7 +2,17 @@ plugins {
     id("org.openrewrite.build.recipe-library-base") version "latest.release"
     id("org.openrewrite.build.publish") version "latest.release"
     id("org.openrewrite.build.recipe-repositories") version "latest.release"
+    id("org.openrewrite.rewrite") version ("7.21.0")
 }
+
+dependencies {
+}
+
+rewrite {
+    activeRecipe("org.openrewrite.staticanalysis.CodeCleanup")
+    throwOnParseFailures = true
+}
+
 
 // Set as appropriate for your organization
 group = "com.santunioni.recipes"
@@ -15,6 +25,8 @@ recipeDependencies {
 
 
 dependencies {
+    rewrite("org.openrewrite.recipe:rewrite-static-analysis:2.22.0")
+
     // The bom version can also be set to a specific version
     // https://github.com/openrewrite/rewrite-recipe-bom/releases
     implementation(platform("org.openrewrite.recipe:rewrite-recipe-bom:latest.release"))
