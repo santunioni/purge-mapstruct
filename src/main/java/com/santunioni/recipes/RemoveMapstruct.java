@@ -211,21 +211,22 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                         J.MethodDeclaration m = (J.MethodDeclaration) s;
                         // Check if this is a constructor (name matches old class name)
                         boolean isConstructor = m.getName().getSimpleName().equals(oldClassName);
-                        
+
                         // Filter out annotations that look like Override
                         List<J.Annotation> cleanedAnnotations = ListUtils.map(m.getLeadingAnnotations(), a -> {
                             if (a.getSimpleName().equals("Override")
-                                    || TypeUtils.isOfClassType(a.getType(), "java.lang.Override")) {
+                                    || TypeUtils.isOfClassType(a.getType(), "java.lang.Override")
+                                    || TypeUtils.isOfClassType(a.getType(), "org.mapstruct.Named")) {
                                 return null;
                             }
                             return a;
                         });
-                        
+
                         // Rename constructor if needed
                         if (isConstructor) {
                             m = m.withName(m.getName().withSimpleName(newClassName));
                         }
-                        
+
                         classStatements.add(m.withLeadingAnnotations(cleanedAnnotations));
                     } else {
                         classStatements.add(s);
