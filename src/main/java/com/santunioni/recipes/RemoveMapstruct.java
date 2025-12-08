@@ -148,9 +148,10 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
         @Override
         public J visitCompilationUnit(J.CompilationUnit originalCu, ExecutionContext ctx) {
-            // Skip implementation files - they're used to replace mapper interfaces, not processed themselves
             if (isMapstructImplementation(originalCu)) {
-                // Return null to delete the implementation file (it's been merged into the mapper interface)
+                // Ideally, I should return null to make openrewrite delete the file.
+                // However, I still need the file to copy its implementation, and openrewrite
+                // makes it unavailable after I return null
                 return originalCu;
             }
 
