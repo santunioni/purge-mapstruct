@@ -49,7 +49,7 @@ class RemoveMapstructTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void replaceSimpleDtoMapper() throws IOException {
+    void shouldReplaceSimpleDtoMapper() throws IOException {
         SourceSpecs makeAvailableSimpleDtoIn = java(
           readResource("fixtures/replaceSimpleDtoMapper/context/SimpleDtoIn.java"),
           spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoIn.java")
@@ -79,7 +79,7 @@ class RemoveMapstructTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void replaceMapperWithDefaultMethod() throws IOException {
+    void shouldReplaceMapperWithDefaultMethod() throws IOException {
         SourceSpecs makeAvailableUserDto = java(
           readResource("fixtures/replaceMapperWithDefaultMethod/context/UserDto.java"),
           spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/UserDto.java")
@@ -109,7 +109,7 @@ class RemoveMapstructTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void replaceMapperWithConstructor() throws IOException {
+    void shouldReplaceMapperWithConstructor() throws IOException {
         SourceSpecs makeAvailableProductDto = java(
           readResource("fixtures/replaceMapperWithConstructor/context/ProductDto.java"),
           spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/ProductDto.java")
@@ -133,7 +133,7 @@ class RemoveMapstructTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void replaceMapperWithStaticField() throws IOException {
+    void shouldReplaceMapperWithStaticField() throws IOException {
         SourceSpecs makeAvailableOrderDto = java(
           readResource("fixtures/replaceMapperWithStaticField/context/OrderDto.java"),
           spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/OrderDto.java")
@@ -157,7 +157,7 @@ class RemoveMapstructTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void replaceAbstractMapperWithImplementation() throws IOException {
+    void shouldReplaceAbstractMapperWithImplementation() throws IOException {
         SourceSpecs makeAvailableCustomerDto = java(
           readResource("fixtures/replaceAbstractMapperWithDecorator/context/CustomerDto.java"),
           spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/CustomerDto.java")
