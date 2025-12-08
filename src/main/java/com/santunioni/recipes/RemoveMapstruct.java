@@ -247,7 +247,15 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                     }));
         }
 
-        private static void captureImplMethod(J.MethodDeclaration implMethod, List<Statement> copiedClassStatements) {
+        private static void captureImplMethod(J.MethodDeclaration implMethod, String mapperImplClassName,
+                                              String mapperDeclClassName, List<Statement> copiedClassStatements) {
+            // Rename the constructor
+            boolean isConstructor =
+                    implMethod.getName().getSimpleName().equals(mapperImplClassName);
+            if (isConstructor) {
+                implMethod =
+                        implMethod.withName(implMethod.getName().withSimpleName(mapperDeclClassName));
+            }
 
             // Filter out annotations that look like Override or Named
             // When removing @Override, we need to preserve the spacing before it
@@ -318,15 +326,8 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 // Transform methods on Impl class
                 for (Statement implStatement : mapperImplClass.getBody().getStatements()) {
                     if (implStatement instanceof J.MethodDeclaration implMethod) {
-                        // Rename the constructor
-                        boolean isConstructor =
-                                implMethod.getName().getSimpleName().equals(mapperImplClassName);
-                        if (isConstructor) {
-                            implMethod =
-                                    implMethod.withName(implMethod.getName().withSimpleName(mapperDeclClassName));
-                        }
 
-                        captureImplMethod(implMethod, copiedClassStatements);
+                        captureImplMethod(implMethod, mapperImplClassName, mapperDeclClassName, copiedClassStatements);
                     } else {
                         copiedClassStatements.add(implStatement);
                     }
