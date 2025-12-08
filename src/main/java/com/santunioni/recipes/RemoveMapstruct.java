@@ -234,6 +234,55 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
             copiedClassStatements.add(mapperDeclField);
         }
 
+        private static J.ClassDeclaration cleanGeneratedAnnotations(J.ClassDeclaration mapperImplClass) {
+            return mapperImplClass.withLeadingAnnotations(
+                    ListUtils.map(mapperImplClass.getLeadingAnnotations(), a -> {
+                        if (a.getSimpleName().equals("Generated")
+                                || TypeUtils.isOfClassType(a.getType(), "javax.annotation.processing" +
+                                ".Generated")
+                                || TypeUtils.isOfClassType(a.getType(), "jakarta.annotation.Generated")) {
+                            return null;
+                        }
+                        return a;
+                    }));
+        }
+
+        private static void captureImplMethod(J.MethodDeclaration implMethod, List<Statement> copiedClassStatements) {
+
+            // Filter out annotations that look like Override or Named
+            // When removing @Override, we need to preserve the spacing before it
+            List<J.Annotation> originalAnnotations = implMethod.getLeadingAnnotations();
+            Space prefixToPreserve = null;
+
+            // Find if we're removing an @Override annotation and capture its prefix
+            for (J.Annotation annotation : originalAnnotations) {
+                if (annotation.getSimpleName().equals("Override")
+                        || TypeUtils.isOfClassType(annotation.getType(), "java.lang.Override")) {
+                    prefixToPreserve = annotation.getPrefix();
+                    break;
+                }
+            }
+
+            List<J.Annotation> filteredAnnotations = ListUtils.map(originalAnnotations,
+                    methodAnnotation -> {
+                        if (methodAnnotation.getSimpleName().equals("Override")
+                                || TypeUtils.isOfClassType(methodAnnotation.getType(),
+                                "java.lang.Override")) {
+                            return null;
+                        }
+                        return methodAnnotation;
+                    });
+
+            implMethod = implMethod.withLeadingAnnotations(filteredAnnotations);
+
+            // If we removed annotations and captured the prefix, apply it to the method
+            if (prefixToPreserve != null && filteredAnnotations.isEmpty()) {
+                implMethod = implMethod.withPrefix(prefixToPreserve);
+            }
+
+            copiedClassStatements.add(implMethod);
+        }
+
         @Override
         public J visitCompilationUnit(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
             if (isMapstructImplementation(mapperDeclFile)) {
@@ -269,7 +318,6 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 // Transform methods on Impl class
                 for (Statement implStatement : mapperImplClass.getBody().getStatements()) {
                     if (implStatement instanceof J.MethodDeclaration implMethod) {
-
                         // Rename the constructor
                         boolean isConstructor =
                                 implMethod.getName().getSimpleName().equals(mapperImplClassName);
@@ -278,38 +326,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                                     implMethod.withName(implMethod.getName().withSimpleName(mapperDeclClassName));
                         }
 
-                        // Filter out annotations that look like Override or Named
-                        // When removing @Override, we need to preserve the spacing before it
-                        List<J.Annotation> originalAnnotations = implMethod.getLeadingAnnotations();
-                        Space prefixToPreserve = null;
-
-                        // Find if we're removing an @Override annotation and capture its prefix
-                        for (J.Annotation annotation : originalAnnotations) {
-                            if (annotation.getSimpleName().equals("Override")
-                                    || TypeUtils.isOfClassType(annotation.getType(), "java.lang.Override")) {
-                                prefixToPreserve = annotation.getPrefix();
-                                break;
-                            }
-                        }
-
-                        List<J.Annotation> filteredAnnotations = ListUtils.map(originalAnnotations,
-                                methodAnnotation -> {
-                                    if (methodAnnotation.getSimpleName().equals("Override")
-                                            || TypeUtils.isOfClassType(methodAnnotation.getType(),
-                                            "java.lang.Override")) {
-                                        return null;
-                                    }
-                                    return methodAnnotation;
-                                });
-
-                        implMethod = implMethod.withLeadingAnnotations(filteredAnnotations);
-
-                        // If we removed annotations and captured the prefix, apply it to the method
-                        if (prefixToPreserve != null && filteredAnnotations.isEmpty()) {
-                            implMethod = implMethod.withPrefix(prefixToPreserve);
-                        }
-
-                        copiedClassStatements.add(implMethod);
+                        captureImplMethod(implMethod, copiedClassStatements);
                     } else {
                         copiedClassStatements.add(implStatement);
                     }
@@ -330,18 +347,8 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 mapperImplClass =
                         mapperImplClass.withBody(mapperImplClass.getBody().withStatements(copiedClassStatements));
 
-                // Remove @Generated annotation from class
-                mapperImplClass =
-                        mapperImplClass.withLeadingAnnotations(
-                                ListUtils.map(mapperImplClass.getLeadingAnnotations(), a -> {
-                                    if (a.getSimpleName().equals("Generated")
-                                            || TypeUtils.isOfClassType(a.getType(), "javax.annotation.processing" +
-                                            ".Generated")
-                                            || TypeUtils.isOfClassType(a.getType(), "jakarta.annotation.Generated")) {
-                                        return null;
-                                    }
-                                    return a;
-                                }));
+                // Remove @Generated annotation from a class
+                mapperImplClass = cleanGeneratedAnnotations(mapperImplClass);
 
                 // Rename class: MyMapperImpl -> MyMapper
                 mapperImplClass =
