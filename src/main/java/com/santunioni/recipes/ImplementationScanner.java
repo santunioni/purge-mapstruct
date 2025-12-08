@@ -1,5 +1,6 @@
 package com.santunioni.recipes;
 
+import org.jspecify.annotations.NullMarked;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
@@ -11,6 +12,7 @@ import java.util.Objects;
 
 import static com.santunioni.recipes.Functions.isMapperImplementation;
 
+@NullMarked
 class ImplementationScanner extends JavaIsoVisitor<ExecutionContext> {
     private final Accumulator acc;
 

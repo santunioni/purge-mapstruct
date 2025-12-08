@@ -18,7 +18,7 @@ class Functions {
 
      static boolean isMapperDeclaration(J.CompilationUnit originalCu) {
         return originalCu.getClasses().stream()
-                .anyMatch(cd -> cd.getAllAnnotations().stream()
+                .anyMatch(cd -> cd.getLeadingAnnotations().stream()
                         .anyMatch(a -> (a.getType() != null && TypeUtils.isOfClassType(a.getType(), "org" +
                                 ".mapstruct.Mapper"))
                                 || a.getSimpleName().equals("Mapper")));
