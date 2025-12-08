@@ -4,19 +4,11 @@ displayName: Auto Format Test Output
 description: |
     Automatically cleanup code, e.g. remove unnecessary parentheses, simplify expressions.
 styleConfigs:
-    - org.openrewrite.java.style.DefaultComesLastStyle
-    - org.openrewrite.java.style.EmptyBlockStyle
     - org.openrewrite.java.style.BlankLinesStyle
     - org.openrewrite.java.style.MethodParamPadStyle
     - org.openrewrite.java.style.NoWhitespaceAfterStyle
     - org.openrewrite.java.style.NoWhitespaceBeforeStyle
     - org.openrewrite.java.style.TypecastParenPadStyle
-    - org.openrewrite.java.style.EqualsAvoidsNullStyle
-    - org.openrewrite.java.style.ExplicitInitializationStyle
-    - org.openrewrite.java.style.FallThroughStyle
-    - org.openrewrite.java.style.HideUtilityClassConstructorStyle
-    - org.openrewrite.java.style.NeedBracesStyle
-    - org.openrewrite.java.style.OperatorWrapStyle
     - org.openrewrite.java.style.UnnecessaryParenthesesStyle
     - org.openrewrite.java.style.ImportLayoutStyle
     - org.openrewrite.java.style.UnusedImportsStyle
