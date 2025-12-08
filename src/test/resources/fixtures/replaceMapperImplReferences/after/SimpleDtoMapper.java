@@ -2,6 +2,7 @@ package com.santunioni.fixtures.dtoMappers;
 
 import org.mapstruct.Mapper;
 
+
 public class SimpleDtoMapper {
     public SimpleDtoOut toSimpleDtoOut(SimpleDtoIn simpleDtoIn) {
         if (simpleDtoIn == null) {
