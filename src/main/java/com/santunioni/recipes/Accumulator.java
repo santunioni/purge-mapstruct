@@ -16,9 +16,9 @@ import java.util.Objects;
 @Log
 @NullMarked
 public class Accumulator {
-    Map<String, List<J.CompilationUnit>> mapSuperToItsImplementers = new HashMap<>();
+    private final Map<String, List<J.CompilationUnit>> mapSuperToItsImplementers = new HashMap<>();
 
-    Map<String, String> mapImplementerToItsSup = new HashMap<>();
+    private final Map<String, String> mapImplementerToItsSup = new HashMap<>();
 
     void addLinking(TypeTree superDecl, J.CompilationUnit mapperImpl) {
         final String superFqn = Objects.requireNonNull(superDecl.getType()).toString();
