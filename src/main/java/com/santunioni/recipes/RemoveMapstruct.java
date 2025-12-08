@@ -11,6 +11,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeTree;
@@ -112,14 +113,21 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
     @NullMarked
     public static class Accumulator {
-        Map<String, List<J.CompilationUnit>> implClasses = new HashMap<>();
+        Map<String, List<J.CompilationUnit>> mapSuperToItsImplementers = new HashMap<>();
 
-        private void addLinking(TypeTree classDecl, J.CompilationUnit compilationUnit) {
-            final String superFqn = Objects.requireNonNull(classDecl.getType()).toString();
-            if (!implClasses.containsKey(superFqn)) {
-                implClasses.put(superFqn, new ArrayList<>());
+        Map<String, String> mapImplementerToItsSup = new HashMap<>();
+
+        private void addLinking(TypeTree superDecl, J.CompilationUnit mapperImpl) {
+            final String superFqn = Objects.requireNonNull(superDecl.getType()).toString();
+            if (!mapSuperToItsImplementers.containsKey(superFqn)) {
+                mapSuperToItsImplementers.put(superFqn, new ArrayList<>());
             }
-            implClasses.get(superFqn).add(compilationUnit);
+            mapSuperToItsImplementers.get(superFqn).add(mapperImpl);
+            JavaType.FullyQualified mapperImplFqn = mapperImpl.getClasses().get(0).getType();
+            if (mapperImplFqn != null) {
+                String implFqn = mapperImplFqn.getFullyQualifiedName();
+                mapImplementerToItsSup.put(implFqn, superFqn);
+            }
         }
 
         private J.@Nullable CompilationUnit getImplementer(J.ClassDeclaration compilationUnit) {
@@ -130,7 +138,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
             }
 
             String fqn = compilationUnit.getType().getFullyQualifiedName();
-            List<J.CompilationUnit> implementers = implClasses.get(fqn);
+            List<J.CompilationUnit> implementers = mapSuperToItsImplementers.get(fqn);
 
             if (implementers == null || implementers.size() != 1) {
                 log.severe("Multiple or no generated implementations found for " + fqn + ". Skipping.");
@@ -149,13 +157,13 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
         }
 
         @Override
-        public J.CompilationUnit visitCompilationUnit(J.CompilationUnit compilationUnit, ExecutionContext ctx) {
-            if (!isMapperImplementation(compilationUnit)) {
-                return compilationUnit;
+        public J.CompilationUnit visitCompilationUnit(J.CompilationUnit mapperImpl, ExecutionContext ctx) {
+            if (!isMapperImplementation(mapperImpl)) {
+                return mapperImpl;
             }
 
-            for (J.ClassDeclaration classDecl : compilationUnit.getClasses()) {
-                if (compilationUnit.getPackageDeclaration() == null) {
+            for (J.ClassDeclaration classDecl : mapperImpl.getClasses()) {
+                if (mapperImpl.getPackageDeclaration() == null) {
                     continue;
                 }
 
@@ -163,15 +171,15 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                         .requireNonNullElse(classDecl.getImplements(),
                                 Collections.emptyList());
                 for (TypeTree interfaceDecl : implInterfaces) {
-                    acc.addLinking(interfaceDecl, compilationUnit);
+                    acc.addLinking(interfaceDecl, mapperImpl);
                 }
 
                 if (classDecl.getExtends() != null) {
-                    acc.addLinking(classDecl.getExtends(), compilationUnit);
+                    acc.addLinking(classDecl.getExtends(), mapperImpl);
                 }
 
             }
-            return super.visitCompilationUnit(compilationUnit, ctx);
+            return super.visitCompilationUnit(mapperImpl, ctx);
         }
 
     }
