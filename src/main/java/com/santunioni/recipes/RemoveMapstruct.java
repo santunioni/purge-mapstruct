@@ -209,8 +209,12 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                 for (Statement s : mapperImplementationClass.getBody().getStatements()) {
                     if (s instanceof J.MethodDeclaration) {
                         J.MethodDeclaration method = (J.MethodDeclaration) s;
-                        // Check if this is a constructor (name matches old class name)
+
+                        // Rename the constructor
                         boolean isConstructor = method.getName().getSimpleName().equals(oldClassName);
+                        if (isConstructor) {
+                            method = method.withName(method.getName().withSimpleName(newClassName));
+                        }
 
                         // Filter out annotations that look like Override or Named
                         method = method.withLeadingAnnotations(ListUtils.map(method.getLeadingAnnotations(),
@@ -224,11 +228,6 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                                     }
                                     return methodAnnotation;
                                 }));
-
-                        // Rename the constructor
-                        if (isConstructor) {
-                            method = method.withName(method.getName().withSimpleName(newClassName));
-                        }
 
                         if (method.getModifiers().stream()
                                 .anyMatch(mod -> mod.getType() == J.Modifier.Type.Default)) {
@@ -259,11 +258,12 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                             }
                             method = method.withModifiers(modifiers);
 
-                            classStatements.add(method);
+//                            classStatements.add(method);
                         } else if (method.getModifiers().stream()
                                 .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
-                            classStatements.add(method);
+//                            classStatements.add(method);
                         }
+                        classStatements.add(method);
                     } else if (s instanceof J.VariableDeclarations) {
                         // Copy static fields from the interface
                         J.VariableDeclarations variableDeclarations = (J.VariableDeclarations) s;
