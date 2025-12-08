@@ -22,6 +22,11 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpecs;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import static org.openrewrite.java.Assertions.java;
 
 class RemoveMapstructTest implements RewriteTest {
@@ -33,153 +38,42 @@ class RemoveMapstructTest implements RewriteTest {
             .classpath("mapstruct"));
     }
 
+    private String readFixture(String testName, String fixtureType, String fileName) {
+        try {
+            Path fixturePath = Paths.get("src/test/resources/com/santunioni/fixtures", testName, fixtureType, fileName);
+            return Files.readString(fixturePath);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read fixture file: " + testName + "/" + fixtureType + "/" + fileName, e);
+        }
+    }
+
     @DocumentExample
     @Test
     void replaceSimpleDtoMapper() {
-        SourceSpecs makeAvailableSimpleDtoIn = java(
+        String testName = "replaceSimpleDtoMapper";
 
-          """
-            package com.santunioni.fixtures.dtoMappers;
-            
-            public class SimpleDtoIn {
-                private final Long id;
-                private final String name;
-            
-                public SimpleDtoIn(Long id, String name) {
-                    this.id = id;
-                    this.name = name;
-                }
-            
-                public Long getId() {
-                    return id;
-                }
-            
-                public String getName() {
-                    return name;
-                }
-            }
-            """,
+        SourceSpecs makeAvailableSimpleDtoIn = java(
+          readFixture(testName, "context", "SimpleDtoIn.java"),
           spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoIn.java")
         );
-        SourceSpecs makeAvailableSimpleDtoOut = java(
 
-          """
-            package com.santunioni.fixtures.dtoMappers;
-            
-            public class SimpleDtoOut {
-                private final Long id;
-                private final String name;
-            
-                public SimpleDtoOut(Long id, String name) {
-                    this.id = id;
-                    this.name = name;
-                }
-            
-                public Long getId() {
-                    return id;
-                }
-            
-                public String getName() {
-                    return name;
-                }
-            }
-            """,
+        SourceSpecs makeAvailableSimpleDtoOut = java(
+          readFixture(testName, "context", "SimpleDtoOut.java"),
           spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoOut.java")
         );
 
-        // Include the generated implementation class as a source file (simulating gradle plugin including it in context)
         SourceSpecs makeAvailableGeneratedClass = java(
-
-          """
-            package com.santunioni.fixtures.dtoMappers;
-            
-            import javax.annotation.processing.Generated;
-            
-            @Generated(
-                value = "org.mapstruct.ap.MappingProcessor",
-                date = "2025-01-01T00:00:00Z",
-                comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17"
-            )
-            public class SimpleDtoMapperImpl implements SimpleDtoMapper {
-            
-                @Override
-                public SimpleDtoOut toSimpleDtoOut(SimpleDtoIn simpleDtoIn) {
-                    if (simpleDtoIn == null) {
-                        return null;
-                    }
-            
-                    Long id = simpleDtoIn.getId();
-                    String name = simpleDtoIn.getName();
-            
-                    return new SimpleDtoOut(id, name);
-                }
-            
-                @Override
-                public SimpleDtoIn toSimpleDtoIn(SimpleDtoOut simpleDtoOut) {
-                    if (simpleDtoOut == null) {
-                        return null;
-                    }
-            
-                    Long id = simpleDtoOut.getId();
-                    String name = simpleDtoOut.getName();
-            
-                    return new SimpleDtoIn(id, name);
-                }
-            }
-            """,
+          readFixture(testName, "context", "SimpleDtoMapperImpl.java"),
           spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoMapperImpl.java")
         );
 
-        // Act - Assert
         rewriteRun(
           makeAvailableSimpleDtoIn,
           makeAvailableSimpleDtoOut,
           makeAvailableGeneratedClass,
           java(
-
-            """
-              package com.santunioni.fixtures.dtoMappers;
-              
-              import org.mapstruct.Mapper;
-              
-              @Mapper
-              public interface SimpleDtoMapper {
-                  SimpleDtoOut toSimpleDtoOut(SimpleDtoIn simpleDtoIn);
-                  SimpleDtoIn toSimpleDtoIn(SimpleDtoOut simpleDtoOut);
-              }
-              """,
-
-            "package com.santunioni.fixtures.dtoMappers;\n" +
-              "\n" +
-              "import org.mapstruct.Mapper;\n" +
-              "\n" +
-              "\n" +
-              "public class SimpleDtoMapper {\n" +
-              "\n" +
-              "    \n" +
-              "    public SimpleDtoOut toSimpleDtoOut(SimpleDtoIn simpleDtoIn) {\n" +
-              "        if (simpleDtoIn == null) {\n" +
-              "            return null;\n" +
-              "        }\n" +
-              "\n" +
-              "        Long id = simpleDtoIn.getId();\n" +
-              "        String name = simpleDtoIn.getName();\n" +
-              "\n" +
-              "        return new SimpleDtoOut(id, name);\n" +
-              "    }\n" +
-              "\n" +
-              "    \n" +
-              "    public SimpleDtoIn toSimpleDtoIn(SimpleDtoOut simpleDtoOut) {\n" +
-              "        if (simpleDtoOut == null) {\n" +
-              "            return null;\n" +
-              "        }\n" +
-              "\n" +
-              "        Long id = simpleDtoOut.getId();\n" +
-              "        String name = simpleDtoOut.getName();\n" +
-              "\n" +
-              "        return new SimpleDtoIn(id, name);\n" +
-              "    }\n" +
-              "}",
+            readFixture(testName, "before", "SimpleDtoMapper.java"),
+            readFixture(testName, "after", "SimpleDtoMapper.java"),
             spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoMapper.java")
           )
         );
@@ -187,129 +81,30 @@ class RemoveMapstructTest implements RewriteTest {
 
     @Test
     void replaceMapperWithDefaultMethod() {
+        String testName = "replaceMapperWithDefaultMethod";
+
         SourceSpecs makeAvailableUserDto = java(
-          """
-            package com.santunioni.fixtures.dtoMappers;
-            
-            public class UserDto {
-                private final String firstName;
-                private final String lastName;
-            
-                public UserDto(String firstName, String lastName) {
-                    this.firstName = firstName;
-                    this.lastName = lastName;
-                }
-            
-                public String getFirstName() {
-                    return firstName;
-                }
-            
-                public String getLastName() {
-                    return lastName;
-                }
-            }
-            """,
+          readFixture(testName, "context", "UserDto.java"),
           spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/UserDto.java")
         );
+
         SourceSpecs makeAvailableUserEntity = java(
-          """
-            package com.santunioni.fixtures.dtoMappers;
-            
-            public class UserEntity {
-                private final String fullName;
-            
-                public UserEntity(String fullName) {
-                    this.fullName = fullName;
-                }
-            
-                public String getFullName() {
-                    return fullName;
-                }
-            }
-            """,
+          readFixture(testName, "context", "UserEntity.java"),
           spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/UserEntity.java")
         );
 
-        // Include the generated implementation class that includes the default method implementation
         SourceSpecs makeAvailableGeneratedClass = java(
-          """
-            package com.santunioni.fixtures.dtoMappers;
-            
-            import javax.annotation.processing.Generated;
-            
-            @Generated(
-                value = "org.mapstruct.ap.MappingProcessor",
-                date = "2025-01-01T00:00:00Z",
-                comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17"
-            )
-            public class UserMapperImpl implements UserMapper {
-            
-                @Override
-                public UserEntity toUserEntity(UserDto userDto) {
-                    if (userDto == null) {
-                        return null;
-                    }
-            
-                    String fullName = formatFullName(userDto.getFirstName(), userDto.getLastName());
-                    return new UserEntity(fullName);
-                }
-            }
-            """,
+          readFixture(testName, "context", "UserMapperImpl.java"),
           spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/UserMapperImpl.java")
         );
 
-        // Act - Assert
         rewriteRun(
           makeAvailableUserDto,
           makeAvailableUserEntity,
           makeAvailableGeneratedClass,
-          // The mapper interface with default method (before) should be replaced with the implementation class (after)
           java(
-            // language=java
-            """
-              package com.santunioni.fixtures.dtoMappers;
-              
-              import org.mapstruct.Mapper;
-              
-              @Mapper
-              public interface UserMapper {
-                  UserEntity toUserEntity(UserDto userDto);
-              
-                  default String formatFullName(String firstName, String lastName) {              
-                      return firstName + " " + lastName;
-                  }
-              
-                  static String formatFullName2(String firstName, String lastName) {              
-                      return firstName + " " + lastName;
-                  }
-              }
-              """,
-
-            "package com.santunioni.fixtures.dtoMappers;\n" +
-              "\n" +
-              "import org.mapstruct.Mapper;\n" +
-              "\n" +
-              "\n" +
-              "public class UserMapper {\n" +
-              "\n" +
-              "    \n" +
-              "    public UserEntity toUserEntity(UserDto userDto) {\n" +
-              "        if (userDto == null) {\n" +
-              "            return null;\n" +
-              "        }\n" +
-              "\n" +
-              "        String fullName = formatFullName(userDto.getFirstName(), userDto.getLastName());\n" +
-              "        return new UserEntity(fullName);\n" +
-              "    }\n" +
-              "\n" +
-              "    static String formatFullName(String firstName, String lastName) {\n" +
-              "        return firstName + \" \" + lastName;\n" +
-              "    }\n" +
-              "\n" +
-              "    static String formatFullName2(String firstName, String lastName) {\n" +
-              "        return firstName + \" \" + lastName;\n" +
-              "    }\n" +
-              "}",
+            readFixture(testName, "before", "UserMapper.java"),
+            readFixture(testName, "after", "UserMapper.java"),
             spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/UserMapper.java")
           )
         );
@@ -317,82 +112,24 @@ class RemoveMapstructTest implements RewriteTest {
 
     @Test
     void replaceMapperWithConstructor() {
+        String testName = "replaceMapperWithConstructor";
+
         SourceSpecs makeAvailableProductDto = java(
-          """
-            package com.santunioni.fixtures.dtoMappers;
-            
-            public class ProductDto {
-                private final String name;
-            
-                public ProductDto(String name) {
-                    this.name = name;
-                }
-            
-                public String getName() {
-                    return name;
-                }
-            }
-            """,
+          readFixture(testName, "context", "ProductDto.java"),
           spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/ProductDto.java")
         );
 
-        // Include the generated implementation class with a constructor
         SourceSpecs makeAvailableGeneratedClass = java(
-          """
-            package com.santunioni.fixtures.dtoMappers;
-            
-            import javax.annotation.processing.Generated;
-            
-            @Generated(
-                value = "org.mapstruct.ap.MappingProcessor",
-                date = "2025-01-01T00:00:00Z",
-                comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17"
-            )
-            public class ProductMapperImpl implements ProductMapper {
-            
-                public ProductMapperImpl() {
-                }
-            
-                @Override
-                public ProductDto toProductDto(String name) {
-                    return new ProductDto(name);
-                }
-            }
-            """,
+          readFixture(testName, "context", "ProductMapperImpl.java"),
           spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/ProductMapperImpl.java")
         );
 
-        // Act - Assert
         rewriteRun(
           makeAvailableProductDto,
           makeAvailableGeneratedClass,
           java(
-            """
-              package com.santunioni.fixtures.dtoMappers;
-              
-              import org.mapstruct.Mapper;
-              
-              @Mapper
-              public interface ProductMapper {
-                  ProductDto toProductDto(String name);
-              }
-              """,
-
-            "package com.santunioni.fixtures.dtoMappers;\n" +
-              "\n" +
-              "import org.mapstruct.Mapper;\n" +
-              "\n" +
-              "\n" +
-              "public class ProductMapper {\n" +
-              "\n" +
-              "    public ProductMapper() {\n" +
-              "    }\n" +
-              "\n" +
-              "    \n" +
-              "    public ProductDto toProductDto(String name) {\n" +
-              "        return new ProductDto(name);\n" +
-              "    }\n" +
-              "}",
+            readFixture(testName, "before", "ProductMapper.java"),
+            readFixture(testName, "after", "ProductMapper.java"),
             spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/ProductMapper.java")
           )
         );
@@ -400,84 +137,24 @@ class RemoveMapstructTest implements RewriteTest {
 
     @Test
     void replaceMapperWithStaticField() {
+        String testName = "replaceMapperWithStaticField";
+
         SourceSpecs makeAvailableOrderDto = java(
-          """
-            package com.santunioni.fixtures.dtoMappers;
-            
-            public class OrderDto {
-                private final String id;
-            
-                public OrderDto(String id) {
-                    this.id = id;
-                }
-            
-                public String getId() {
-                    return id;
-                }
-            }
-            """,
+          readFixture(testName, "context", "OrderDto.java"),
           spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/OrderDto.java")
         );
 
-        // Include the generated implementation class
         SourceSpecs makeAvailableGeneratedClass = java(
-          """
-            package com.santunioni.fixtures.dtoMappers;
-            
-            import javax.annotation.processing.Generated;
-            
-            @Generated(
-                value = "org.mapstruct.ap.MappingProcessor",
-                date = "2025-01-01T00:00:00Z",
-                comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17"
-            )
-            public class OrderMapperImpl implements OrderMapper {
-            
-                @Override
-                public OrderDto toOrderDto(String id) {
-                    return new OrderDto(id);
-                }
-            }
-            """,
+          readFixture(testName, "context", "OrderMapperImpl.java"),
           spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/OrderMapperImpl.java")
         );
 
-        // Act - Assert
         rewriteRun(
           makeAvailableOrderDto,
           makeAvailableGeneratedClass,
           java(
-            """
-              package com.santunioni.fixtures.dtoMappers;
-              
-              import org.mapstruct.Mapper;
-              
-              @Mapper
-              public interface OrderMapper {
-                  OrderDto toOrderDto(String id);
-              
-                  String STATUS = "PENDING";
-                  final String DEFAULT_STATUS = "PENDING";
-                  static final String DEFAULT_SITUATION = "PENDING";
-              }
-              """,
-
-            "package com.santunioni.fixtures.dtoMappers;\n" +
-              "\n" +
-              "import org.mapstruct.Mapper;\n" +
-              "\n" +
-              "\n" +
-              "public class OrderMapper {\n" +
-              "\n" +
-              "    \n" +
-              "    public OrderDto toOrderDto(String id) {\n" +
-              "        return new OrderDto(id);\n" +
-              "    }\n" +
-              "\n" +
-              "    public static final String STATUS = \"PENDING\";\n" +
-              "    public static final String DEFAULT_STATUS = \"PENDING\";\n" +
-              "    public static final String DEFAULT_SITUATION = \"PENDING\";\n" +
-              "}",
+            readFixture(testName, "before", "OrderMapper.java"),
+            readFixture(testName, "after", "OrderMapper.java"),
             spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/OrderMapper.java")
           )
         );
