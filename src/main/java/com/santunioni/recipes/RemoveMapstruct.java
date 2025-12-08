@@ -23,8 +23,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static java.util.Collections.emptyList;
-
 /**
  * RemoveMapstruct is a recipe designed to refactor Mapstruct mapper interfaces.
  * <p>
@@ -282,13 +280,12 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                         modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
                                 Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()));
 
-
                         modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
                                 Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList()));
 
                         for (J.Modifier modifier : interfaceField.getModifiers()) {
                             if (!modifiersSetManual.contains(modifier.getType())) {
-                                modifiers.add(modifier.withPrefix(Space.build("    ", emptyList())));
+                                modifiers.add(modifier.withPrefix(Space.SINGLE_SPACE));
                             }
                         }
 
