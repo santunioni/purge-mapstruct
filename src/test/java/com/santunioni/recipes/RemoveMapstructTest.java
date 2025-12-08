@@ -17,12 +17,8 @@ package com.santunioni.recipes;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
-import org.openrewrite.Recipe;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.format.AutoFormat;
-import org.openrewrite.java.format.NormalizeFormatVisitor;
-import org.openrewrite.java.format.TabsAndIndentsVisitor;
-import org.openrewrite.style.GeneralFormatStyle;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpecs;
@@ -31,7 +27,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -39,7 +34,7 @@ class RemoveMapstructTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipes(new RemoveMapstruct(), new AutoFormat(, true))
+        spec.recipes(new RemoveMapstruct(), new AutoFormat("com.santunioni.styles.AutoFormatRecipeOutputForTest", true))
           .parser(JavaParser.fromJavaVersion()
             .classpath("mapstruct"));
     }
