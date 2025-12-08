@@ -39,8 +39,8 @@ import java.util.Map;
  * This recipe assumes that the generated implementation is available in the source files being processed.
  * The gradle plugin should be configured to include generated sources in the context.
  * <p>
- * Note: This recipe does not copy default methods from the interface. It only works with
- * interfaces that do not have default methods.
+ * Note: This recipe copies default methods and static methods from the interface to the
+ * implementation class, removing the default modifier and preserving the static modifier.
  * <p>
  * It is recommended to run supplementary cleanup tools or recipes (e.g., RemoveUnusedImports)
  * following this recipe to handle any redundant imports or formatting inconsistencies introduced during the process.
@@ -76,8 +76,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
     @Override
     public String getDescription() {
         return "Replaces @Mapper interfaces with their generated implementation. Copies imports and removes @Override"
-                + " annotations from methods and @Generated annotations from classes. Only supports interfaces " +
-                "without default methods.";
+                + " annotations from methods and @Generated annotations from classes. Copies default methods and static methods from the interface.";
     }
 
     @Override
@@ -233,6 +232,34 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                                 return mod;
                             });
                             // Add public if missing (use the first method's public modifier as a template)
+                            boolean hasPublic = modifiers.stream()
+                                    .anyMatch(mod -> mod.getType() == J.Modifier.Type.Public);
+                            if (!hasPublic && !classStatements.isEmpty() && classStatements.get(0) instanceof J.MethodDeclaration) {
+                                J.Modifier publicMod =
+                                        ((J.MethodDeclaration) classStatements.get(0)).getModifiers().stream()
+                                                .filter(mod -> mod.getType() == J.Modifier.Type.Public)
+                                                .findFirst()
+                                                .orElse(null);
+                                if (publicMod != null) {
+                                    List<J.Modifier> modifiersWithPublic = new ArrayList<>();
+                                    modifiersWithPublic.add(publicMod);
+                                    modifiersWithPublic.addAll(modifiers);
+                                    modifiers = modifiersWithPublic;
+                                }
+                            }
+                            classStatements.add(method.withModifiers(modifiers));
+                        }
+                    }
+                }
+
+                // Copy static methods from the interface
+                for (Statement s : originalInterface.getBody().getStatements()) {
+                    if (s instanceof J.MethodDeclaration) {
+                        J.MethodDeclaration method = (J.MethodDeclaration) s;
+                        if (method.getModifiers().stream()
+                                .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
+                            // Keep static modifier, but ensure public is present
+                            List<J.Modifier> modifiers = method.getModifiers();
                             boolean hasPublic = modifiers.stream()
                                     .anyMatch(mod -> mod.getType() == J.Modifier.Type.Public);
                             if (!hasPublic && !classStatements.isEmpty() && classStatements.get(0) instanceof J.MethodDeclaration) {

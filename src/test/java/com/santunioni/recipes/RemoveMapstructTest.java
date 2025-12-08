@@ -265,7 +265,7 @@ class RemoveMapstructTest implements RewriteTest {
           makeAvailableGeneratedClass,
           // The mapper interface with default method (before) should be replaced with the implementation class (after)
           java(
-
+            // language=java
             """
               package com.santunioni.fixtures.dtoMappers;
               
@@ -275,16 +275,11 @@ class RemoveMapstructTest implements RewriteTest {
               public interface UserMapper {
                   UserEntity toUserEntity(UserDto userDto);
               
-                  default String formatFullName(String firstName, String lastName) {
-                      if (firstName == null && lastName == null) {
-                          return "";
-                      }
-                      if (firstName == null) {
-                          return lastName;
-                      }
-                      if (lastName == null) {
-                          return firstName;
-                      }
+                  default String formatFullName(String firstName, String lastName) {              
+                      return firstName + " " + lastName;
+                  }
+              
+                  static String formatFullName2(String firstName, String lastName) {              
                       return firstName + " " + lastName;
                   }
               }
@@ -309,15 +304,11 @@ class RemoveMapstructTest implements RewriteTest {
               "\n" +
               "    \n" +
               "    public String formatFullName(String firstName, String lastName) {\n" +
-              "        if (firstName == null && lastName == null) {\n" +
-              "            return \"\";\n" +
-              "        }\n" +
-              "        if (firstName == null) {\n" +
-              "            return lastName;\n" +
-              "        }\n" +
-              "        if (lastName == null) {\n" +
-              "            return firstName;\n" +
-              "        }\n" +
+              "        return firstName + \" \" + lastName;\n" +
+              "    }\n" +
+              "\n" +
+              "    \n" +
+              "    public static String formatFullName2(String firstName, String lastName) {\n" +
               "        return firstName + \" \" + lastName;\n" +
               "    }\n" +
               "}",
