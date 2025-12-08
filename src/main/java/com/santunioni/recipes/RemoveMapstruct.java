@@ -63,7 +63,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
     public RemoveMapstruct() {
     }
 
-    private static boolean isMapstructImplementation(J.CompilationUnit compilationUnit) {
+    private static boolean isMapperImplementation(J.CompilationUnit compilationUnit) {
         return compilationUnit.getClasses().stream()
                 .anyMatch(cd -> {
                     String className = cd.getName().getSimpleName();
@@ -73,6 +73,14 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
                             && cd.getLeadingAnnotations().stream().anyMatch(an ->
                             TypeUtils.isOfClassType(an.getType(), "javax.annotation.processing.Generated"));
                 });
+    }
+
+    private static boolean isMapperDeclaration(J.CompilationUnit originalCu) {
+        return originalCu.getClasses().stream()
+                .anyMatch(cd -> cd.getAllAnnotations().stream()
+                        .anyMatch(a -> (a.getType() != null && TypeUtils.isOfClassType(a.getType(), "org" +
+                                ".mapstruct.Mapper"))
+                                || a.getSimpleName().equals("Mapper")));
     }
 
     @Override
@@ -142,7 +150,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
 
         @Override
         public J.CompilationUnit visitCompilationUnit(J.CompilationUnit compilationUnit, ExecutionContext ctx) {
-            if (!isMapstructImplementation(compilationUnit)) {
+            if (!isMapperImplementation(compilationUnit)) {
                 return compilationUnit;
             }
 
@@ -295,7 +303,7 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
         public J visitCompilationUnit(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
             if (isMapperDeclaration(mapperDeclFile)) {
                 return processMapperDeclaration(mapperDeclFile, ctx);
-            } else if (isMapstructImplementation(mapperDeclFile)) {
+            } else if (isMapperImplementation(mapperDeclFile)) {
                 // Ideally, I should return null to make openrewrite delete the file.
                 // However, I still need the file to copy its implementation, and openrewrite
                 // makes it unavailable after I return null
@@ -389,13 +397,6 @@ public class RemoveMapstruct extends ScanningRecipe<RemoveMapstruct.Accumulator>
             return mapperImplementationFile;
         }
 
-        private boolean isMapperDeclaration(J.CompilationUnit originalCu) {
-            return originalCu.getClasses().stream()
-                    .anyMatch(cd -> cd.getAllAnnotations().stream()
-                            .anyMatch(a -> (a.getType() != null && TypeUtils.isOfClassType(a.getType(), "org" +
-                                    ".mapstruct.Mapper"))
-                                    || a.getSimpleName().equals("Mapper")));
-        }
 
     }
 
