@@ -18,6 +18,7 @@ import static com.santunioni.recipes.removeMapstruct.Functions.isMapperImplement
 @Log
 @NullMarked
 public class MapperProcessor extends JavaVisitor<ExecutionContext> {
+    private static final String MAPSTRUCT_GROUP = "org.mapstruct";
     private final Accumulator acc;
 
     public MapperProcessor(Accumulator acc) {
@@ -33,78 +34,25 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                     return modifier;
                 }));
 
-        // Remove MapStruct annotations from method
         mapperDeclMethod =
-                mapperDeclMethod.withLeadingAnnotations(ListUtils.map(mapperDeclMethod.getLeadingAnnotations(),
-                        methodAnnotation -> {
-                            String simpleName = methodAnnotation.getSimpleName();
-                            if (simpleName.equals("Named")
-                                    || TypeUtils.isOfClassType(methodAnnotation.getType(),
-                                    "org.mapstruct.Named")) {
-                                return null;
-                            }
-                            // Remove MapStruct annotations - check by simple name first
-                            if (simpleName.equals("AfterMapping") || simpleName.equals("BeforeMapping")
-                                    || simpleName.equals("MappingTarget") || simpleName.equals("Context")
-                                    || simpleName.equals("Mapper") || simpleName.equals("Named")) {
-                                // Verify it's actually a MapStruct annotation by checking the type
-                                if (methodAnnotation.getType() != null) {
-                                    String typeString = methodAnnotation.getType().toString();
-                                    if (typeString.startsWith("org.mapstruct")) {
-                                        return null;
-                                    }
-                                } else {
-                                    // If type is null but simple name matches, assume it's MapStruct
-                                    return null;
-                                }
-                            }
-                            // Also check by type string as fallback
-                            if (methodAnnotation.getType() != null) {
-                                String typeString = methodAnnotation.getType().toString();
-                                if (typeString.startsWith("org.mapstruct")) {
-                                    return null;
-                                }
-                            }
-                            return methodAnnotation;
-                        }));
+                mapperDeclMethod.withLeadingAnnotations(ListUtils.filter(
+                        mapperDeclMethod.getLeadingAnnotations(),
+                        MapperProcessor::excludeMapstructAnnotations)
+                );
 
         // Remove MapStruct annotations from method parameters
-        if (mapperDeclMethod.getParameters() != null) {
-            List<Statement> filteredParameters = ListUtils.map(mapperDeclMethod.getParameters(),
-                    param -> {
-                        if (param instanceof J.VariableDeclarations varDecl) {
-                            List<J.Annotation> paramAnnotations = ListUtils.map(
-                                    varDecl.getLeadingAnnotations(),
-                                    annotation -> {
-                                        // Remove MapStruct annotations - check by simple name first
-                                        String simpleName = annotation.getSimpleName();
-                                        if (simpleName.equals("MappingTarget") || simpleName.equals("Context")) {
-                                            // Verify it's actually a MapStruct annotation by checking the type
-                                            if (annotation.getType() != null) {
-                                                String typeString = annotation.getType().toString();
-                                                if (typeString.startsWith("org.mapstruct")) {
-                                                    return null;
-                                                }
-                                            } else {
-                                                // If type is null but simple name matches, assume it's MapStruct
-                                                return null;
-                                            }
-                                        }
-                                        // Also check by type string as fallback
-                                        if (annotation.getType() != null) {
-                                            String typeString = annotation.getType().toString();
-                                            if (typeString.startsWith("org.mapstruct")) {
-                                                return null;
-                                            }
-                                        }
-                                        return annotation;
-                                    });
-                            return varDecl.withLeadingAnnotations(paramAnnotations);
-                        }
-                        return param;
-                    });
-            mapperDeclMethod = mapperDeclMethod.withParameters(filteredParameters);
-        }
+        List<Statement> filteredParameters = ListUtils.map(mapperDeclMethod.getParameters(),
+                param -> {
+                    if (param instanceof J.VariableDeclarations varDecl) {
+                        return varDecl.withLeadingAnnotations(ListUtils.filter(
+                                varDecl.getLeadingAnnotations(),
+                                MapperProcessor::excludeMapstructAnnotations
+                        ));
+                    }
+                    return param;
+                });
+
+        mapperDeclMethod = mapperDeclMethod.withParameters(filteredParameters);
 
         // Normalize method prefix to avoid extra blank lines
         Space currentPrefix = mapperDeclMethod.getPrefix();
@@ -223,7 +171,8 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         if (a.getType() == null) {
             return false;
         }
-        return !a.getType().toString().startsWith("org.mapstruct");
+
+        return !a.getType().toString().startsWith(MAPSTRUCT_GROUP);
     }
 
     /**
@@ -502,14 +451,11 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                 "javax.annotation.processing.Generated",
                 "jakarta.annotation.Generated"
         ));
-
-        // Also filter out any import that starts with org.mapstruct
-        var mapstructImportPrefix = "org.mapstruct";
-
+        
         var imports = new ArrayList<J.Import>();
         for (J.Import imp : allImports) {
             String importFqn = imp.getQualid().printTrimmed(getCursor());
-            if (!forbiddenImports.contains(importFqn) && !importFqn.startsWith(mapstructImportPrefix)) {
+            if (!forbiddenImports.contains(importFqn) && !importFqn.startsWith(MAPSTRUCT_GROUP)) {
                 imports.add(imp);
             }
             forbiddenImports.add(importFqn);
@@ -695,5 +641,6 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         }
         return "";
     }
+
 
 }
