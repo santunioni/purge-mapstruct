@@ -44,8 +44,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                             return methodAnnotation;
                         }));
 
-        if (mapperDeclMethod.getModifiers().stream()
-                .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
+        if (mapperDeclMethod.getBody() != null) {
             copiedClassStatements.add(mapperDeclMethod);
         }
     }
