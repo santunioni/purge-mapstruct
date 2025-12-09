@@ -80,11 +80,6 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     @Override
-    public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext p) {
-        return super.visitMethodInvocation(method, p);
-    }
-
-    @Override
     public J visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
         J visited = super.visitNewClass(newClass, ctx);
         if (!(visited instanceof J.NewClass newClazz)) {
