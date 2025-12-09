@@ -13,6 +13,7 @@ Rename implementation classes when they are passed as class parameters into anno
 
 Default methods and fields copied from interfaces should be explicitly set as public. Non-default should keep their
 visibility. They should also not be made static
+![bug-default-methods-not-public.png](docs/bug-default-methods-not-public.png)
 
 # Features
 
