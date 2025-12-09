@@ -2,12 +2,15 @@ package com.santunioni.recipes.removeMapstruct;
 
 import lombok.extern.java.Log;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
@@ -35,13 +38,45 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
             // makes it unavailable after I return null
             return mapperDeclFile;
         } else {
-            return mapperDeclFile;
+            return super.visitCompilationUnit(mapperDeclFile, ctx);
         }
     }
 
     @Override
     public J visitImport(J.Import imp, ExecutionContext ctx) {
-        return super.visitImport(imp, ctx);
+        J visited = super.visitImport(imp, ctx);
+        if (!(visited instanceof J.Import import_)) {
+            return visited;
+        }
+
+        // Extract FQN from import qualid
+        String importFqn = extractFqnFromFieldAccess(import_.getQualid());
+        if (importFqn == null) {
+            return import_;
+        }
+
+        // Check if this is a mapper implementation that needs replacement
+        String superFqn = acc.getSuperFqnFromImplFqn(importFqn);
+        if (superFqn == null) {
+            // Not a mapper impl - check if it's already a super type (to avoid replacing backwards)
+            // If this FQN is a super type for some impl, don't touch it
+            return import_;
+        }
+
+        // Check if already replaced - the import FQN should match super FQN
+        if (importFqn.equals(superFqn)) {
+            return import_;
+        }
+
+        // Check by simple name - if it matches and doesn't end with Impl, it's already replaced
+        String currentSimpleName = getFinalIdentifierName(import_.getQualid());
+        String expectedSimpleName = extractSimpleName(superFqn);
+        if (currentSimpleName.equals(expectedSimpleName) && !currentSimpleName.endsWith("Impl")) {
+            return import_;
+        }
+
+        // Replace the import with the super type
+        return replaceImportQualid(import_, superFqn);
     }
 
     @Override
@@ -50,18 +85,99 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     @Override
-    public J visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext p) {
-        return super.visitVariableDeclarations(multiVariable, p);
+    public J visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+        J visited = super.visitNewClass(newClass, ctx);
+        if (!(visited instanceof J.NewClass newClazz)) {
+            return visited;
+        }
+
+        // Replace constructor type (new MyMapperImpl() -> new MyMapper())
+        TypeTree clazz = newClazz.getClazz();
+        if (clazz != null) {
+            String clazzFqn = extractFqnFromTypeTree(clazz);
+            if (clazzFqn != null) {
+                String superFqn = acc.getSuperFqnFromImplFqn(clazzFqn);
+                if (superFqn != null) {
+                    // Check if already replaced - compare FQNs and simple names
+                    if (clazzFqn.equals(superFqn)) {
+                        return newClazz;
+                    }
+                    String currentSimpleName = getSimpleNameFromTypeTree(clazz);
+                    String expectedSimpleName = extractSimpleName(superFqn);
+                    if (currentSimpleName.equals(expectedSimpleName) && !currentSimpleName.endsWith("Impl")) {
+                        return newClazz;
+                    }
+                    TypeTree newClazzType = replaceTypeTree(clazz, superFqn);
+                    return newClazz.withClazz(newClazzType);
+                }
+            }
+        }
+
+        return newClazz;
     }
 
     @Override
-    public J visitVariable(J.VariableDeclarations.NamedVariable namedVariable, ExecutionContext p) {
-        return super.visitVariable(namedVariable, p);
+    public J visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext p) {
+        J visited = super.visitVariableDeclarations(multiVariable, p);
+        if (!(visited instanceof J.VariableDeclarations varDecl)) {
+            return visited;
+        }
+
+        // Replace type expression (for method parameters, field declarations, etc.)
+        if (varDecl.getTypeExpression() != null) {
+            TypeTree typeExpression = varDecl.getTypeExpression();
+            String typeFqn = extractFqnFromTypeTree(typeExpression);
+            if (typeFqn != null) {
+                String superFqn = acc.getSuperFqnFromImplFqn(typeFqn);
+                if (superFqn != null) {
+                    // Check if already replaced
+                    if (typeFqn.equals(superFqn)) {
+                        return varDecl;
+                    }
+                    String currentSimpleName = getSimpleNameFromTypeTree(typeExpression);
+                    String expectedSimpleName = extractSimpleName(superFqn);
+                    if (currentSimpleName.equals(expectedSimpleName) && !currentSimpleName.endsWith("Impl")) {
+                        return varDecl;
+                    }
+                    TypeTree newTypeExpression = replaceTypeTree(typeExpression, superFqn);
+                    return varDecl.withTypeExpression(newTypeExpression);
+                }
+            }
+        }
+
+        return varDecl;
     }
 
     @Override
     public J visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
-        return super.visitInstanceOf(instanceOf, ctx);
+        J visited = super.visitInstanceOf(instanceOf, ctx);
+        if (!(visited instanceof J.InstanceOf instanceOf_)) {
+            return visited;
+        }
+
+        // Replace the type in instanceof checks
+        J clazzExpr = instanceOf_.getClazz();
+        if (clazzExpr instanceof J.ControlParentheses clazzParentheses) {
+            Object treeObj = clazzParentheses.getTree();
+            if (treeObj instanceof TypeTree clazz) {
+                String clazzFqn = extractFqnFromTypeTree(clazz);
+                if (clazzFqn != null) {
+                    String superFqn = acc.getSuperFqnFromImplFqn(clazzFqn);
+                    if (superFqn != null) {
+                        // Check if already replaced
+                        String currentSimpleName = getSimpleNameFromTypeTree(clazz);
+                        String expectedSimpleName = extractSimpleName(superFqn);
+                        if (currentSimpleName.equals(expectedSimpleName)) {
+                            return instanceOf_;
+                        }
+                        TypeTree newClazzType = replaceTypeTree(clazz, superFqn);
+                        return instanceOf_.withClazz(clazzParentheses.withTree(newClazzType));
+                    }
+                }
+            }
+        }
+
+        return instanceOf_;
     }
 
     private J processMapperDeclaration(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
@@ -264,6 +380,151 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         }
 
         return mapperImplementationFile.withImports(imports);
+    }
+
+    /**
+     * Extracts FQN from a FieldAccess (used for imports).
+     * Prioritizes name-based extraction to avoid stale type information after replacements.
+     */
+    private @Nullable String extractFqnFromFieldAccess(J.FieldAccess fieldAccess) {
+        // First try to extract from the name chain (more reliable after replacements)
+        List<String> parts = new ArrayList<>();
+        J.FieldAccess current = fieldAccess;
+        while (true) {
+            parts.add(current.getName().getSimpleName());
+            if (current.getTarget() instanceof J.FieldAccess nested) {
+                current = nested;
+            } else if (current.getTarget() instanceof J.Identifier identifier) {
+                parts.add(identifier.getSimpleName());
+                break;
+            } else {
+                break;
+            }
+        }
+        Collections.reverse(parts);
+        String nameBasedFqn = parts.isEmpty() ? null : String.join(".", parts);
+
+        // If we got a valid FQN from names, use it (more reliable after replacements)
+        if (nameBasedFqn != null && !nameBasedFqn.isEmpty()) {
+            return nameBasedFqn;
+        }
+
+        // Fallback to type information if name extraction failed
+        if (fieldAccess.getType() != null) {
+            JavaType type = fieldAccess.getType();
+            if (type instanceof JavaType.FullyQualified fullyQualified) {
+                return fullyQualified.getFullyQualifiedName();
+            }
+            return type.toString();
+        }
+
+        return null;
+    }
+
+    /**
+     * Extracts FQN from a TypeTree, following the pattern used in Accumulator.addLinking.
+     */
+    private @Nullable String extractFqnFromTypeTree(TypeTree typeTree) {
+        if (typeTree.getType() == null) {
+            return null;
+        }
+        JavaType type = typeTree.getType();
+        if (type instanceof JavaType.FullyQualified fullyQualified) {
+            return fullyQualified.getFullyQualifiedName();
+        }
+        // Fallback to toString() as used in Accumulator.addLinking line 24
+        return type.toString();
+    }
+
+    /**
+     * Replaces a TypeTree with a new one using the super FQN.
+     */
+    private TypeTree replaceTypeTree(TypeTree typeTree, String superFqn) {
+        String superSimpleName = extractSimpleName(superFqn);
+
+        if (typeTree instanceof J.Identifier identifier) {
+            return identifier.withSimpleName(superSimpleName);
+        } else if (typeTree instanceof J.FieldAccess fieldAccess) {
+            // Replace the final identifier in the field access chain
+            J.FieldAccess current = fieldAccess;
+            while (current.getTarget() instanceof J.FieldAccess nested) {
+                current = nested;
+            }
+            J.Identifier finalIdentifier = current.getName();
+            J.Identifier newIdentifier = finalIdentifier.withSimpleName(superSimpleName);
+            return replaceFinalIdentifierInChain(fieldAccess, newIdentifier);
+        }
+        // Fallback: create a new identifier
+        return new J.Identifier(
+                UUID.randomUUID(),
+                typeTree.getPrefix(),
+                typeTree.getMarkers(),
+                Collections.emptyList(),
+                superSimpleName,
+                null,
+                null
+        );
+    }
+
+    /**
+     * Recursively replaces the final identifier in a FieldAccess chain.
+     */
+    private J.FieldAccess replaceFinalIdentifierInChain(J.FieldAccess fieldAccess, J.Identifier newIdentifier) {
+        if (fieldAccess.getTarget() instanceof J.FieldAccess nested) {
+            // Continue down the chain
+            J.FieldAccess newTarget = replaceFinalIdentifierInChain(nested, newIdentifier);
+            return fieldAccess.withTarget(newTarget);
+        }
+        // This is the final FieldAccess, replace its name
+        return fieldAccess.withName(newIdentifier);
+    }
+
+    /**
+     * Replaces the qualid in an import statement with the super type.
+     * The root FieldAccess (returned by getQualid()) has the class name as its name.
+     * We just need to replace that name.
+     */
+    private J.Import replaceImportQualid(J.Import import_, String superFqn) {
+        String superSimpleName = extractSimpleName(superFqn);
+        J.FieldAccess qualid = import_.getQualid();
+
+        // The root FieldAccess's name is the class name we want to replace
+        J.Identifier rootName = qualid.getName();
+        J.Identifier newName = rootName.withSimpleName(superSimpleName);
+        J.FieldAccess newQualid = qualid.withName(newName);
+
+        return import_.withQualid(newQualid);
+    }
+
+    /**
+     * Extracts the simple name (last part) from an FQN.
+     */
+    private String extractSimpleName(String fqn) {
+        int lastDot = fqn.lastIndexOf('.');
+        return lastDot >= 0 ? fqn.substring(lastDot + 1) : fqn;
+    }
+
+    /**
+     * Gets the final identifier name from a FieldAccess chain.
+     */
+    private String getFinalIdentifierName(J.FieldAccess fieldAccess) {
+        J.FieldAccess current = fieldAccess;
+        while (current.getTarget() instanceof J.FieldAccess nested) {
+            current = nested;
+        }
+        return current.getName().getSimpleName();
+    }
+
+    /**
+     * Gets the simple name from a TypeTree.
+     */
+    private String getSimpleNameFromTypeTree(TypeTree typeTree) {
+        if (typeTree instanceof J.Identifier identifier) {
+            return identifier.getSimpleName();
+        } else if (typeTree instanceof J.FieldAccess fieldAccess) {
+            return getFinalIdentifierName(fieldAccess);
+        }
+        return "";
     }
 
 }
