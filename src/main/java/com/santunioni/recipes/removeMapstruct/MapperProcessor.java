@@ -77,7 +77,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                         .getModifiers()
                         .stream()
                         .filter(modifier -> accessModifiers.contains(modifier.getType())).findFirst();
-        
+
         if (accessModifierInPlace.isPresent()) {
             modifiers.add(accessModifierInPlace.get());
         } else {
@@ -324,6 +324,8 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                     captureMapperDeclField(mapperDeclField, copiedClassStatements);
                 }
             }
+
+            copiedClassStatements.sort(new StatementDefinitionOrder());
 
             List<J.ClassDeclaration> classes = Collections.singletonList(cleanGeneratedAnnotations(
                     mapperImplClass
