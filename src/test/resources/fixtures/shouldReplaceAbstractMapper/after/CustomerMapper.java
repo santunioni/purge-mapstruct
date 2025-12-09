@@ -6,14 +6,15 @@ import lombok.extern.java.Log;
 
 @Log
 public class CustomerMapper {
-
     protected static final String PERSONAL_DATA_TYPE = "PERSONAL_DATA";
+
     @Getter
     @Setter
-    private Long myChieldField;
+    private static final Long myParentField;
+
     @Getter
     @Setter
-    private Long myParentField;
+    private Long myChildField;
 
     public CustomerDto toCustomerDto(CustomerEntity customerEntity) {
         if (customerEntity == null) {
