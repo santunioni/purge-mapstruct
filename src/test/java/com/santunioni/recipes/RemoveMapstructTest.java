@@ -44,7 +44,7 @@ class RemoveMapstructTest implements RewriteTest {
     public void defaults(RecipeSpec spec) {
         spec.recipes(new RemoveMapstruct(), new AutoFormat("com.santunioni.styles.AutoFormatRecipeOutputForTest", false))
                 .parser(JavaParser.fromJavaVersion()
-                        .classpath("mapstruct", "lombok"));
+                        .classpath("mapstruct", "lombok", "junit-jupiter-api"));
     }
 
     @DocumentExample

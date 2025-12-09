@@ -1,9 +1,10 @@
 package com.santunioni.fixtures;
 
-import com.santunioni.fixtures.dtoMappers.SimpleDtoIn;
-import com.santunioni.fixtures.dtoMappers.SimpleDtoMapperImpl;
-import com.santunioni.fixtures.dtoMappers.SimpleDtoOut;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(
+        UserMapperImpl.class
+)
 public class SimpleService {
     private final UserMapperImpl mapper = new UserMapperImpl();
 
