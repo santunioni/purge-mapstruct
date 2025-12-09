@@ -18,6 +18,11 @@ Default methods and fields copied from interfaces should be explicitly set as pu
 visibility. They should also not be made static
 ![bug-default-methods-not-public.png](docs/bug-default-methods-not-public.png)
 
+## Generation
+
+Remove AfterMapping and MappingTarget from the generated method
+![remove-decorators.png](docs/remove-decorators.png)
+
 # Features
 
 Add another recipe that inserts a lombok @Builder decorator into all classes that are target of a mapper
