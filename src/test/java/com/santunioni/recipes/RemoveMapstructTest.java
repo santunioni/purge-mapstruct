@@ -73,6 +73,11 @@ class RemoveMapstructTest implements RewriteTest {
                         readResource("fixtures/replaceInterfaceMapper/before/UserMapper.java"),
                         readResource("fixtures/replaceInterfaceMapper/after/UserMapper.java"),
                         spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/UserMapper.java")
+                ),
+                java(
+                        readResource("fixtures/replaceInterfaceMapper/before/UserService.java"),
+                        readResource("fixtures/replaceInterfaceMapper/after/UserService.java"),
+                        spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/UserService.java")
                 )
         );
     }

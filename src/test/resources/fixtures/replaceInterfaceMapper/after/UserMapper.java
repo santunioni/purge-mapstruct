@@ -17,12 +17,14 @@ public class UserMapper {
     }
 
     public UserEntity toUserEntity(UserDto userDto) {
-        if (userDto == null) {
-            return null;
-        }
-
         String fullName = formatFullName(userDto.getFirstName(), userDto.getLastName());
         return new UserEntity(fullName);
+    }
+
+    public UserDto toUserDto(UserEntity userEntity) {
+        String fullName = userEntity.getFullName();
+        int split = fullName.indexOf(' ');
+        return new UserDto(fullName.substring(0, split), fullName.substring(split + 1));
     }
 
     static String formatFullName(String firstName, String lastName) {
