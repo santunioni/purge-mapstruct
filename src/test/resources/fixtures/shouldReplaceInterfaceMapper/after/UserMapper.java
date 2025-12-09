@@ -4,9 +4,10 @@ import lombok.Setter;
 
 
 public class UserMapper {
-    static final String STATIC_FINAL_INTERFACE_FIELD = "VALUE";
-    static final String FINAL_INTERFACE_FIELD = "VALUE";
-    static final String INTERFACE_FIELD = "VALUE";
+    public static final String INTERFACE_FIELD = "VALUE";
+    public static final String FINAL_INTERFACE_FIELD = "VALUE";
+    public static final String STATIC_FINAL_INTERFACE_FIELD = "VALUE";
+
     @Setter
     private Long childField;
 
