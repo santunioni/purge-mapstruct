@@ -1,9 +1,14 @@
 package com.santunioni.fixtures.dtoMappers;
 
+import lombok.Setter;
+
 import lombok.extern.java.Log;
 
 @Log
 public class CustomerMapper {
+
+    @Setter
+    private Long myField;
     protected static final String PERSONAL_DATA_TYPE = "PERSONAL_DATA";
 
     public CustomerDto toCustomerDto(CustomerEntity customerEntity) {

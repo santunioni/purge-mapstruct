@@ -1,6 +1,6 @@
 package com.santunioni.fixtures.dtoMappers;
 
-import javax.annotation.processing.Generated;
+import lombok.Setter;import javax.annotation.processing.Generated;
 
 @Generated(
         value = "org.mapstruct.ap.MappingProcessor",
@@ -8,6 +8,9 @@ import javax.annotation.processing.Generated;
         comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17"
 )
 public class CustomerMapperImpl extends CustomerMapper {
+
+    @Setter
+    private Long myField;
 
     @Override
     public CustomerDto toCustomerDto(CustomerEntity customerEntity) {

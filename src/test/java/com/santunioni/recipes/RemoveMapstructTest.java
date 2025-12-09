@@ -49,49 +49,19 @@ class RemoveMapstructTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void shouldReplaceSimpleDtoMapper() throws IOException {
-        SourceSpecs makeAvailableSimpleDtoIn = java(
-                readResource("fixtures/replaceSimpleDtoMapper/context/SimpleDtoIn.java"),
-                spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoIn.java")
-        );
-
-        SourceSpecs makeAvailableSimpleDtoOut = java(
-                readResource("fixtures/replaceSimpleDtoMapper/context/SimpleDtoOut.java"),
-                spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoOut.java")
-        );
-
-        SourceSpecs makeAvailableGeneratedClass = java(
-                readResource("fixtures/replaceSimpleDtoMapper/context/SimpleDtoMapperImpl.java"),
-                spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoMapperImpl.java")
-        );
-
-        rewriteRun(
-                makeAvailableSimpleDtoIn,
-                makeAvailableSimpleDtoOut,
-                makeAvailableGeneratedClass,
-                java(
-                        readResource("fixtures/replaceSimpleDtoMapper/before/SimpleDtoMapper.java"),
-                        readResource("fixtures/replaceSimpleDtoMapper/after/SimpleDtoMapper.java"),
-                        spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoMapper.java")
-                )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void shouldReplaceMapperWithDefaultMethod() throws IOException {
+    void shouldReplaceInterfaceMapper() throws IOException {
         SourceSpecs makeAvailableUserDto = java(
-                readResource("fixtures/replaceMapperWithDefaultMethod/context/UserDto.java"),
+                readResource("fixtures/replaceInterfaceMapper/context/UserDto.java"),
                 spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/UserDto.java")
         );
 
         SourceSpecs makeAvailableUserEntity = java(
-                readResource("fixtures/replaceMapperWithDefaultMethod/context/UserEntity.java"),
+                readResource("fixtures/replaceInterfaceMapper/context/UserEntity.java"),
                 spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/UserEntity.java")
         );
 
         SourceSpecs makeAvailableGeneratedClass = java(
-                readResource("fixtures/replaceMapperWithDefaultMethod/context/UserMapperImpl.java"),
+                readResource("fixtures/replaceInterfaceMapper/context/UserMapperImpl.java"),
                 spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/UserMapperImpl.java")
         );
 
@@ -100,57 +70,9 @@ class RemoveMapstructTest implements RewriteTest {
                 makeAvailableUserEntity,
                 makeAvailableGeneratedClass,
                 java(
-                        readResource("fixtures/replaceMapperWithDefaultMethod/before/UserMapper.java"),
-                        readResource("fixtures/replaceMapperWithDefaultMethod/after/UserMapper.java"),
+                        readResource("fixtures/replaceInterfaceMapper/before/UserMapper.java"),
+                        readResource("fixtures/replaceInterfaceMapper/after/UserMapper.java"),
                         spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/UserMapper.java")
-                )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void shouldReplaceMapperWithConstructor() throws IOException {
-        SourceSpecs makeAvailableProductDto = java(
-                readResource("fixtures/replaceMapperWithConstructor/context/ProductDto.java"),
-                spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/ProductDto.java")
-        );
-
-        SourceSpecs makeAvailableGeneratedClass = java(
-                readResource("fixtures/replaceMapperWithConstructor/context/ProductMapperImpl.java"),
-                spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/ProductMapperImpl.java")
-        );
-
-        rewriteRun(
-                makeAvailableProductDto,
-                makeAvailableGeneratedClass,
-                java(
-                        readResource("fixtures/replaceMapperWithConstructor/before/ProductMapper.java"),
-                        readResource("fixtures/replaceMapperWithConstructor/after/ProductMapper.java"),
-                        spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/ProductMapper.java")
-                )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void shouldReplaceMapperWithStaticField() throws IOException {
-        SourceSpecs makeAvailableOrderDto = java(
-                readResource("fixtures/replaceMapperWithStaticField/context/OrderDto.java"),
-                spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/OrderDto.java")
-        );
-
-        SourceSpecs makeAvailableGeneratedClass = java(
-                readResource("fixtures/replaceMapperWithStaticField/context/OrderMapperImpl.java"),
-                spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/OrderMapperImpl.java")
-        );
-
-        rewriteRun(
-                makeAvailableOrderDto,
-                makeAvailableGeneratedClass,
-                java(
-                        readResource("fixtures/replaceMapperWithStaticField/before/OrderMapper.java"),
-                        readResource("fixtures/replaceMapperWithStaticField/after/OrderMapper.java"),
-                        spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/OrderMapper.java")
                 )
         );
     }
@@ -185,39 +107,5 @@ class RemoveMapstructTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
-    @Test
-    void shouldReplaceMapperImplReferences() throws IOException {
-        SourceSpecs makeAvailableSimpleDtoIn = java(
-                readResource("fixtures/replaceMapperImplReferences/context/SimpleDtoIn.java"),
-                spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoIn.java")
-        );
-
-        SourceSpecs makeAvailableSimpleDtoOut = java(
-                readResource("fixtures/replaceMapperImplReferences/context/SimpleDtoOut.java"),
-                spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoOut.java")
-        );
-
-        SourceSpecs makeAvailableGeneratedClass = java(
-                readResource("fixtures/replaceMapperImplReferences/context/SimpleDtoMapperImpl.java"),
-                spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoMapperImpl.java")
-        );
-
-        rewriteRun(
-                makeAvailableSimpleDtoIn,
-                makeAvailableSimpleDtoOut,
-                makeAvailableGeneratedClass,
-                java(
-                        readResource("fixtures/replaceMapperImplReferences/before/SimpleDtoMapper.java"),
-                        readResource("fixtures/replaceMapperImplReferences/after/SimpleDtoMapper.java"),
-                        spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/SimpleDtoMapper.java")
-                ),
-                java(
-                        readResource("fixtures/replaceMapperImplReferences/before/SimpleService.java"),
-                        readResource("fixtures/replaceMapperImplReferences/after/SimpleService.java"),
-                        spec -> spec.path("src/main/java/com/santunioni/fixtures/services/SimpleService.java")
-                )
-        );
-    }
 
 }

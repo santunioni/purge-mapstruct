@@ -9,7 +9,8 @@
 ## Declaration
 
 - Default methods and fields copied from interfaces should be explicitly set as public.
-- Non-default should keep their visibility. They should also not be made static
+- Non-default should keep their visibility.
+- They should also not be made static
 
 # Features
 
