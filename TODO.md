@@ -1,0 +1,1 @@
+- When copying fields from implementation, copy as is. Don't do any accessor transformations
