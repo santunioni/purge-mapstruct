@@ -10,11 +10,11 @@ public class CustomerMapper {
 
     @Getter
     @Setter
-    private Long myParentField;
+    private Long myChildField;
 
     @Getter
     @Setter
-    private Long myChildField;
+    private Long myParentField;
 
     public CustomerDto toCustomerDto(CustomerEntity customerEntity) {
         if (customerEntity == null) {

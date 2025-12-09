@@ -4,14 +4,14 @@ import lombok.Setter;
 
 
 public class UserMapper {
-
-
-    public static final String STATUS = "PENDING";
-    public static final String DEFAULT_STATUS = "PENDING";
-    public static final String DEFAULT_SITUATION = "PENDING";
-
+    static final String DEFAULT_SITUATION = "PENDING";
+    final String DEFAULT_STATUS = "PENDING";
+    String STATUS = "PENDING";
     @Setter
     private Long myField;
+
+    public UserMapper() {
+    }
 
     static String formatFullName(String firstName, String lastName) {
         return firstName + " " + lastName;
@@ -19,9 +19,6 @@ public class UserMapper {
 
     static String formatFullName2(String firstName, String lastName) {
         return firstName + " " + lastName;
-    }
-
-    public UserMapper() {
     }
 
     public UserEntity toUserEntity(UserDto userDto) {

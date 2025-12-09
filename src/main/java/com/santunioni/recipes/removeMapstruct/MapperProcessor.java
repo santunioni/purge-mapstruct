@@ -24,8 +24,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         this.acc = acc;
     }
 
-    private static void captureMapperDeclMethod(J.MethodDeclaration mapperDeclMethod,
-                                                List<Statement> copiedClassStatements) {
+    private static J.@Nullable MethodDeclaration transformMapperDeclMethod(J.MethodDeclaration mapperDeclMethod) {
         mapperDeclMethod = mapperDeclMethod.withModifiers(ListUtils.map(mapperDeclMethod.getModifiers(),
                 modifier -> {
                     if (modifier.getType() == J.Modifier.Type.Default) {
@@ -45,13 +44,10 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                             return methodAnnotation;
                         }));
 
-        if (mapperDeclMethod.getBody() != null) {
-            copiedClassStatements.add(mapperDeclMethod);
-        }
+        return mapperDeclMethod.getBody() != null ? mapperDeclMethod : null;
     }
 
-    private static void captureMapperDeclField(J.VariableDeclarations mapperDeclField,
-                                               List<Statement> copiedClassStatements) {
+    private static J.VariableDeclarations transformMapperDeclInterfaceField(J.VariableDeclarations mapperDeclField) {
         ArrayList<J.Modifier> modifiers = new ArrayList<>();
 
         final var accessModifiers = Set.of(J.Modifier.Type.Public, J.Modifier.Type.Protected, J.Modifier.Type.Private);
@@ -93,11 +89,11 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                     mapperDeclField.getTypeExpression().withPrefix(Space.SINGLE_SPACE));
         }
 
-        copiedClassStatements.add(mapperDeclField);
+        return mapperDeclField;
     }
 
-    private static void captureMapperImplMethod(J.MethodDeclaration implMethod, String mapperImplClassName,
-                                                String mapperDeclClassName, List<Statement> copiedClassStatements) {
+    private static J.MethodDeclaration transformMapperImplMethod(J.MethodDeclaration implMethod, String mapperImplClassName,
+                                                                 String mapperDeclClassName) {
         // Rename the constructor
         boolean isConstructor =
                 implMethod.getName().getSimpleName().equals(mapperImplClassName);
@@ -137,7 +133,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
             implMethod = implMethod.withPrefix(prefixToPreserve);
         }
 
-        copiedClassStatements.add(implMethod);
+        return implMethod;
     }
 
     private static boolean excludeGeneratedAnnotations(J.Annotation a) {
@@ -297,12 +293,11 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
             // Transform methods on Impl class
             for (Statement implStatement : mapperImplClass.getBody().getStatements()) {
                 if (implStatement instanceof J.MethodDeclaration mapperImplMethod) {
-                    captureMapperImplMethod(
+                    copiedClassStatements.add(transformMapperImplMethod(
                             mapperImplMethod,
                             mapperImplClassName,
-                            mapperDeclClassName,
-                            copiedClassStatements
-                    );
+                            mapperDeclClassName
+                    ));
                 } else {
                     copiedClassStatements.add(implStatement);
                 }
@@ -310,9 +305,15 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
 
             for (Statement mapperDeclStatement : mapperDeclClass.getBody().getStatements()) {
                 if (mapperDeclStatement instanceof J.MethodDeclaration mapperDeclMethod) {
-                    captureMapperDeclMethod(mapperDeclMethod, copiedClassStatements);
+                    final var mapperDeclMethodNullable = transformMapperDeclMethod(mapperDeclMethod);
+                    if (mapperDeclMethodNullable != null) {
+                        copiedClassStatements.add(mapperDeclMethodNullable);
+                    }
                 } else if (mapperDeclStatement instanceof J.VariableDeclarations mapperDeclField) {
-                    captureMapperDeclField(mapperDeclField, copiedClassStatements);
+                    if (mapperDeclClass.getClass().isInterface()) {
+                        mapperDeclField = transformMapperDeclInterfaceField(mapperDeclField);
+                    }
+                    copiedClassStatements.add(mapperDeclField);
                 }
             }
 
