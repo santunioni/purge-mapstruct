@@ -1,10 +1,10 @@
 package com.santunioni.fixtures.dtoMappers;
 
-import lombok.extern.java.Log;
+import com.santunioni.fixtures.decorators.Decorator;
 import org.mapstruct.Mapper;
 
 
-@Log
+@Decorator
 @Mapper
 public abstract class CustomerMapper {
     protected static final String PERSONAL_DATA_TYPE = "PERSONAL_DATA";

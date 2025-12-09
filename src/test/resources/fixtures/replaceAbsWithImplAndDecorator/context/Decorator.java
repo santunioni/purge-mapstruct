@@ -1,4 +1,4 @@
-package com.santunioni.fixtures;
+package com.santunioni.fixtures.decorators;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
