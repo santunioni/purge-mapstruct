@@ -152,7 +152,12 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     @Override
-    public J visitCompilationUnit(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
+    public J visitCompilationUnit(J.CompilationUnit mapperDeclFile_, ExecutionContext ctx) {
+        J visited = super.visitCompilationUnit(mapperDeclFile_, ctx);
+        if (!(visited instanceof J.CompilationUnit mapperDeclFile)) {
+            return visited;
+        }
+
         if (isMapperDeclaration(mapperDeclFile)) {
             return processMapperDeclaration(mapperDeclFile, ctx);
         } else if (isMapperImplementation(mapperDeclFile)) {
@@ -161,8 +166,50 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
             // makes it unavailable after I return null
             return mapperDeclFile;
         } else {
-            return super.visitCompilationUnit(mapperDeclFile, ctx);
+            return mapperDeclFile;
         }
+    }
+
+    @Override
+    public J visitFieldAccess(J.FieldAccess fieldAccess_, ExecutionContext ctx) {
+        J visited = super.visitFieldAccess(fieldAccess_, ctx);
+        if (!(visited instanceof J.FieldAccess fieldAccess)) {
+            return visited;
+        }
+
+        final var target = fieldAccess.getTarget();
+
+        if (!(target instanceof J.Identifier targetIdentifier)) {
+            return fieldAccess;
+        }
+
+        final var targetType = targetIdentifier.getType();
+        if (targetType == null) {
+            return fieldAccess;
+        }
+
+        final var targetFqn = targetType.toString();
+        final var superFqn = acc.getSuperFqnFromImplFqn(targetFqn);
+
+        if (superFqn == null) {
+            return fieldAccess;
+        }
+
+        final var superSimpleName = extractSimpleName(superFqn);
+        final var superType = JavaType.buildType(superFqn);
+        final Expression superTarget = new J.Identifier(
+                UUID.randomUUID(),
+                targetIdentifier.getPrefix(),
+                targetIdentifier.getMarkers(),
+                Collections.emptyList(),
+                superSimpleName,
+                superType,
+                targetIdentifier.getFieldType()
+        );
+
+        fieldAccess = fieldAccess.withTarget(superTarget);
+
+        return fieldAccess;
     }
 
     @Override
