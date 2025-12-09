@@ -20,9 +20,11 @@ import static com.santunioni.recipes.Functions.isMapperImplementation;
 @NullMarked
 class MapperProcessor extends JavaVisitor<ExecutionContext> {
     private final Accumulator acc;
+    private final ReferenceReplacer referenceReplacer ;
 
     MapperProcessor(Accumulator acc) {
         this.acc = acc;
+        this.referenceReplacer = new ReferenceReplacer(acc);
     }
 
     @Override
@@ -35,7 +37,7 @@ class MapperProcessor extends JavaVisitor<ExecutionContext> {
             // makes it unavailable after I return null
             return mapperDeclFile;
         } else {
-            return new ReferenceReplacer(acc).visitCompilationUnit(mapperDeclFile, ctx);
+            return this.referenceReplacer.visitCompilationUnit(mapperDeclFile, ctx);
         }
     }
 

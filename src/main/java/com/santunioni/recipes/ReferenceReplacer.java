@@ -29,8 +29,22 @@ class ReferenceReplacer extends JavaIsoVisitor<ExecutionContext> {
 
     @Override
     public J.Import visitImport(J.Import import_, ExecutionContext ctx) {
-        // Extract FQN before calling super to avoid cursor issues
-        String importFqn = extractFqnFromFieldAccess(import_.getQualid());
+        // Try to extract FQN from type information first, then fallback to manual extraction
+        String importFqn = null;
+        if (import_.getQualid().getType() != null) {
+            JavaType type = import_.getQualid().getType();
+            if (type instanceof JavaType.FullyQualified fullyQualified) {
+                importFqn = fullyQualified.getFullyQualifiedName();
+            } else {
+                importFqn = type.toString();
+            }
+        }
+        
+        // Fallback to manual extraction if type info not available
+        if (importFqn == null) {
+            importFqn = extractFqnFromFieldAccess(import_.getQualid());
+        }
+        
         String superFqn = null;
         if (importFqn != null) {
             superFqn = acc.getSuperFqnFromImplFqn(importFqn);
@@ -42,6 +56,13 @@ class ReferenceReplacer extends JavaIsoVisitor<ExecutionContext> {
         }
 
         if (superFqn != null) {
+            // Check if already replaced by comparing the final identifier
+            String currentSimpleName = getFinalIdentifierName(imp.getQualid());
+            String expectedSimpleName = extractSimpleName(superFqn);
+            if (currentSimpleName.equals(expectedSimpleName)) {
+                // Already replaced, no need to change
+                return imp;
+            }
             // Replace the import with the super type
             return replaceImportQualid(imp, superFqn);
         }
@@ -235,6 +256,17 @@ class ReferenceReplacer extends JavaIsoVisitor<ExecutionContext> {
     private String extractSimpleName(String fqn) {
         int lastDot = fqn.lastIndexOf('.');
         return lastDot >= 0 ? fqn.substring(lastDot + 1) : fqn;
+    }
+
+    /**
+     * Gets the final identifier name from a FieldAccess chain.
+     */
+    private String getFinalIdentifierName(J.FieldAccess fieldAccess) {
+        J.FieldAccess current = fieldAccess;
+        while (current.getTarget() instanceof J.FieldAccess nested) {
+            current = nested;
+        }
+        return current.getName().getSimpleName();
     }
 
 }
