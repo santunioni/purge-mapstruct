@@ -2,7 +2,7 @@
   <code_scheme name="Project" version="173">
     <option name="DO_NOT_FORMAT">
       <list>
-        <fileSet type="globPattern" pattern="src/test/resources/fixtures" />
+        <fileSet type="globPattern" pattern="src/test/resources/fixtures/**/*.java" />
       </list>
     </option>
   </code_scheme>

@@ -6,21 +6,10 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
-import org.openrewrite.java.tree.TypeTree;
-import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static com.santunioni.recipes.removeMapstruct.Functions.isMapperDeclaration;
 import static com.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation;
@@ -324,8 +313,6 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                     captureMapperDeclField(mapperDeclField, copiedClassStatements);
                 }
             }
-
-            copiedClassStatements.sort(new StatementDefinitionOrder());
 
             List<J.ClassDeclaration> classes = Collections.singletonList(cleanGeneratedAnnotations(
                     mapperImplClass
