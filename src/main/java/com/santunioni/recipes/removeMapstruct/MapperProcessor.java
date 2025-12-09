@@ -151,6 +151,10 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return !a.getType().toString().startsWith("org.mapstruct");
     }
 
+    /**
+     * Overrides the entire mapper declaration by a modified mix of methods and fields from declaration and
+     * implementation
+     */
     @Override
     public J visitCompilationUnit(J.CompilationUnit mapperDeclFile_, ExecutionContext ctx) {
         J visited = super.visitCompilationUnit(mapperDeclFile_, ctx);
@@ -170,6 +174,9 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         }
     }
 
+    /**
+     * Replaces references of UserMapperImpl.class to UserMapper.class
+     */
     @Override
     public J visitFieldAccess(J.FieldAccess fieldAccess_, ExecutionContext ctx) {
         J visited = super.visitFieldAccess(fieldAccess_, ctx);
@@ -212,6 +219,9 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return fieldAccess;
     }
 
+    /**
+     * Replaces import references of UserMapperImpl to UserMapper
+     */
     @Override
     public J visitImport(J.Import imp, ExecutionContext ctx) {
         J visited = super.visitImport(imp, ctx);
@@ -249,6 +259,9 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return replaceImportQualid(import_, superFqn);
     }
 
+    /**
+     * Replaces instantiations of UserMapperImpl() to UserMapper()
+     */
     @Override
     public J visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
         J visited = super.visitNewClass(newClass, ctx);
@@ -270,6 +283,9 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return newClazz.withClazz(replacedClazz);
     }
 
+    /**
+     * Replaces variable declarations like `UserMapperImpl userMapper` to `UserMapper userMapper`
+     */
     @Override
     public J visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext p) {
         J visited = super.visitVariableDeclarations(multiVariable, p);
@@ -291,6 +307,9 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return varDecl.withTypeExpression(replacedTypeExpression);
     }
 
+    /**
+     * Replaces instanceof checks like `userMapper instanceof UserMapperImpl` to `userMapper instanceof UserMapper`
+     */
     @Override
     public J visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
         J visited = super.visitInstanceOf(instanceOf, ctx);
@@ -317,6 +336,9 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return instanceOf_.withClazz(clazzParentheses.withTree(replacedClazz));
     }
 
+    /**
+     * Modify the mapper declaration file with a modified mix of methods and fields from declaration and implementation
+     */
     private J processMapperDeclaration(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
         J.ClassDeclaration mapperDeclClass = mapperDeclFile.getClasses().get(0);
 
