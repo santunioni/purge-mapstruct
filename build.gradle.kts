@@ -2,16 +2,7 @@ plugins {
     id("org.openrewrite.build.recipe-library-base") version "latest.release"
     id("org.openrewrite.build.publish") version "latest.release"
     id("org.openrewrite.build.recipe-repositories") version "latest.release"
-    id("org.openrewrite.rewrite") version ("7.21.0")
     kotlin("jvm") version "1.9.24"
-}
-
-dependencies {
-}
-
-rewrite {
-    activeRecipe("org.openrewrite.staticanalysis.CodeCleanup")
-    throwOnParseFailures = true
 }
 
 
@@ -26,7 +17,6 @@ recipeDependencies {
 
 
 dependencies {
-    rewrite("org.openrewrite.recipe:rewrite-static-analysis:2.22.0")
 
     // The bom version can also be set to a specific version
     // https://github.com/openrewrite/rewrite-recipe-bom/releases

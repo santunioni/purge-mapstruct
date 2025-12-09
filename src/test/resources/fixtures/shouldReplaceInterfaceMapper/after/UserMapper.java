@@ -13,15 +13,15 @@ public class UserMapper {
     @Setter
     private Long myField;
 
-    public UserMapper() {
-    }
-
     static String formatFullName(String firstName, String lastName) {
         return firstName + " " + lastName;
     }
 
     static String formatFullName2(String firstName, String lastName) {
         return firstName + " " + lastName;
+    }
+
+    public UserMapper() {
     }
 
     public UserEntity toUserEntity(UserDto userDto) {
