@@ -26,6 +26,11 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     private static J.@Nullable MethodDeclaration transformMapperDeclMethod(J.MethodDeclaration mapperDeclMethod) {
+        // Don't copy declaration methods
+        if (mapperDeclMethod.getBody() == null) {
+            return null;
+        }
+
         mapperDeclMethod = mapperDeclMethod.withModifiers(ListUtils.map(mapperDeclMethod.getModifiers(),
                 modifier -> {
                     if (modifier.getType() == J.Modifier.Type.Default) {
@@ -54,20 +59,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
 
         mapperDeclMethod = mapperDeclMethod.withParameters(filteredParameters);
 
-        // Normalize method prefix to avoid extra blank lines
-        Space currentPrefix = mapperDeclMethod.getPrefix();
-        if (currentPrefix != null) {
-            String whitespace = currentPrefix.getWhitespace();
-            // Remove multiple consecutive newlines, keep only single newlines
-            String normalizedWhitespace = whitespace.replaceAll("\n\n+", "\n");
-            // Ensure we don't have leading blank lines
-            normalizedWhitespace = normalizedWhitespace.replaceAll("^\n+", "");
-            if (!normalizedWhitespace.equals(whitespace)) {
-                mapperDeclMethod = mapperDeclMethod.withPrefix(Space.format(normalizedWhitespace));
-            }
-        }
-
-        return mapperDeclMethod.getBody() != null ? mapperDeclMethod : null;
+        return mapperDeclMethod;
     }
 
     private static J.VariableDeclarations transformMapperDeclInterfaceField(J.VariableDeclarations mapperDeclField) {
@@ -451,7 +443,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                 "javax.annotation.processing.Generated",
                 "jakarta.annotation.Generated"
         ));
-        
+
         var imports = new ArrayList<J.Import>();
         for (J.Import imp : allImports) {
             String importFqn = imp.getQualid().printTrimmed(getCursor());

@@ -35,6 +35,7 @@ public class UserMapper {
         return firstName + " " + lastName;
     }
 
+
     protected void setLastName(final UserDto userDto,
                                final UserEntity userEntity) {
         userDto.setLastName(userEntity.getFullName());
