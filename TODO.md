@@ -4,7 +4,9 @@
 
 Copy fields as is. Don't do any accessor transformations. It fails spring when I
 add final to fields.
+
 ![bug-field-access-transformation.png](docs/bug-field-access-transformation.png)
+
 ![bug-field-access-transformation-2.png](docs/bug-field-access-transformation-2.png)
 
 Rename implementation classes when they are passed as class parameters into annotations
