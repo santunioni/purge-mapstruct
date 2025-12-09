@@ -12,7 +12,6 @@ import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 import static com.santunioni.recipes.Functions.isMapperDeclaration;
 import static com.santunioni.recipes.Functions.isMapperImplementation;
@@ -24,6 +23,82 @@ class MapperProcessor extends JavaVisitor<ExecutionContext> {
 
     MapperProcessor(Accumulator acc) {
         this.acc = acc;
+    }
+
+    @Override
+    public J visitCompilationUnit(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
+        if (isMapperDeclaration(mapperDeclFile)) {
+            return processMapperDeclaration(mapperDeclFile, ctx);
+        } else if (isMapperImplementation(mapperDeclFile)) {
+            // Ideally, I should return null to make openrewrite delete the file.
+            // However, I still need the file to copy its implementation, and openrewrite
+            // makes it unavailable after I return null
+            return mapperDeclFile;
+        } else {
+            return new ReferenceReplacer(acc).visitCompilationUnit(mapperDeclFile, ctx);
+        }
+    }
+
+    private J processMapperDeclaration(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
+        J.ClassDeclaration mapperDecl = mapperDeclFile.getClasses().get(0);
+
+        try {
+            J.CompilationUnit mapperImplFile = acc.getImplementer(mapperDecl);
+            if (mapperImplFile == null) {
+                return super.visitCompilationUnit(mapperDeclFile, ctx);
+            }
+
+            J.ClassDeclaration mapperImplClass = mapperImplFile.getClasses().get(0);
+            String mapperImplClassName = mapperImplClass.getName().getSimpleName();
+            String mapperDeclClassName = mapperDecl.getName().getSimpleName();
+
+            mapperImplFile = copyImports(mapperImplFile, mapperDeclFile);
+
+            // ==========================================================
+            // STEP B: PREPARE GENERATED METHODS (Remove @Override and rename constructors)
+            // ==========================================================
+            List<Statement> copiedClassStatements = new ArrayList<>();
+
+            // Transform methods on Impl class
+            for (Statement implStatement : mapperImplClass.getBody().getStatements()) {
+                if (implStatement instanceof J.MethodDeclaration mapperImplMethod) {
+                    captureMapperImplMethod(
+                            mapperImplMethod,
+                            mapperImplClassName,
+                            mapperDeclClassName,
+                            copiedClassStatements
+                    );
+                } else {
+                    copiedClassStatements.add(implStatement);
+                }
+            }
+
+            for (Statement mapperDeclStatement : mapperDecl.getBody().getStatements()) {
+                if (mapperDeclStatement instanceof J.MethodDeclaration mapperDeclMethod) {
+                    captureMapperDeclMethod(mapperDeclMethod, copiedClassStatements);
+                } else if (mapperDeclStatement instanceof J.VariableDeclarations mapperDeclField) {
+                    captureMapperDeclField(mapperDeclField, copiedClassStatements);
+                }
+            }
+
+            List<J.ClassDeclaration> classes = Collections.singletonList(cleanGeneratedAnnotations(
+                    mapperImplClass
+                            .withBody(mapperImplClass.getBody().withStatements(copiedClassStatements))
+                            .withName(mapperImplClass.getName().withSimpleName(mapperDeclClassName))
+                            .withImplements(null)
+                            .withExtends(null)
+            ));
+
+            return mapperImplFile
+                    .withClasses(classes)
+                    .withId(mapperDeclFile.getId())
+                    .withSourcePath(mapperDeclFile.getSourcePath());
+
+        } catch (Exception e) {
+            log.severe("Error processing @Mapper class " + mapperDeclFile.getClasses().get(0).getName() + ": " + e.getMessage());
+            throw new RuntimeException("Failed to migrate Mapstruct Mapper: " + mapperDecl.getName().getSimpleName(),
+                    e);
+        }
     }
 
     private static void captureMapperDeclMethod(J.MethodDeclaration mapperDeclMethod,
@@ -142,88 +217,6 @@ class MapperProcessor extends JavaVisitor<ExecutionContext> {
         copiedClassStatements.add(implMethod);
     }
 
-    @Override
-    public J visitCompilationUnit(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
-        if (isMapperDeclaration(mapperDeclFile)) {
-            return processMapperDeclaration(mapperDeclFile, ctx);
-        } else if (isMapperImplementation(mapperDeclFile)) {
-            // Ideally, I should return null to make openrewrite delete the file.
-            // However, I still need the file to copy its implementation, and openrewrite
-            // makes it unavailable after I return null
-            return mapperDeclFile;
-        } else {
-            return super.visitCompilationUnit(mapperDeclFile, ctx);
-        }
-    }
-
-    private J processMapperDeclaration(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
-        J.ClassDeclaration mapperDecl = mapperDeclFile.getClasses().get(0);
-
-        try {
-            J.CompilationUnit mapperImplFile = acc.getImplementer(mapperDecl);
-            if (mapperImplFile == null) {
-                return super.visitCompilationUnit(mapperDeclFile, ctx);
-            }
-
-            J.ClassDeclaration mapperImplClass = mapperImplFile.getClasses().get(0);
-            String mapperImplClassName = mapperImplClass.getName().getSimpleName();
-            String mapperDeclClassName = mapperDecl.getName().getSimpleName();
-
-            mapperImplFile = copyImports(mapperImplFile, mapperDeclFile);
-
-            // ==========================================================
-            // STEP B: PREPARE GENERATED METHODS (Remove @Override and rename constructors)
-            // ==========================================================
-            List<Statement> copiedClassStatements = new ArrayList<>();
-
-            // Transform methods on Impl class
-            for (Statement implStatement : mapperImplClass.getBody().getStatements()) {
-                if (implStatement instanceof J.MethodDeclaration mapperImplMethod) {
-                    captureMapperImplMethod(
-                            mapperImplMethod,
-                            mapperImplClassName,
-                            mapperDeclClassName,
-                            copiedClassStatements
-                    );
-                } else {
-                    copiedClassStatements.add(implStatement);
-                }
-            }
-
-            for (Statement mapperDeclStatement : mapperDecl.getBody().getStatements()) {
-                if (mapperDeclStatement instanceof J.MethodDeclaration mapperDeclMethod) {
-                    captureMapperDeclMethod(mapperDeclMethod, copiedClassStatements);
-                } else if (mapperDeclStatement instanceof J.VariableDeclarations mapperDeclField) {
-                    captureMapperDeclField(mapperDeclField, copiedClassStatements);
-                }
-            }
-
-            List<J.ClassDeclaration> classes = Collections.singletonList(cleanGeneratedAnnotations(
-                    mapperImplClass
-                            .withBody(mapperImplClass.getBody().withStatements(copiedClassStatements))
-                            .withName(mapperImplClass.getName().withSimpleName(mapperDeclClassName))
-                            .withImplements(null)
-                            .withExtends(null)
-            ));
-
-            return mapperImplFile
-                    .withClasses(classes)
-                    .withId(mapperDeclFile.getId())
-                    .withSourcePath(mapperDeclFile.getSourcePath());
-
-        } catch (Exception e) {
-            log.severe("Error processing @Mapper class " + mapperDeclFile.getClasses().get(0).getName() + ": " + e.getMessage());
-            throw new RuntimeException("Failed to migrate Mapstruct Mapper: " + mapperDecl.getName().getSimpleName(),
-                    e);
-        }
-    }
-
-    /**
-     * STEP A: COPY IMPORTS
-     * <p>
-     * We append original imports to the implementation imports.
-     * Duplicates will be handled by a subsequent "RemoveUnusedImports" recipe run.
-     */
     private J.CompilationUnit copyImports(J.CompilationUnit mapperImplementationFile,
                                           J.CompilationUnit originalCompilationUnit
     ) {
@@ -247,6 +240,5 @@ class MapperProcessor extends JavaVisitor<ExecutionContext> {
 
         return mapperImplementationFile.withImports(imports);
     }
-
 
 }
