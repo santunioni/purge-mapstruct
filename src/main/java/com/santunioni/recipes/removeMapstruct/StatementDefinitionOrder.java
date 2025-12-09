@@ -22,18 +22,44 @@ public class StatementDefinitionOrder implements Comparator<Statement> {
     }
 
     private int getOrder(Statement statement) {
-        if (statement instanceof J.VariableDeclarations) {
-            return 0;
-        } else if (statement instanceof J.MethodDeclaration method) {
-            if (method.getModifiers().stream().anyMatch(mod -> mod.getType() == J.Modifier.Type.Public)) {
-                return 1;
-            } else if (method.getModifiers().stream().anyMatch(mod -> mod.getType() == J.Modifier.Type.Protected)) {
-                return 2;
+        if (statement instanceof J.VariableDeclarations variable) {
+            if (variable.hasModifier(J.Modifier.Type.Static)) {
+                if (variable.hasModifier(J.Modifier.Type.Public)) {
+                    return 10000000;
+                } else if (variable.hasModifier(J.Modifier.Type.Protected)) {
+                    return 10100000;
+                } else {
+                    return 10200000;
+                }
             } else {
-                return 3;
+                if (variable.hasModifier(J.Modifier.Type.Public)) {
+                    return 11000000;
+                } else if (variable.hasModifier(J.Modifier.Type.Protected)) {
+                    return 11100000;
+                } else {
+                    return 11200000;
+                }
+            }
+        } else if (statement instanceof J.MethodDeclaration method) {
+            if (method.hasModifier(J.Modifier.Type.Static)) {
+                if (method.hasModifier(J.Modifier.Type.Public)) {
+                    return 20000000;
+                } else if (method.hasModifier(J.Modifier.Type.Protected)) {
+                    return 20100000;
+                } else {
+                    return 20200000;
+                }
+            } else {
+                if (method.hasModifier(J.Modifier.Type.Public)) {
+                    return 21000000;
+                } else if (method.hasModifier(J.Modifier.Type.Protected)) {
+                    return 21100000;
+                } else {
+                    return 21200000;
+                }
             }
         }
-        return 4;
+        return 90000000;
     }
 
 }
