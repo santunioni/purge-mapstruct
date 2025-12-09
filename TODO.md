@@ -1,10 +1,5 @@
 # Fixes
 
-## Implementation
-
-Rename implementation classes when they are passed as class parameters into annotations
-![bug-mapper-as-annotation-parameter.png](docs/bug-mapper-as-annotation-parameter.png)
-
 ## Generation
 
 Remove AfterMapping and MappingTarget from the generated method
