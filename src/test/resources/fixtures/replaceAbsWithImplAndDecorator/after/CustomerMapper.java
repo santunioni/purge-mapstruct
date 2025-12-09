@@ -1,8 +1,8 @@
 package com.santunioni.fixtures.dtoMappers;
 
-import com.santunioni.fixtures.decorators.Decorator;
+import lombok.extern.java.Log;
 
-@Decorator
+@Log
 public class CustomerMapper {
     protected static final String PERSONAL_DATA_TYPE = "PERSONAL_DATA";
 

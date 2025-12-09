@@ -44,7 +44,7 @@ class RemoveMapstructTest implements RewriteTest {
     public void defaults(RecipeSpec spec) {
         spec.recipes(new RemoveMapstruct(), new AutoFormat("com.santunioni.styles.AutoFormatRecipeOutputForTest", false))
                 .parser(JavaParser.fromJavaVersion()
-                        .classpath("mapstruct"));
+                        .classpath("mapstruct", "lombok"));
     }
 
     @DocumentExample
@@ -168,12 +168,6 @@ class RemoveMapstructTest implements RewriteTest {
                 spec -> spec.path("src/main/java/com/santunioni/fixtures/dtoMappers/CustomerEntity.java")
         );
 
-        SourceSpecs makeAvailableDecorator = java(
-                readResource("fixtures/replaceAbsWithImplAndDecorator/context/Decorator.java"),
-                spec -> spec.path(
-                        "src/main/java/com/santunioni/fixtures/decorators/Decorator.java"
-                )
-        );
         SourceSpecs makeAvailableGeneratedClass = java(
                 readResource("fixtures/replaceAbsWithImplAndDecorator/context/CustomerMapperImpl.java"),
                 spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/dtoMappers/CustomerMapperImpl.java")
@@ -182,7 +176,6 @@ class RemoveMapstructTest implements RewriteTest {
         rewriteRun(
                 makeAvailableCustomerDto,
                 makeAvailableCustomerEntity,
-                makeAvailableDecorator,
                 makeAvailableGeneratedClass,
                 java(
                         readResource("fixtures/replaceAbsWithImplAndDecorator/before/CustomerMapper.java"),
