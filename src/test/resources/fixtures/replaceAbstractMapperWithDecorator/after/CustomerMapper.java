@@ -2,6 +2,8 @@ package com.santunioni.fixtures.dtoMappers;
 
 
 public class CustomerMapper {
+    protected static final String PERSONAL_DATA_TYPE = "PERSONAL_DATA";
+
     public CustomerDto toCustomerDto(CustomerEntity customerEntity) {
         if (customerEntity == null) {
             return null;
@@ -26,6 +28,10 @@ public class CustomerMapper {
             customerEntity.setEmail(customerEntity.getEmail().toLowerCase());
         }
         return customerEntity;
+    }
+
+    public String getSignature(CustomerEntity customerEntity) {
+        return customerEntity.getName() + " <" + customerEntity.getEmail() + ">";
     }
 
 }
