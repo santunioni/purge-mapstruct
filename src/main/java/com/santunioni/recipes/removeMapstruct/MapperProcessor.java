@@ -314,6 +314,8 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                 }
             }
 
+            copiedClassStatements.sort(new StatementDefinitionOrder());
+
             List<J.ClassDeclaration> classes = Collections.singletonList(cleanGeneratedAnnotations(
                     mapperImplClass
                             .withBody(mapperImplClass.getBody().withStatements(copiedClassStatements))

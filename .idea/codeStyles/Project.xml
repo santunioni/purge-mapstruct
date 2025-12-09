@@ -1,9 +1,13 @@
 <component name="ProjectCodeStyleConfiguration">
   <code_scheme name="Project" version="173">
+    <option name="WRAP_WHEN_TYPING_REACHES_RIGHT_MARGIN" value="true" />
     <option name="DO_NOT_FORMAT">
       <list>
         <fileSet type="globPattern" pattern="src/test/resources/fixtures/**/*.java" />
       </list>
     </option>
+    <editorconfig>
+      <option name="ENABLED" value="false" />
+    </editorconfig>
   </code_scheme>
 </component>
