@@ -8,7 +8,7 @@ public interface UserMapper {
     final String FINAL_INTERFACE_FIELD = "VALUE";
     static final String STATIC_FINAL_INTERFACE_FIELD = "VALUE";
 
-    static String formatFullName2(String firstName, String lastName) {
+    static String formatFullNameStatic(String firstName, String lastName) {
         return firstName + " " + lastName;
     }
 
@@ -16,7 +16,7 @@ public interface UserMapper {
 
     UserDto toUserDto(UserEntity userEntity);
 
-    default String formatFullName(String firstName, String lastName) {
+    default String formatFullNameDefault(String firstName, String lastName) {
         return firstName + " " + lastName;
     }
 }

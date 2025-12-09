@@ -11,15 +11,15 @@ import javax.annotation.processing.Generated;
 )
 public class UserMapperImpl implements UserMapper {
 
-    public UserMapperImpl() {
-    }
-
     @Setter
     private Long childField;
 
+    public UserMapperImpl() {
+    }
+
     @Override
     public UserEntity toUserEntity(UserDto userDto) {
-        String fullName = formatFullName(userDto.getFirstName(), userDto.getLastName());
+        String fullName = formatFullNameDefault(userDto.getFirstName(), userDto.getLastName());
         return new UserEntity(fullName);
     }
 

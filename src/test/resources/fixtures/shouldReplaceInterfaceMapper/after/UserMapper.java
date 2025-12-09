@@ -14,16 +14,16 @@ public class UserMapper {
     public UserMapper() {
     }
 
-    static String formatFullName2(String firstName, String lastName) {
+    static String formatFullNameStatic(String firstName, String lastName) {
         return firstName + " " + lastName;
     }
 
-    static String formatFullName(String firstName, String lastName) {
+    public String formatFullNameDefault(String firstName, String lastName) {
         return firstName + " " + lastName;
     }
 
     public UserEntity toUserEntity(UserDto userDto) {
-        String fullName = formatFullName(userDto.getFirstName(), userDto.getLastName());
+        String fullName = formatFullNameDefault(userDto.getFirstName(), userDto.getLastName());
         return new UserEntity(fullName);
     }
 
