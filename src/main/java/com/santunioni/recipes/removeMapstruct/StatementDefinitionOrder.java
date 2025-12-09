@@ -41,7 +41,10 @@ public class StatementDefinitionOrder implements Comparator<Statement> {
                 }
             }
         } else if (statement instanceof J.MethodDeclaration method) {
-            if (method.hasModifier(J.Modifier.Type.Static)) {
+            // Constructor before every other method: check if the method name starts with a capital letter
+            if (method.getSimpleName().matches("^[A-Z].*")) {
+                return 19999999;
+            } else if (method.hasModifier(J.Modifier.Type.Static)) {
                 if (method.hasModifier(J.Modifier.Type.Public)) {
                     return 20000000;
                 } else if (method.hasModifier(J.Modifier.Type.Protected)) {
