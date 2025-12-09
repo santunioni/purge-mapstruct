@@ -10,6 +10,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static com.santunioni.recipes.removeMapstruct.Functions.isMapperDeclaration;
 import static com.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation;
@@ -95,19 +96,6 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         copiedClassStatements.add(mapperDeclField);
     }
 
-    private static J.ClassDeclaration cleanGeneratedAnnotations(J.ClassDeclaration mapperImplClass) {
-        return mapperImplClass.withLeadingAnnotations(
-                ListUtils.map(mapperImplClass.getLeadingAnnotations(), a -> {
-                    if (a.getSimpleName().equals("Generated")
-                            || TypeUtils.isOfClassType(a.getType(), "javax.annotation.processing" +
-                            ".Generated")
-                            || TypeUtils.isOfClassType(a.getType(), "jakarta.annotation.Generated")) {
-                        return null;
-                    }
-                    return a;
-                }));
-    }
-
     private static void captureMapperImplMethod(J.MethodDeclaration implMethod, String mapperImplClassName,
                                                 String mapperDeclClassName, List<Statement> copiedClassStatements) {
         // Rename the constructor
@@ -150,6 +138,21 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         }
 
         copiedClassStatements.add(implMethod);
+    }
+
+    private static boolean excludeGeneratedAnnotations(J.Annotation a) {
+        return !(
+                a.getSimpleName().equals("Generated")
+                        || TypeUtils.isOfClassType(a.getType(), "javax.annotation.processing.Generated")
+                        || TypeUtils.isOfClassType(a.getType(), "jakarta.annotation.Generated")
+        );
+    }
+
+    private static boolean excludeMapstructAnnotations(J.Annotation a) {
+        if (a.getType() == null) {
+            return false;
+        }
+        return !a.getType().toString().startsWith("org.mapstruct");
     }
 
     @Override
@@ -272,17 +275,17 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     private J processMapperDeclaration(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
-        J.ClassDeclaration mapperDecl = mapperDeclFile.getClasses().get(0);
+        J.ClassDeclaration mapperDeclClass = mapperDeclFile.getClasses().get(0);
 
         try {
-            J.CompilationUnit mapperImplFile = acc.getImplementer(mapperDecl);
+            J.CompilationUnit mapperImplFile = acc.getImplementer(mapperDeclClass);
             if (mapperImplFile == null) {
                 return super.visitCompilationUnit(mapperDeclFile, ctx);
             }
 
             J.ClassDeclaration mapperImplClass = mapperImplFile.getClasses().get(0);
             String mapperImplClassName = mapperImplClass.getName().getSimpleName();
-            String mapperDeclClassName = mapperDecl.getName().getSimpleName();
+            String mapperDeclClassName = mapperDeclClass.getName().getSimpleName();
 
             mapperImplFile = copyImports(mapperImplFile, mapperDeclFile);
 
@@ -305,7 +308,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                 }
             }
 
-            for (Statement mapperDeclStatement : mapperDecl.getBody().getStatements()) {
+            for (Statement mapperDeclStatement : mapperDeclClass.getBody().getStatements()) {
                 if (mapperDeclStatement instanceof J.MethodDeclaration mapperDeclMethod) {
                     captureMapperDeclMethod(mapperDeclMethod, copiedClassStatements);
                 } else if (mapperDeclStatement instanceof J.VariableDeclarations mapperDeclField) {
@@ -315,22 +318,31 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
 
             copiedClassStatements.sort(new StatementDefinitionOrder());
 
-            List<J.ClassDeclaration> classes = Collections.singletonList(cleanGeneratedAnnotations(
-                    mapperImplClass
-                            .withBody(mapperImplClass.getBody().withStatements(copiedClassStatements))
-                            .withName(mapperImplClass.getName().withSimpleName(mapperDeclClassName))
-                            .withImplements(null)
-                            .withExtends(null)
-            ));
+            J.ClassDeclaration clazz = mapperImplClass
+                    .withBody(mapperImplClass.getBody().withStatements(copiedClassStatements))
+                    .withName(mapperImplClass.getName().withSimpleName(mapperDeclClassName))
+                    .withImplements(null)
+                    .withLeadingAnnotations(
+                            Stream.concat(
+                                            mapperDeclClass
+                                                    .getLeadingAnnotations()
+                                                    .stream().filter(MapperProcessor::excludeMapstructAnnotations),
+                                            mapperImplClass
+                                                    .getLeadingAnnotations()
+                                                    .stream().filter(MapperProcessor::excludeGeneratedAnnotations)
+                                    )
+                                    .toList()
+                    )
+                    .withExtends(null);
 
             return mapperImplFile
-                    .withClasses(classes)
+                    .withClasses(Collections.singletonList(clazz))
                     .withId(mapperDeclFile.getId())
                     .withSourcePath(mapperDeclFile.getSourcePath());
 
         } catch (Exception e) {
             log.severe("Error processing @Mapper class " + mapperDeclFile.getClasses().get(0).getName() + ": " + e.getMessage());
-            throw new RuntimeException("Failed to migrate Mapstruct Mapper: " + mapperDecl.getName().getSimpleName(),
+            throw new RuntimeException("Failed to migrate Mapstruct Mapper: " + mapperDeclClass.getName().getSimpleName(),
                     e);
         }
     }
