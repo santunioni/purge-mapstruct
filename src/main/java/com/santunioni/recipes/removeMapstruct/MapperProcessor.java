@@ -13,7 +13,6 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static com.santunioni.recipes.removeMapstruct.Functions.isMapperDeclaration;
-import static com.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation;
 
 @Log
 @NullMarked
@@ -180,11 +179,6 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
 
         if (isMapperDeclaration(mapperDeclFile)) {
             return processMapperDeclaration(mapperDeclFile, ctx);
-        } else if (isMapperImplementation(mapperDeclFile)) {
-            // Ideally, I should return null to make openrewrite delete the file.
-            // However, I still need the file to copy its implementation, and openrewrite
-            // makes it unavailable after I return null
-            return mapperDeclFile;
         } else {
             return mapperDeclFile;
         }
