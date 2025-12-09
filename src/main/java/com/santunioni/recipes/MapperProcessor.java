@@ -12,6 +12,7 @@ import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static com.santunioni.recipes.Functions.isMapperDeclaration;
 import static com.santunioni.recipes.Functions.isMapperImplementation;
@@ -228,16 +229,23 @@ class MapperProcessor extends JavaVisitor<ExecutionContext> {
     ) {
         List<J.Import> allImports = ListUtils.concatAll(
                 mapperImplementationFile.getImports(), originalCompilationUnit.getImports());
-        List<J.Import> mergedImports = ListUtils.map(allImports, imp -> {
-            String importName = imp.getQualid().printTrimmed(getCursor());
-            if (importName.equals("javax.annotation.processing.Generated")
-                    || importName.equals("jakarta.annotation.Generated")) {
-                return null;
+
+        var forbiddenImports = new HashSet<>(Arrays.asList(
+                "org.mapstruct.Mapper",
+                "javax.annotation.processing.Generated",
+                "jakarta.annotation.Generated"
+        ));
+
+        var imports = new ArrayList<J.Import>();
+        for (J.Import imp : allImports) {
+            String importFqn = imp.getQualid().printTrimmed(getCursor());
+            if (!forbiddenImports.contains(importFqn)) {
+                imports.add(imp);
             }
-            return imp;
-        });
-        mapperImplementationFile = mapperImplementationFile.withImports(mergedImports);
-        return mapperImplementationFile;
+            forbiddenImports.add(importFqn);
+        }
+
+        return mapperImplementationFile.withImports(imports);
     }
 
 
