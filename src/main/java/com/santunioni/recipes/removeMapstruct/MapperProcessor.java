@@ -28,7 +28,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         mapperDeclMethod = mapperDeclMethod.withModifiers(ListUtils.map(mapperDeclMethod.getModifiers(),
                 modifier -> {
                     if (modifier.getType() == J.Modifier.Type.Default) {
-                        return modifier.withType(J.Modifier.Type.Static);
+                        return modifier.withType(J.Modifier.Type.Public);
                     }
                     return modifier;
                 }));
