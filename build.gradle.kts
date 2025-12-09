@@ -15,7 +15,6 @@ recipeDependencies {
     parserClasspath("org.jspecify:jspecify:1.0.0")
 }
 
-
 dependencies {
 
     // The bom version can also be set to a specific version
