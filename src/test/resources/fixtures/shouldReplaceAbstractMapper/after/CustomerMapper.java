@@ -10,7 +10,7 @@ public class CustomerMapper {
 
     @Getter
     @Setter
-    private static final Long myParentField;
+    private Long myParentField;
 
     @Getter
     @Setter
