@@ -39,9 +39,4 @@ public class UserMapper {
                                final UserEntity userEntity) {
         userDto.setLastName(userEntity.getFullName());
     }
-
-    protected void setLastName(final UserDto userDto,
-                               final UserEntity userEntity) {
-        userDto.setLastName(userEntity.getFullName());
-    }
 }

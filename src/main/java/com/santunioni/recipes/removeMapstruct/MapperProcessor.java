@@ -37,13 +37,13 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         mapperDeclMethod =
                 mapperDeclMethod.withLeadingAnnotations(ListUtils.map(mapperDeclMethod.getLeadingAnnotations(),
                         methodAnnotation -> {
-                            if (methodAnnotation.getSimpleName().equals("Named")
+                            String simpleName = methodAnnotation.getSimpleName();
+                            if (simpleName.equals("Named")
                                     || TypeUtils.isOfClassType(methodAnnotation.getType(),
                                     "org.mapstruct.Named")) {
                                 return null;
                             }
                             // Remove MapStruct annotations - check by simple name first
-                            String simpleName = methodAnnotation.getSimpleName();
                             if (simpleName.equals("AfterMapping") || simpleName.equals("BeforeMapping")
                                     || simpleName.equals("MappingTarget") || simpleName.equals("Context")
                                     || simpleName.equals("Mapper") || simpleName.equals("Named")) {
@@ -177,7 +177,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                     implMethod.withName(implMethod.getName().withSimpleName(mapperDeclClassName));
         }
 
-        // Filter out annotations that look like Override or MapStruct annotations
+        // Filter out annotations that look like Override or Named
         // When removing @Override, we need to preserve the spacing before it
         List<J.Annotation> originalAnnotations = implMethod.getLeadingAnnotations();
         Space prefixToPreserve = null;
@@ -198,90 +198,14 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                             "java.lang.Override")) {
                         return null;
                     }
-                    // Remove MapStruct annotations - check by simple name first (more reliable)
-                    String simpleName = methodAnnotation.getSimpleName();
-                    if (simpleName.equals("AfterMapping") || simpleName.equals("BeforeMapping")
-                            || simpleName.equals("MappingTarget") || simpleName.equals("Context")
-                            || simpleName.equals("Mapper") || simpleName.equals("Named")) {
-                        // Verify it's actually a MapStruct annotation by checking the type
-                        if (methodAnnotation.getType() != null) {
-                            String typeString = methodAnnotation.getType().toString();
-                            if (typeString.startsWith("org.mapstruct")) {
-                                return null;
-                            }
-                        } else {
-                            // If type is null but simple name matches, assume it's MapStruct and remove it
-                            // This is safe because these annotation names are specific to MapStruct
-                            return null;
-                        }
-                    }
-                    // Also check by type string as fallback
-                    if (methodAnnotation.getType() != null) {
-                        String typeString = methodAnnotation.getType().toString();
-                        if (typeString.startsWith("org.mapstruct")) {
-                            return null;
-                        }
-                    }
                     return methodAnnotation;
                 });
 
         implMethod = implMethod.withLeadingAnnotations(filteredAnnotations);
 
-        // If we removed annotations, normalize the method prefix to avoid extra blank lines
-        if (filteredAnnotations.size() < originalAnnotations.size()) {
-            // Annotations were removed - normalize prefix to remove extra blank lines
-            Space currentPrefix = implMethod.getPrefix();
-            if (currentPrefix != null) {
-                String whitespace = currentPrefix.getWhitespace();
-                // Remove multiple consecutive newlines, keep only single newlines
-                String normalizedWhitespace = whitespace.replaceAll("\n\n+", "\n");
-                // Ensure we don't have leading blank lines
-                normalizedWhitespace = normalizedWhitespace.replaceAll("^\n+", "");
-                if (!normalizedWhitespace.equals(whitespace)) {
-                    implMethod = implMethod.withPrefix(Space.format(normalizedWhitespace));
-                }
-            }
-        } else if (prefixToPreserve != null && filteredAnnotations.isEmpty()) {
-            // All annotations removed and we captured the prefix
+        // If we removed annotations and captured the prefix, apply it to the method
+        if (prefixToPreserve != null && filteredAnnotations.isEmpty()) {
             implMethod = implMethod.withPrefix(prefixToPreserve);
-        }
-
-        // Remove MapStruct annotations from method parameters
-        if (implMethod.getParameters() != null) {
-            List<Statement> filteredParameters = ListUtils.map(implMethod.getParameters(),
-                    param -> {
-                        if (param instanceof J.VariableDeclarations varDecl) {
-                            List<J.Annotation> paramAnnotations = ListUtils.map(
-                                    varDecl.getLeadingAnnotations(),
-                                    annotation -> {
-                                        // Remove MapStruct annotations - check by simple name first
-                                        String simpleName = annotation.getSimpleName();
-                                        if (simpleName.equals("MappingTarget") || simpleName.equals("Context")) {
-                                            // Verify it's actually a MapStruct annotation by checking the type
-                                            if (annotation.getType() != null) {
-                                                String typeString = annotation.getType().toString();
-                                                if (typeString.startsWith("org.mapstruct")) {
-                                                    return null;
-                                                }
-                                            } else {
-                                                // If type is null but simple name matches, assume it's MapStruct
-                                                return null;
-                                            }
-                                        }
-                                        // Also check by type string as fallback
-                                        if (annotation.getType() != null) {
-                                            String typeString = annotation.getType().toString();
-                                            if (typeString.startsWith("org.mapstruct")) {
-                                                return null;
-                                            }
-                                        }
-                                        return annotation;
-                                    });
-                            return varDecl.withLeadingAnnotations(paramAnnotations);
-                        }
-                        return param;
-                    });
-            implMethod = implMethod.withParameters(filteredParameters);
         }
 
         return implMethod;

@@ -1,8 +1,6 @@
 package com.santunioni.fixtures;
 
 import lombok.Setter;
-import org.mapstruct.AfterMapping;
-import org.mapstruct.MappingTarget;
 
 import javax.annotation.processing.Generated;
 
@@ -32,11 +30,5 @@ public class UserMapperImpl implements UserMapper {
         UserDto userDto = new UserDto(fullName.substring(0, split), fullName.substring(split + 1));
         setLastName(userDto, userEntity);
         return userDto;
-    }
-
-    @AfterMapping
-    protected void setLastName(@MappingTarget final UserDto userDto,
-                               final UserEntity userEntity) {
-        userDto.setLastName(userEntity.getFullName());
     }
 }
