@@ -310,7 +310,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                         copiedClassStatements.add(mapperDeclMethodNullable);
                     }
                 } else if (mapperDeclStatement instanceof J.VariableDeclarations mapperDeclField) {
-                    if (mapperDeclClass.getClass().isInterface()) {
+                    if (mapperDeclClass.getKind() == J.ClassDeclaration.Kind.Type.Interface) {
                         mapperDeclField = transformMapperDeclInterfaceField(mapperDeclField);
                     }
                     copiedClassStatements.add(mapperDeclField);
