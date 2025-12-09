@@ -4,7 +4,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.Extensions;
 
 @ExtendWith(UserMapperImpl.class)
-@Extensions(value = {UserMapperImpl.class})
+@Extensions(classes = {
+        UserMapperImpl.class,
+})
 public class SimpleService {
     private final UserMapperImpl mapper = new UserMapperImpl();
 
