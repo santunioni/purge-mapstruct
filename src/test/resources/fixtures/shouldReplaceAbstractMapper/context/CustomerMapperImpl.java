@@ -1,6 +1,9 @@
 package com.santunioni.fixtures;
 
-import lombok.Setter;import javax.annotation.processing.Generated;
+import lombok.Getter;
+import lombok.Setter;
+
+import javax.annotation.processing.Generated;
 
 @Generated(
         value = "org.mapstruct.ap.MappingProcessor",
@@ -9,8 +12,9 @@ import lombok.Setter;import javax.annotation.processing.Generated;
 )
 public class CustomerMapperImpl extends CustomerMapper {
 
+    @Getter
     @Setter
-    private Long myField;
+    private Long myChildField;
 
     @Override
     public CustomerDto toCustomerDto(CustomerEntity customerEntity) {
