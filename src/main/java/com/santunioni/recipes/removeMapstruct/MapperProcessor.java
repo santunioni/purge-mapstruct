@@ -44,6 +44,26 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return super.visitImport(imp, ctx);
     }
 
+    @Override
+    public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext p) {
+        return super.visitMethodInvocation(method, p);
+    }
+
+    @Override
+    public J visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext p) {
+        return super.visitVariableDeclarations(multiVariable, p);
+    }
+
+    @Override
+    public J visitVariable(J.VariableDeclarations.NamedVariable namedVariable, ExecutionContext p) {
+        return super.visitVariable(namedVariable, p);
+    }
+
+    @Override
+    public J visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
+        return super.visitInstanceOf(instanceOf, ctx);
+    }
+
     private J processMapperDeclaration(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
         J.ClassDeclaration mapperDecl = mapperDeclFile.getClasses().get(0);
 
