@@ -3,13 +3,13 @@ name: com.santunioni.styles.AutoFormatRecipeOutputForTest
 displayName: Auto Format Test Output
 description: |
   Automatically cleanup code, e.g. remove unnecessary parentheses, simplify expressions.
-#styleConfigs:
-#    - org.openrewrite.java.style.BlankLinesStyle
-#    - org.openrewrite.java.style.MethodParamPadStyle
-#    - org.openrewrite.java.style.NoWhitespaceAfterStyle
-#    - org.openrewrite.java.style.NoWhitespaceBeforeStyle
-#    - org.openrewrite.java.style.TypecastParenPadStyle
-#    -   org.openrewrite.java.style.TabsAndIndentsStyle:
-#            useTabCharacter: false
-#            continuationIndent: 4
-#            indentSize: 4
+styleConfigs:
+  - org.openrewrite.java.style.BlankLinesStyle
+  - org.openrewrite.java.style.MethodParamPadStyle
+  - org.openrewrite.java.style.NoWhitespaceAfterStyle
+  - org.openrewrite.java.style.NoWhitespaceBeforeStyle
+  - org.openrewrite.java.style.TypecastParenPadStyle
+  - org.openrewrite.java.style.TabsAndIndentsStyle:
+      useTabCharacter: false
+      continuationIndent: 4
+      indentSize: 4
