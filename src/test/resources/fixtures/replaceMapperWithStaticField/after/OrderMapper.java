@@ -1,7 +1,5 @@
 package com.santunioni.fixtures.dtoMappers;
 
-import org.mapstruct.Mapper;
-
 
 public class OrderMapper {
     public OrderDto toOrderDto(String id) {
