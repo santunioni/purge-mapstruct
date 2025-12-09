@@ -4,24 +4,21 @@ import lombok.Setter;
 
 
 public class UserMapper {
-    static final String DEFAULT_SITUATION = "PENDING";
-
+    static final String STATIC_FINAL_INTERFACE_FIELD = "VALUE";
+    static final String FINAL_INTERFACE_FIELD = "VALUE";
+    static final String String INTERFACE_FIELD = "VALUE";
     @Setter
     private Long myField;
 
-
-    String STATUS = "PENDING";
-    final String DEFAULT_STATUS = "PENDING";
-
-    static String formatFullName(String firstName, String lastName) {
-        return firstName + " " + lastName;
+    public UserMapper() {
     }
 
     static String formatFullName2(String firstName, String lastName) {
         return firstName + " " + lastName;
     }
 
-    public UserMapper() {
+    static String formatFullName(String firstName, String lastName) {
+        return firstName + " " + lastName;
     }
 
     public UserEntity toUserEntity(UserDto userDto) {
@@ -31,7 +28,7 @@ public class UserMapper {
 
     public UserDto toUserDto(UserEntity userEntity) {
         String fullName = userEntity.getFullName();
-        int split = fullName.indexOf( );
+        int split = fullName.indexOf(' ');
         return new UserDto(fullName.substring(0, split), fullName.substring(split + 1));
     }
 }
