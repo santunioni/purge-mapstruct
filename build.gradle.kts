@@ -3,6 +3,7 @@ plugins {
     id("org.openrewrite.build.publish") version "latest.release"
     id("org.openrewrite.build.recipe-repositories") version "latest.release"
     id("org.openrewrite.rewrite") version ("7.21.0")
+    kotlin("jvm") version "1.9.24"
 }
 
 dependencies {
@@ -99,5 +100,28 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+kotlin {
+    jvmToolchain(17)
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = "17"
+        apiVersion = "1.9"
+        languageVersion = "1.9"
+        freeCompilerArgs = listOf("-Xjvm-default=all")
+    }
+}
+
+// Configure source sets for Kotlin to work alongside Java
+sourceSets {
+    main {
+        java.srcDirs("src/main/java", "src/main/kotlin")
+    }
+    test {
+        java.srcDirs("src/test/java", "src/test/kotlin")
     }
 }
