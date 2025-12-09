@@ -20,14 +20,13 @@ import java.util.UUID;
  */
 @Log
 @NullMarked
-class ReferenceReplacer extends JavaIsoVisitor<ExecutionContext> {
+class ReferenceReplacer {
     private final Accumulator acc;
 
     ReferenceReplacer(Accumulator acc) {
         this.acc = acc;
     }
 
-    @Override
     public J.Import visitImport(J.Import import_, ExecutionContext ctx) {
         // Try to extract FQN from type information first, then fallback to manual extraction
         String importFqn = null;
@@ -39,12 +38,12 @@ class ReferenceReplacer extends JavaIsoVisitor<ExecutionContext> {
                 importFqn = type.toString();
             }
         }
-        
+
         // Fallback to manual extraction if type info not available
         if (importFqn == null) {
             importFqn = extractFqnFromFieldAccess(import_.getQualid());
         }
-        
+
         String superFqn = null;
         if (importFqn != null) {
             superFqn = acc.getSuperFqnFromImplFqn(importFqn);

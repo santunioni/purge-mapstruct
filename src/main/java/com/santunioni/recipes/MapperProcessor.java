@@ -37,8 +37,13 @@ class MapperProcessor extends JavaVisitor<ExecutionContext> {
             // makes it unavailable after I return null
             return mapperDeclFile;
         } else {
-            return this.referenceReplacer.visitCompilationUnit(mapperDeclFile, ctx);
+            return super.visitCompilationUnit(mapperDeclFile, ctx);
         }
+    }
+
+    @Override
+    public J visitImport(J.Import imp, ExecutionContext ctx) {
+        return this.referenceReplacer.visitImport(imp, ctx);
     }
 
     private J processMapperDeclaration(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
