@@ -7,6 +7,7 @@ add final to fields.
 ![bug-field-access-transformation.png](docs/bug-field-access-transformation.png)
 
 Rename implementation classes when they are passed as class parameters into annotations
+![bug-mapper-as-annotation-parameter.png](docs/bug-mapper-as-annotation-parameter.png)
 
 ## Declaration
 
