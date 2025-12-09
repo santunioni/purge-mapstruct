@@ -1,4 +1,4 @@
-package com.santunioni.fixtures.dtoMappers;
+package com.santunioni.fixtures;
 
 import lombok.Setter;import javax.annotation.processing.Generated;
 

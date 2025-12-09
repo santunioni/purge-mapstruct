@@ -1,4 +1,4 @@
-package com.santunioni.fixtures.dtoMappers;
+package com.santunioni.fixtures;
 
 public class CustomerDto {
     private String name;

@@ -1,4 +1,4 @@
-package com.santunioni.fixtures.services;
+package com.santunioni.fixtures;
 
 import com.santunioni.fixtures.dtoMappers.SimpleDtoIn;
 import com.santunioni.fixtures.dtoMappers.SimpleDtoMapperImpl;

@@ -1,4 +1,4 @@
-package com.santunioni.fixtures.dtoMappers;
+package com.santunioni.fixtures;
 
 import lombok.extern.java.Log;
 import org.mapstruct.Mapper;
