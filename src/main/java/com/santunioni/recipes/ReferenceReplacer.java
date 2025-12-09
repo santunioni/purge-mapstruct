@@ -1,5 +1,7 @@
 package com.santunioni.recipes;
 
+import lombok.extern.java.Log;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -16,6 +18,8 @@ import java.util.UUID;
  * Visitor that replaces references to mapper implementations with their super class/interface.
  * For example, replaces MyMapperImpl with MyMapper in imports, variable declarations, constructor calls, etc.
  */
+@Log
+@NullMarked
 class ReferenceReplacer extends JavaIsoVisitor<ExecutionContext> {
     private final Accumulator acc;
 
