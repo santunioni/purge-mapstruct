@@ -80,6 +80,11 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     @Override
+    public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext p) {
+        return super.visitMethodInvocation(method, p);
+    }
+
+    @Override
     public J visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
         J visited = super.visitNewClass(newClass, ctx);
         if (!(visited instanceof J.NewClass newClazz)) {
@@ -89,9 +94,22 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         // Replace constructor type (new MyMapperImpl() -> new MyMapper())
         TypeTree clazz = newClazz.getClazz();
         if (clazz != null) {
-            TypeTree replacedClazz = replaceTypeTreeIfNeeded(clazz);
-            if (replacedClazz != clazz) {
-                return newClazz.withClazz(replacedClazz);
+            String clazzFqn = extractFqnFromTypeTree(clazz);
+            if (clazzFqn != null) {
+                String superFqn = acc.getSuperFqnFromImplFqn(clazzFqn);
+                if (superFqn != null) {
+                    // Check if already replaced - compare FQNs and simple names
+                    if (clazzFqn.equals(superFqn)) {
+                        return newClazz;
+                    }
+                    String currentSimpleName = getSimpleNameFromTypeTree(clazz);
+                    String expectedSimpleName = extractSimpleName(superFqn);
+                    if (currentSimpleName.equals(expectedSimpleName) && !currentSimpleName.endsWith("Impl")) {
+                        return newClazz;
+                    }
+                    TypeTree newClazzType = replaceTypeTree(clazz, superFqn);
+                    return newClazz.withClazz(newClazzType);
+                }
             }
         }
 
@@ -108,9 +126,22 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         // Replace type expression (for method parameters, field declarations, etc.)
         if (varDecl.getTypeExpression() != null) {
             TypeTree typeExpression = varDecl.getTypeExpression();
-            TypeTree replacedTypeExpression = replaceTypeTreeIfNeeded(typeExpression);
-            if (replacedTypeExpression != typeExpression) {
-                return varDecl.withTypeExpression(replacedTypeExpression);
+            String typeFqn = extractFqnFromTypeTree(typeExpression);
+            if (typeFqn != null) {
+                String superFqn = acc.getSuperFqnFromImplFqn(typeFqn);
+                if (superFqn != null) {
+                    // Check if already replaced
+                    if (typeFqn.equals(superFqn)) {
+                        return varDecl;
+                    }
+                    String currentSimpleName = getSimpleNameFromTypeTree(typeExpression);
+                    String expectedSimpleName = extractSimpleName(superFqn);
+                    if (currentSimpleName.equals(expectedSimpleName) && !currentSimpleName.endsWith("Impl")) {
+                        return varDecl;
+                    }
+                    TypeTree newTypeExpression = replaceTypeTree(typeExpression, superFqn);
+                    return varDecl.withTypeExpression(newTypeExpression);
+                }
             }
         }
 
@@ -129,9 +160,19 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         if (clazzExpr instanceof J.ControlParentheses clazzParentheses) {
             Object treeObj = clazzParentheses.getTree();
             if (treeObj instanceof TypeTree clazz) {
-                TypeTree replacedClazz = replaceTypeTreeIfNeeded(clazz);
-                if (replacedClazz != clazz) {
-                    return instanceOf_.withClazz(clazzParentheses.withTree(replacedClazz));
+                String clazzFqn = extractFqnFromTypeTree(clazz);
+                if (clazzFqn != null) {
+                    String superFqn = acc.getSuperFqnFromImplFqn(clazzFqn);
+                    if (superFqn != null) {
+                        // Check if already replaced
+                        String currentSimpleName = getSimpleNameFromTypeTree(clazz);
+                        String expectedSimpleName = extractSimpleName(superFqn);
+                        if (currentSimpleName.equals(expectedSimpleName)) {
+                            return instanceOf_;
+                        }
+                        TypeTree newClazzType = replaceTypeTree(clazz, superFqn);
+                        return instanceOf_.withClazz(clazzParentheses.withTree(newClazzType));
+                    }
                 }
             }
         }
@@ -440,56 +481,19 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
 
     /**
      * Replaces the qualid in an import statement with the super type.
-     * Uses replaceFinalIdentifierInChain to maintain consistency.
+     * The root FieldAccess (returned by getQualid()) has the class name as its name.
+     * We just need to replace that name.
      */
     private J.Import replaceImportQualid(J.Import import_, String superFqn) {
         String superSimpleName = extractSimpleName(superFqn);
         J.FieldAccess qualid = import_.getQualid();
 
-        // Find the final identifier and replace it
-        J.FieldAccess current = qualid;
-        while (current.getTarget() instanceof J.FieldAccess nested) {
-            current = nested;
-        }
-        J.Identifier finalIdentifier = current.getName();
-        J.Identifier newIdentifier = finalIdentifier.withSimpleName(superSimpleName);
-        J.FieldAccess newQualid = replaceFinalIdentifierInChain(qualid, newIdentifier);
+        // The root FieldAccess's name is the class name we want to replace
+        J.Identifier rootName = qualid.getName();
+        J.Identifier newName = rootName.withSimpleName(superSimpleName);
+        J.FieldAccess newQualid = qualid.withName(newName);
 
         return import_.withQualid(newQualid);
-    }
-
-    /**
-     * Checks if a TypeTree needs replacement and replaces it if needed.
-     * Returns the original TypeTree if no replacement is needed, or a new TypeTree if replaced.
-     * This method consolidates the common pattern of checking and replacing mapper implementation types.
-     */
-    private TypeTree replaceTypeTreeIfNeeded(TypeTree typeTree) {
-        if (typeTree == null) {
-            return null;
-        }
-
-        String typeFqn = extractFqnFromTypeTree(typeTree);
-        if (typeFqn == null) {
-            return typeTree;
-        }
-
-        String superFqn = acc.getSuperFqnFromImplFqn(typeFqn);
-        if (superFqn == null) {
-            return typeTree;
-        }
-
-        // Check if already replaced
-        if (typeFqn.equals(superFqn)) {
-            return typeTree;
-        }
-
-        String currentSimpleName = getSimpleNameFromTypeTree(typeTree);
-        String expectedSimpleName = extractSimpleName(superFqn);
-        if (currentSimpleName.equals(expectedSimpleName) && !currentSimpleName.endsWith("Impl")) {
-            return typeTree;
-        }
-
-        return replaceTypeTree(typeTree, superFqn);
     }
 
     /**
