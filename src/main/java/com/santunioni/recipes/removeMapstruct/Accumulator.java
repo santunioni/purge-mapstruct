@@ -1,4 +1,4 @@
-package com.santunioni.recipes;
+package com.santunioni.recipes.removeMapstruct;
 
 import lombok.extern.java.Log;
 import org.jspecify.annotations.NullMarked;

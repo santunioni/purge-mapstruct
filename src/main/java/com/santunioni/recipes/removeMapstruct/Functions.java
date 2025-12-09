@@ -1,4 +1,4 @@
-package com.santunioni.recipes;
+package com.santunioni.recipes.removeMapstruct;
 
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;

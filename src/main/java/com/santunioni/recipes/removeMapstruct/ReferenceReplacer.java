@@ -1,10 +1,11 @@
-package com.santunioni.recipes;
+package com.santunioni.recipes.removeMapstruct;
 
 import lombok.extern.java.Log;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeTree;
@@ -20,7 +21,7 @@ import java.util.UUID;
  */
 @Log
 @NullMarked
-class ReferenceReplacer {
+class ReferenceReplacer extends JavaVisitor<Accumulator> {
     private final Accumulator acc;
 
     ReferenceReplacer(Accumulator acc) {

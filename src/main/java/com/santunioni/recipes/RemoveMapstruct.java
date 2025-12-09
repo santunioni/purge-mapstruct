@@ -1,6 +1,9 @@
 package com.santunioni.recipes;
 
 
+import com.santunioni.recipes.removeMapstruct.Accumulator;
+import com.santunioni.recipes.removeMapstruct.ImplementationScanner;
+import com.santunioni.recipes.removeMapstruct.MapperProcessor;
 import lombok.extern.java.Log;
 import org.jspecify.annotations.NullMarked;
 import org.openrewrite.ExecutionContext;

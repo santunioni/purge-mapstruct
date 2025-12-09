@@ -1,4 +1,4 @@
-package com.santunioni.recipes;
+package com.santunioni.recipes.removeMapstruct;
 
 import org.jspecify.annotations.NullMarked;
 import org.openrewrite.ExecutionContext;
@@ -10,13 +10,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import static com.santunioni.recipes.Functions.isMapperImplementation;
+import static com.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation;
 
 @NullMarked
-class ImplementationScanner extends JavaIsoVisitor<ExecutionContext> {
+public class ImplementationScanner extends JavaIsoVisitor<ExecutionContext> {
     private final Accumulator acc;
 
-    ImplementationScanner(Accumulator acc) {
+    public ImplementationScanner(Accumulator acc) {
         this.acc = acc;
     }
 

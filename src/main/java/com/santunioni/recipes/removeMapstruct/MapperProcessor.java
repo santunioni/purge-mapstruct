@@ -1,4 +1,4 @@
-package com.santunioni.recipes;
+package com.santunioni.recipes.removeMapstruct;
 
 import lombok.extern.java.Log;
 import org.jspecify.annotations.NullMarked;
@@ -13,16 +13,16 @@ import org.openrewrite.marker.Markers;
 
 import java.util.*;
 
-import static com.santunioni.recipes.Functions.isMapperDeclaration;
-import static com.santunioni.recipes.Functions.isMapperImplementation;
+import static com.santunioni.recipes.removeMapstruct.Functions.isMapperDeclaration;
+import static com.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation;
 
 @Log
 @NullMarked
-class MapperProcessor extends JavaVisitor<ExecutionContext> {
+public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     private final Accumulator acc;
     private final ReferenceReplacer referenceReplacer ;
 
-    MapperProcessor(Accumulator acc) {
+    public MapperProcessor(Accumulator acc) {
         this.acc = acc;
         this.referenceReplacer = new ReferenceReplacer(acc);
     }
@@ -37,13 +37,8 @@ class MapperProcessor extends JavaVisitor<ExecutionContext> {
             // makes it unavailable after I return null
             return mapperDeclFile;
         } else {
-            return super.visitCompilationUnit(mapperDeclFile, ctx);
+            return mapperDeclFile;
         }
-    }
-
-    @Override
-    public J visitImport(J.Import imp, ExecutionContext ctx) {
-        return this.referenceReplacer.visitImport(imp, ctx);
     }
 
     private J processMapperDeclaration(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
