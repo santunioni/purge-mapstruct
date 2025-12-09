@@ -1,6 +1,8 @@
 package com.santunioni.fixtures;
 
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
+import org.mapstruct.MappingTarget;
 
 @Mapper
 public interface UserMapper {
@@ -15,6 +17,12 @@ public interface UserMapper {
     UserEntity toUserEntity(UserDto userDto);
 
     UserDto toUserDto(UserEntity userEntity);
+
+    @AfterMapping
+    protected void setLastName(@MappingTarget final UserDto userDto,
+                               final UserEntity userEntity) {
+        userDto.setLastName(userEntity.getFullName());
+    }
 
     default String formatFullNameDefault(String firstName, String lastName) {
         return firstName + " " + lastName;

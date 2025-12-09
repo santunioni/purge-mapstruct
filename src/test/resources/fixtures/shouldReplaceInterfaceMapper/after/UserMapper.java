@@ -26,10 +26,22 @@ public class UserMapper {
     public UserDto toUserDto(UserEntity userEntity) {
         String fullName = userEntity.getFullName();
         int split = fullName.indexOf(' ');
-        return new UserDto(fullName.substring(0, split), fullName.substring(split + 1));
+        UserDto userDto = new UserDto(fullName.substring(0, split), fullName.substring(split + 1));
+        setLastName(userDto, userEntity);
+        return userDto;
     }
 
     public String formatFullNameDefault(String firstName, String lastName) {
         return firstName + " " + lastName;
+    }
+
+    protected void setLastName(final UserDto userDto,
+                               final UserEntity userEntity) {
+        userDto.setLastName(userEntity.getFullName());
+    }
+
+    protected void setLastName(final UserDto userDto,
+                               final UserEntity userEntity) {
+        userDto.setLastName(userEntity.getFullName());
     }
 }

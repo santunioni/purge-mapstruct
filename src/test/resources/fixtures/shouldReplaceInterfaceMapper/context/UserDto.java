@@ -16,4 +16,8 @@ public class UserDto {
     public String getLastName() {
         return lastName;
     }
+
+    public String setLastName(String lastName) {
+        this.lastName = lastName;
+    }
 }
