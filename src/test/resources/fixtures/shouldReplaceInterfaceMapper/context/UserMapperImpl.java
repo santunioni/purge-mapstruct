@@ -1,6 +1,7 @@
 package com.santunioni.fixtures;
 
 import lombok.Setter;
+
 import javax.annotation.processing.Generated;
 
 @Generated(
@@ -14,7 +15,7 @@ public class UserMapperImpl implements UserMapper {
     }
 
     @Setter
-    private Long myField;
+    private Long childField;
 
     @Override
     public UserEntity toUserEntity(UserDto userDto) {
