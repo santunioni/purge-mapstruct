@@ -20,11 +20,9 @@ import static com.santunioni.recipes.removeMapstruct.Functions.isMapperImplement
 @NullMarked
 public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     private final Accumulator acc;
-    private final ReferenceReplacer referenceReplacer ;
 
     public MapperProcessor(Accumulator acc) {
         this.acc = acc;
-        this.referenceReplacer = new ReferenceReplacer(acc);
     }
 
     @Override
@@ -39,6 +37,11 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         } else {
             return mapperDeclFile;
         }
+    }
+
+    @Override
+    public J visitImport(J.Import imp, ExecutionContext ctx) {
+        return super.visitImport(imp, ctx);
     }
 
     private J processMapperDeclaration(J.CompilationUnit mapperDeclFile, ExecutionContext ctx) {
