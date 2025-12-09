@@ -14,7 +14,13 @@ import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 import static com.santunioni.recipes.removeMapstruct.Functions.isMapperDeclaration;
 import static com.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation;
@@ -26,6 +32,136 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
 
     public MapperProcessor(Accumulator acc) {
         this.acc = acc;
+    }
+
+    private static void captureMapperDeclMethod(J.MethodDeclaration mapperDeclMethod,
+                                                List<Statement> copiedClassStatements) {
+        mapperDeclMethod = mapperDeclMethod.withModifiers(ListUtils.map(mapperDeclMethod.getModifiers(),
+                modifier -> {
+                    if (modifier.getType() == J.Modifier.Type.Default) {
+                        return modifier.withType(J.Modifier.Type.Static);
+                    }
+                    return modifier;
+                }));
+
+        mapperDeclMethod =
+                mapperDeclMethod.withLeadingAnnotations(ListUtils.map(mapperDeclMethod.getLeadingAnnotations(),
+                        methodAnnotation -> {
+                            if (methodAnnotation.getSimpleName().equals("Named")
+                                    || TypeUtils.isOfClassType(methodAnnotation.getType(),
+                                    "org.mapstruct.Named")) {
+                                return null;
+                            }
+                            return methodAnnotation;
+                        }));
+
+        if (mapperDeclMethod.getModifiers().stream()
+                .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
+            copiedClassStatements.add(mapperDeclMethod);
+        }
+    }
+
+    private static void captureMapperDeclField(J.VariableDeclarations mapperDeclField,
+                                               List<Statement> copiedClassStatements) {
+        ArrayList<J.Modifier> modifiers = new ArrayList<>();
+
+        final var accessModifiers = Set.of(J.Modifier.Type.Public, J.Modifier.Type.Protected, J.Modifier.Type.Private);
+
+        final var modifiersSetManually =
+                Set.of(J.Modifier.Type.Public, J.Modifier.Type.Protected, J.Modifier.Type.Private,
+                        J.Modifier.Type.Static,
+                        J.Modifier.Type.Final);
+
+        final var accessModifierInPlace =
+                mapperDeclField
+                        .getModifiers()
+                        .stream()
+                        .filter(modifier -> accessModifiers.contains(modifier.getType())).findFirst();
+        
+        if (accessModifierInPlace.isPresent()) {
+            modifiers.add(accessModifierInPlace.get());
+        } else {
+            modifiers.add(new J.Modifier(UUID.randomUUID(), Space.EMPTY,
+                    Markers.EMPTY, null, J.Modifier.Type.Public, Collections.emptyList()));
+        }
+
+        modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
+                Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()));
+
+        modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
+                Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList()));
+
+        for (J.Modifier modifier : mapperDeclField.getModifiers()) {
+            if (!modifiersSetManually.contains(modifier.getType())) {
+                modifiers.add(modifier.withPrefix(Space.SINGLE_SPACE));
+            }
+        }
+
+        // Ensure the type expression has proper spacing after modifiers
+        mapperDeclField = mapperDeclField.withModifiers(modifiers);
+        if (mapperDeclField.getTypeExpression() != null) {
+            mapperDeclField = mapperDeclField.withTypeExpression(
+                    mapperDeclField.getTypeExpression().withPrefix(Space.SINGLE_SPACE));
+        }
+
+        copiedClassStatements.add(mapperDeclField);
+    }
+
+    private static J.ClassDeclaration cleanGeneratedAnnotations(J.ClassDeclaration mapperImplClass) {
+        return mapperImplClass.withLeadingAnnotations(
+                ListUtils.map(mapperImplClass.getLeadingAnnotations(), a -> {
+                    if (a.getSimpleName().equals("Generated")
+                            || TypeUtils.isOfClassType(a.getType(), "javax.annotation.processing" +
+                            ".Generated")
+                            || TypeUtils.isOfClassType(a.getType(), "jakarta.annotation.Generated")) {
+                        return null;
+                    }
+                    return a;
+                }));
+    }
+
+    private static void captureMapperImplMethod(J.MethodDeclaration implMethod, String mapperImplClassName,
+                                                String mapperDeclClassName, List<Statement> copiedClassStatements) {
+        // Rename the constructor
+        boolean isConstructor =
+                implMethod.getName().getSimpleName().equals(mapperImplClassName);
+        if (isConstructor) {
+            implMethod =
+                    implMethod.withName(implMethod.getName().withSimpleName(mapperDeclClassName));
+        }
+
+        // Filter out annotations that look like Override or Named
+        // When removing @Override, we need to preserve the spacing before it
+        List<J.Annotation> originalAnnotations = implMethod.getLeadingAnnotations();
+        Space prefixToPreserve = null;
+
+        // Find if we're removing an @Override annotation and capture its prefix
+        for (J.Annotation annotation : originalAnnotations) {
+            if (annotation.getSimpleName().equals("Override")
+                    || TypeUtils.isOfClassType(annotation.getType(), "java.lang.Override")) {
+                prefixToPreserve = annotation.getPrefix();
+                break;
+            }
+        }
+
+        List<J.Annotation> filteredAnnotations = ListUtils.map(originalAnnotations,
+                methodAnnotation -> {
+                    if (methodAnnotation.getSimpleName().equals("Override")
+                            || TypeUtils.isOfClassType(methodAnnotation.getType(),
+                            "java.lang.Override")) {
+                        return null;
+                    }
+                    return methodAnnotation;
+                });
+
+        implMethod = implMethod.withLeadingAnnotations(filteredAnnotations);
+
+        // If we removed annotations and captured the prefix, apply it to the method
+        if (prefixToPreserve != null && filteredAnnotations.isEmpty()) {
+            implMethod = implMethod.withPrefix(prefixToPreserve);
+        }
+
+        copiedClassStatements.add(implMethod);
     }
 
     @Override
@@ -207,122 +343,6 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
             throw new RuntimeException("Failed to migrate Mapstruct Mapper: " + mapperDecl.getName().getSimpleName(),
                     e);
         }
-    }
-
-    private static void captureMapperDeclMethod(J.MethodDeclaration mapperDeclMethod,
-                                                List<Statement> copiedClassStatements) {
-        mapperDeclMethod = mapperDeclMethod.withModifiers(ListUtils.map(mapperDeclMethod.getModifiers(),
-                modifier -> {
-                    if (modifier.getType() == J.Modifier.Type.Default) {
-                        return modifier.withType(J.Modifier.Type.Static);
-                    }
-                    return modifier;
-                }));
-
-        mapperDeclMethod =
-                mapperDeclMethod.withLeadingAnnotations(ListUtils.map(mapperDeclMethod.getLeadingAnnotations(),
-                        methodAnnotation -> {
-                            if (methodAnnotation.getSimpleName().equals("Named")
-                                    || TypeUtils.isOfClassType(methodAnnotation.getType(),
-                                    "org.mapstruct.Named")) {
-                                return null;
-                            }
-                            return methodAnnotation;
-                        }));
-
-        if (mapperDeclMethod.getModifiers().stream()
-                .anyMatch(mod -> mod.getType() == J.Modifier.Type.Static)) {
-            copiedClassStatements.add(mapperDeclMethod);
-        }
-    }
-
-    private static void captureMapperDeclField(J.VariableDeclarations mapperDeclField,
-                                               List<Statement> copiedClassStatements) {
-        ArrayList<J.Modifier> modifiers = new ArrayList<>();
-
-        final var modifiersSetManual =
-                Set.of(J.Modifier.Type.Public, J.Modifier.Type.Static, J.Modifier.Type.Final);
-
-        modifiers.add(new J.Modifier(UUID.randomUUID(), Space.EMPTY,
-                Markers.EMPTY, null, J.Modifier.Type.Public, Collections.emptyList()));
-
-        modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
-                Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()));
-
-        modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
-                Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList()));
-
-        for (J.Modifier modifier : mapperDeclField.getModifiers()) {
-            if (!modifiersSetManual.contains(modifier.getType())) {
-                modifiers.add(modifier.withPrefix(Space.SINGLE_SPACE));
-            }
-        }
-
-        // Ensure the type expression has proper spacing after modifiers
-        mapperDeclField = mapperDeclField.withModifiers(modifiers);
-        if (mapperDeclField.getTypeExpression() != null) {
-            mapperDeclField = mapperDeclField.withTypeExpression(
-                    mapperDeclField.getTypeExpression().withPrefix(Space.SINGLE_SPACE));
-        }
-
-        copiedClassStatements.add(mapperDeclField);
-    }
-
-    private static J.ClassDeclaration cleanGeneratedAnnotations(J.ClassDeclaration mapperImplClass) {
-        return mapperImplClass.withLeadingAnnotations(
-                ListUtils.map(mapperImplClass.getLeadingAnnotations(), a -> {
-                    if (a.getSimpleName().equals("Generated")
-                            || TypeUtils.isOfClassType(a.getType(), "javax.annotation.processing" +
-                            ".Generated")
-                            || TypeUtils.isOfClassType(a.getType(), "jakarta.annotation.Generated")) {
-                        return null;
-                    }
-                    return a;
-                }));
-    }
-
-    private static void captureMapperImplMethod(J.MethodDeclaration implMethod, String mapperImplClassName,
-                                                String mapperDeclClassName, List<Statement> copiedClassStatements) {
-        // Rename the constructor
-        boolean isConstructor =
-                implMethod.getName().getSimpleName().equals(mapperImplClassName);
-        if (isConstructor) {
-            implMethod =
-                    implMethod.withName(implMethod.getName().withSimpleName(mapperDeclClassName));
-        }
-
-        // Filter out annotations that look like Override or Named
-        // When removing @Override, we need to preserve the spacing before it
-        List<J.Annotation> originalAnnotations = implMethod.getLeadingAnnotations();
-        Space prefixToPreserve = null;
-
-        // Find if we're removing an @Override annotation and capture its prefix
-        for (J.Annotation annotation : originalAnnotations) {
-            if (annotation.getSimpleName().equals("Override")
-                    || TypeUtils.isOfClassType(annotation.getType(), "java.lang.Override")) {
-                prefixToPreserve = annotation.getPrefix();
-                break;
-            }
-        }
-
-        List<J.Annotation> filteredAnnotations = ListUtils.map(originalAnnotations,
-                methodAnnotation -> {
-                    if (methodAnnotation.getSimpleName().equals("Override")
-                            || TypeUtils.isOfClassType(methodAnnotation.getType(),
-                            "java.lang.Override")) {
-                        return null;
-                    }
-                    return methodAnnotation;
-                });
-
-        implMethod = implMethod.withLeadingAnnotations(filteredAnnotations);
-
-        // If we removed annotations and captured the prefix, apply it to the method
-        if (prefixToPreserve != null && filteredAnnotations.isEmpty()) {
-            implMethod = implMethod.withPrefix(prefixToPreserve);
-        }
-
-        copiedClassStatements.add(implMethod);
     }
 
     private J.CompilationUnit copyImports(J.CompilationUnit mapperImplementationFile,
