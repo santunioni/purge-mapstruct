@@ -51,17 +51,17 @@ class RemoveMapstructTest implements RewriteTest {
     @Test
     void shouldReplaceInterfaceMapper() throws IOException {
         SourceSpecs makeAvailableUserDto = java(
-                readResource("fixtures/replaceInterfaceMapper/context/UserDto.java"),
+                readResource("fixtures/shouldReplaceInterfaceMapper/context/UserDto.java"),
                 spec -> spec.path("src/main/java/com/santunioni/fixtures/UserDto.java")
         );
 
         SourceSpecs makeAvailableUserEntity = java(
-                readResource("fixtures/replaceInterfaceMapper/context/UserEntity.java"),
+                readResource("fixtures/shouldReplaceInterfaceMapper/context/UserEntity.java"),
                 spec -> spec.path("src/main/java/com/santunioni/fixtures/UserEntity.java")
         );
 
         SourceSpecs makeAvailableGeneratedClass = java(
-                readResource("fixtures/replaceInterfaceMapper/context/UserMapperImpl.java"),
+                readResource("fixtures/shouldReplaceInterfaceMapper/context/UserMapperImpl.java"),
                 spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/UserMapperImpl.java")
         );
 
@@ -70,13 +70,13 @@ class RemoveMapstructTest implements RewriteTest {
                 makeAvailableUserEntity,
                 makeAvailableGeneratedClass,
                 java(
-                        readResource("fixtures/replaceInterfaceMapper/before/UserService.java"),
-                        readResource("fixtures/replaceInterfaceMapper/after/UserService.java"),
+                        readResource("fixtures/shouldReplaceInterfaceMapper/before/UserService.java"),
+                        readResource("fixtures/shouldReplaceInterfaceMapper/after/UserService.java"),
                         spec -> spec.path("src/main/java/com/santunioni/fixtures/UserService.java")
                 ),
                 java(
-                        readResource("fixtures/replaceInterfaceMapper/before/UserMapper.java"),
-                        readResource("fixtures/replaceInterfaceMapper/after/UserMapper.java"),
+                        readResource("fixtures/shouldReplaceInterfaceMapper/before/UserMapper.java"),
+                        readResource("fixtures/shouldReplaceInterfaceMapper/after/UserMapper.java"),
                         spec -> spec.path("src/main/java/com/santunioni/fixtures/UserMapper.java")
                 )
         );
@@ -84,19 +84,19 @@ class RemoveMapstructTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void shouldReplaceAbsWithImplAndDecorator() throws IOException {
+    void shouldReplaceAbstractMapper() throws IOException {
         SourceSpecs makeAvailableCustomerDto = java(
-                readResource("fixtures/replaceAbsWithImplAndDecorator/context/CustomerDto.java"),
+                readResource("fixtures/shouldReplaceAbstractMapper/context/CustomerDto.java"),
                 spec -> spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
         );
 
         SourceSpecs makeAvailableCustomerEntity = java(
-                readResource("fixtures/replaceAbsWithImplAndDecorator/context/CustomerEntity.java"),
+                readResource("fixtures/shouldReplaceAbstractMapper/context/CustomerEntity.java"),
                 spec -> spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
         );
 
         SourceSpecs makeAvailableGeneratedClass = java(
-                readResource("fixtures/replaceAbsWithImplAndDecorator/context/CustomerMapperImpl.java"),
+                readResource("fixtures/shouldReplaceAbstractMapper/context/CustomerMapperImpl.java"),
                 spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java")
         );
 
@@ -105,8 +105,8 @@ class RemoveMapstructTest implements RewriteTest {
                 makeAvailableCustomerEntity,
                 makeAvailableGeneratedClass,
                 java(
-                        readResource("fixtures/replaceAbsWithImplAndDecorator/before/CustomerMapper.java"),
-                        readResource("fixtures/replaceAbsWithImplAndDecorator/after/CustomerMapper.java"),
+                        readResource("fixtures/shouldReplaceAbstractMapper/before/CustomerMapper.java"),
+                        readResource("fixtures/shouldReplaceAbstractMapper/after/CustomerMapper.java"),
                         spec -> spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
                 )
         );
