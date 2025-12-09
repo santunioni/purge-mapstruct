@@ -214,7 +214,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                 targetIdentifier.getFieldType()
         );
 
-        fieldAccess = fieldAccess.withTarget(superTarget);
+        fieldAccess = fieldAccess.withTarget(superTarget).withType(superType);
 
         return fieldAccess;
     }
