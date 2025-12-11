@@ -483,11 +483,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     /**
-     * Replaces a TypeTree if it's a mapper implementation, otherwise returns it unchanged.
-     * This method encapsulates the common logic for checking and replacing mapper impl types.
-     *
-     * @param typeTree the TypeTree to potentially replace
-     * @return the replaced TypeTree, or the original if no replacement was needed
+     * Replaces mentions of a type to it's super type (implements or extends).
      */
     private TypeTree replaceTypeTreeIfNeeded(TypeTree typeTree) {
         if (!(typeTree.getType() instanceof JavaType.FullyQualified type)) {
