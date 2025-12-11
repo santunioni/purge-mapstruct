@@ -500,38 +500,16 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
             return typeTree;
         }
 
-        // Check by simple name - if it matches and doesn't end with Impl, it's already replaced
-        String currentSimpleName = getSimpleNameFromTypeTree(typeTree);
-        String expectedSimpleName = extractSimpleName(superFqn);
-        if (currentSimpleName.equals(expectedSimpleName) && !currentSimpleName.endsWith("Impl")) {
-            return typeTree;
-        }
-
         String superSimpleName = extractSimpleName(superFqn);
 
-        if (typeTree instanceof J.Identifier identifier) {
-            return identifier.withSimpleName(superSimpleName);
-        }
-
-        if (typeTree instanceof J.FieldAccess fieldAccess) {
-            // Replace the final identifier in the field access chain
-            J.FieldAccess current = fieldAccess;
-            while (current.getTarget() instanceof J.FieldAccess nested) {
-                current = nested;
-            }
-            J.Identifier finalIdentifier = current.getName();
-            J.Identifier newIdentifier = finalIdentifier.withSimpleName(superSimpleName);
-            return replaceFinalIdentifierInChain(fieldAccess, newIdentifier);
-        }
-
-        // Fallback: create a new identifier
+        final var superType = JavaType.buildType(superFqn);
         return new J.Identifier(
                 UUID.randomUUID(),
                 typeTree.getPrefix(),
                 typeTree.getMarkers(),
                 Collections.emptyList(),
                 superSimpleName,
-                null,
+                superType,
                 null
         );
     }
