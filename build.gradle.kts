@@ -5,8 +5,6 @@ plugins {
     kotlin("jvm") version "1.9.24"
 }
 
-
-// Set as appropriate for your organization
 group = "com.santunioni.recipes"
 description = "Remove Mapstruct"
 version = "0.6.0-SNAPSHOT"
@@ -71,7 +69,6 @@ signing {
     // To enable signing have your CI workflow set the "signingKey" and "signingPassword" Gradle project properties
     isRequired = false
 }
-
 
 tasks.register("licenseFormat") {
     println("License format task not implemented for rewrite-recipe-starter")

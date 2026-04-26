@@ -2,7 +2,6 @@ package com.santunioni.fixtures;
 
 import lombok.Setter;
 
-
 public class UserMapper {
     public static final String INTERFACE_FIELD = "VALUE";
     public static final String FINAL_INTERFACE_FIELD = "VALUE";
@@ -34,7 +33,6 @@ public class UserMapper {
     public String formatFullNameDefault(String firstName, String lastName) {
         return firstName + " " + lastName;
     }
-
 
     protected void setLastName(final UserDto userDto,
                                final UserEntity userEntity) {
