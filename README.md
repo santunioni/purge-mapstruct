@@ -4,9 +4,9 @@ This is an openrewrite recipe that purges mapstruct from your codebase.
 
 ## Why?
 
-I believe mapstruct is a library that hurts your codebase. Its greatest feature is allowing you to auto-transform
-your value classes by matching field names. When it can't match, your field is either unmapped or you must write a
-manual mapping, which is just writing java code as string and losing the compile-time safety.
+I believe mapstruct is a library that hurts your codebase. Its _greatest_ feature is a terrible idea: allowing you to
+auto-transform your value classes by matching field names. When it can't match, your field is either unmapped or you
+must write a manual mapping, which is just writing java code as string and losing the compile-time safety.
 
 When you don't map fields correctly, you get a bunch of nulls in production.
 
