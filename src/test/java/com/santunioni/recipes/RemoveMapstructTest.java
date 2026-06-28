@@ -31,10 +31,10 @@ import java.util.Objects;
 
 import static org.openrewrite.java.Assertions.java;
 
-class RemoveMapstructTest implements RewriteTest {
+class InlineMapstructTest implements RewriteTest {
     private static @NonNull String readResource(String resource) throws IOException {
         try (InputStream stream = Objects.requireNonNull(
-                RemoveMapstructTest.class.getClassLoader()
+                InlineMapstructTest.class.getClassLoader()
                         .getResourceAsStream(resource))) {
             return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
         }
@@ -42,7 +42,7 @@ class RemoveMapstructTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipes(new RemoveMapstruct(), new AutoFormat("com.santunioni.styles.AutoFormatRecipeOutputForTest"))
+        spec.recipes(new InlineMapstruct(), new AutoFormat("com.santunioni.styles.AutoFormatRecipeOutputForTest"))
                 .parser(JavaParser.fromJavaVersion()
                         .classpath("mapstruct", "lombok", "junit-jupiter-api"));
     }

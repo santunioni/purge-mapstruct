@@ -11,7 +11,7 @@ import org.openrewrite.ScanningRecipe;
 import org.openrewrite.TreeVisitor;
 
 /**
- * RemoveMapstruct is a recipe designed to refactor Mapstruct mapper interfaces.
+ * InlineMapstruct is a recipe designed to refactor Mapstruct mapper interfaces.
  * <p>
  * It replaces @Mapper interfaces with their associated generated implementation. This process
  * includes managing necessary imports, removing @Override annotations from methods, and renaming
@@ -38,13 +38,13 @@ import org.openrewrite.TreeVisitor;
  */
 @Log
 @NullMarked
-public class RemoveMapstruct extends ScanningRecipe<Accumulator> {
+public class InlineMapstruct extends ScanningRecipe<Accumulator> {
 
     /**
-     * Constructor for the RemoveMapstruct class.
-     * This method initializes an instance of the RemoveMapstruct recipe.
+     * Constructor for the InlineMapstruct class.
+     * This method initializes an instance of the InlineMapstruct recipe.
      */
-    public RemoveMapstruct() {
+    public InlineMapstruct() {
     }
 
 
