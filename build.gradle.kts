@@ -7,7 +7,7 @@ plugins {
 
 group = "io.github.santunioni"
 description = "Inline Mapstruct"
-version = "0.1.0"
+version = "0.1.0-SNAPSHOT"
 
 recipeDependencies {
     parserClasspath("org.jspecify:jspecify:1.0.0")
