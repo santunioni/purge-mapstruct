@@ -11,7 +11,7 @@ import org.openrewrite.ScanningRecipe;
 import org.openrewrite.TreeVisitor;
 
 /**
- * InlineMapstruct is a recipe designed to refactor Mapstruct mapper interfaces.
+ * PurgeMapstruct is a recipe designed to refactor Mapstruct mapper interfaces.
  * <p>
  * It replaces @Mapper interfaces with their associated generated implementation. This process
  * includes managing necessary imports, removing @Override annotations from methods, and renaming
@@ -38,13 +38,13 @@ import org.openrewrite.TreeVisitor;
  */
 @Log
 @NullMarked
-public class InlineMapstruct extends ScanningRecipe<Accumulator> {
+public class PurgeMapstruct extends ScanningRecipe<Accumulator> {
 
     /**
-     * Constructor for the InlineMapstruct class.
-     * This method initializes an instance of the InlineMapstruct recipe.
+     * Constructor for the PurgeMapstruct class.
+     * This method initializes an instance of the PurgeMapstruct recipe.
      */
-    public InlineMapstruct() {
+    public PurgeMapstruct() {
     }
 
 

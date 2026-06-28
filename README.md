@@ -1,4 +1,4 @@
-# InlineMapstruct
+# PurgeMapstruct
 
 This is an OpenRewrite recipe that inlines MapStruct mapper implementations into plain Java code.
 
@@ -31,5 +31,5 @@ understand how you can improve the quality of the generated code automatically.
   will make mapstruct use the builder classes in generated code. This is better because otherwise mapstruct will
   generate a constructor with all fields, which is hard to read because java doesn't have keyword variables.
 - Run the quality recipes and commit your code
-- Run the `InlineMapstruct` recipe. Make sure your software builds and your tests pass. Commit the code.
+- Run the `PurgeMapstruct` recipe. Make sure your software builds and your tests pass. Commit the code.
 - Run the quality recipes again and commit your code.

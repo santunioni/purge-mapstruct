@@ -1,1 +1,1 @@
-rootProject.name = "remove-mapstruct"
+rootProject.name = "purge-mapstruct"
