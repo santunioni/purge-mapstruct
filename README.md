@@ -1,6 +1,6 @@
-# Rewrite recipe starter
+# InlineMapstruct
 
-This is an openrewrite recipe that purges mapstruct from your codebase.
+This is an OpenRewrite recipe that inlines MapStruct mapper implementations into plain Java code.
 
 ## Why?
 

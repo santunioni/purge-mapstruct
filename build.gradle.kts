@@ -5,9 +5,9 @@ plugins {
     kotlin("jvm") version "1.9.24"
 }
 
-group = "com.santunioni.recipes"
-description = "Remove Mapstruct"
-version = "0.6.0-SNAPSHOT"
+group = "io.github.santunioni"
+description = "Inline Mapstruct"
+version = "0.1.0"
 
 recipeDependencies {
     parserClasspath("org.jspecify:jspecify:1.0.0")
