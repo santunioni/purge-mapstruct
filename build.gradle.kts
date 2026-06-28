@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "io.github.santunioni"
-description = "Inline Mapstruct"
+description = "Purge Mapstruct"
 version = "0.1.0-SNAPSHOT"
 
 recipeDependencies {
