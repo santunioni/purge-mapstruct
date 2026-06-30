@@ -159,12 +159,30 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         );
     }
 
+    /**
+     * Simple names of MapStruct annotations, used as a fallback when an annotation's type cannot be
+     * resolved to its fully qualified name (e.g. partial type attribution). Mirrors the public
+     * annotations in the {@code org.mapstruct} package.
+     */
+    private static final Set<String> MAPSTRUCT_ANNOTATION_SIMPLE_NAMES = Set.of(
+            "AfterMapping", "BeanMapping", "BeforeMapping", "Condition", "Context", "DecoratedWith",
+            "EnumMapping", "InheritConfiguration", "InheritInverseConfiguration", "IterableMapping",
+            "MapMapping", "Mapper", "MapperConfig", "Mapping", "MappingConstants", "Mappings",
+            "MappingTarget", "Named", "ObjectFactory", "Qualifier", "SubclassMapping",
+            "SubclassMappings", "TargetType", "ValueMapping", "ValueMappings"
+    );
+
     private static boolean excludeMapstructAnnotations(J.Annotation a) {
-        if (a.getType() == null) {
-            return false;
+        final JavaType type = a.getType();
+
+        // When the type resolves, rely on the fully qualified name.
+        if (type != null && !(type instanceof JavaType.Unknown)) {
+            return !type.toString().startsWith(MAPSTRUCT_GROUP);
         }
 
-        return !a.getType().toString().startsWith(MAPSTRUCT_GROUP);
+        // Otherwise fall back to the annotation's simple name (e.g. @AfterMapping, @MappingTarget),
+        // so MapStruct annotations are still removed even without full type attribution.
+        return !MAPSTRUCT_ANNOTATION_SIMPLE_NAMES.contains(a.getSimpleName());
     }
 
     /**
