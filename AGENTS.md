@@ -85,8 +85,31 @@ Tests use OpenRewrite's `RewriteTest` harness with the `org.openrewrite.java.Ass
 DSL. The suite lives in `src/test/java/com/santunioni/recipes/PurgeMapstructTest.java`.
 
 - Run all tests: `./gradlew test`
+- Run one test: `./gradlew test --tests "com.santunioni.recipes.PurgeMapstructTest.<method>"`
 - The recipe under test is configured in `defaults(RecipeSpec)`: it runs `PurgeMapstruct` followed
   by `AutoFormat`, with `mapstruct`, `lombok`, and `junit-jupiter-api` on the parser classpath.
+
+### Work test-first (TDD)
+
+**Always develop changes to this recipe test-first.** OpenRewrite LST transformations are easy to
+get subtly wrong (spacing, types, member order), so the test fixture is how you discover what the
+recipe actually produces before you trust it. This is exactly how the
+`shouldRemoveAfterMappingDecorators` case (the `@AfterMapping`/`@MappingTarget` feature) was built:
+
+1. **Write the failing test first.** Create the `before/` input that exercises the new behavior and
+   a *placeholder* `after/` file (e.g. just `PLACEHOLDER`). Wire up the `@Test` and run it.
+2. **Let the test print the real output.** The assertion fails with a `but was:` block showing the
+   recipe's actual output. Read it — that is ground truth for what the recipe does today.
+3. **Decide if the output is correct.** If it already does the right thing, copy the `but was:`
+   content verbatim into `after/` and you have a green regression test. If it's wrong, that block is
+   your bug reproduction — now go fix the recipe.
+4. **Fix the recipe, re-run, iterate** until the real output matches a hand-verified-correct
+   `after/`. Never hand-write the expected output from imagination and assume the recipe matches it;
+   confirm it empirically.
+5. **Run the full suite** (`./gradlew test`) to check for regressions before committing.
+
+A scratch test with inline source strings is fine for *exploring* behavior quickly, but the
+committed test must be fixture-based (below), matching the existing cases.
 
 ### Fixture layout
 
@@ -95,14 +118,25 @@ Each test reads `.java` fixtures from `src/test/resources/fixtures/<testName>/`:
 ```
 fixtures/<testName>/
   context/   # files that must exist for parsing/linking but whose final state we don't assert
-             # (DTOs, entities, and the generated *MapperImpl.java)
-  before/    # input state of files we assert on
-  after/     # expected output state of those files
+             # — DTOs, entities, AND the generated *MapperImpl.java (the recipe needs the generated
+             #   impl in context to do the merge)
+  before/    # input state of the file(s) we assert on — typically the @Mapper interface/abstract class
+  after/     # expected output state of those same file(s), filename-matched to before/
 ```
+
+Conventions, mirrored from the existing cases:
+
+- One file per role, named after the type (e.g. `before/CustomerMapper.java` ⇄ `after/CustomerMapper.java`
+  ⇄ `context/CustomerMapperImpl.java`). Keep names consistent across the three dirs.
+- `context/` holds supporting types (`CustomerDto`, `CustomerEntity`) plus the MapStruct-generated
+  `*MapperImpl.java`. The generated impl must carry the real `@Generated(value = "org.mapstruct...")`
+  annotation so the scanner recognizes it.
+- Fixtures are loaded in the test with `readResource("fixtures/<testName>/<role>/<File>.java")`.
 
 A test wires fixtures to virtual source paths via `spec.path(...)`. **The path matters**: generated
 impls live under `build/generated/annotationProcessor/main/java/...` and real sources under
-`src/main/java/...`, mirroring a real Gradle project.
+`src/main/java/...`, mirroring a real Gradle project. The generated impl's `after` is `null` (it gets
+deleted — see below); the `@Mapper` file's `before`→`after` shows the inlined result.
 
 ### Asserting the generated impl is deleted
 
@@ -116,9 +150,13 @@ java(
 );
 ```
 
-### Adding a new test case
+### Adding a new test case (TDD order)
 
-1. Create a `fixtures/<newCase>/` directory with `context/`, `before/`, `after/` as needed.
-2. Add a `@Test` (optionally `@DocumentExample`) method following the existing two as templates.
-3. Wire each fixture with the correct `spec.path(...)`.
-4. `./gradlew test`.
+1. Create a `fixtures/<newCase>/` directory with `context/`, `before/`, and an `after/` containing a
+   `PLACEHOLDER` for each asserted file.
+2. Add a `@Test` (optionally `@DocumentExample`) method following the existing ones as templates, and
+   wire each fixture with the correct `spec.path(...)`.
+3. Run just that test — read the `but was:` output to see what the recipe actually produces.
+4. Verify that output is correct (fix the recipe if not), then paste the confirmed output into the
+   `after/` files.
+5. `./gradlew test` to confirm green with no regressions.
