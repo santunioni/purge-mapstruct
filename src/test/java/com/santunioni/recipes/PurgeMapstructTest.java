@@ -114,6 +114,42 @@ class PurgeMapstructTest implements RewriteTest {
     }
 
     @Test
+    void shouldReplaceMappersGetMapperInGeneratedField() throws IOException {
+        SourceSpecs makeAvailableCustomerDto = java(
+                readResource("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerDto.java"),
+                spec -> spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
+        );
+
+        SourceSpecs makeAvailableCustomerEntity = java(
+                readResource("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerEntity.java"),
+                spec -> spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
+        );
+
+        SourceSpecs makeAvailableAddressMapper = java(
+                readResource("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/AddressMapper.java"),
+                spec -> spec.path("src/main/java/com/santunioni/fixtures/AddressMapper.java")
+        );
+
+        SourceSpecs makeAvailableGeneratedClass = java(
+                readResource("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerMapperImpl.java"),
+                (String) null,
+                spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java")
+        );
+
+        rewriteRun(
+                makeAvailableCustomerDto,
+                makeAvailableCustomerEntity,
+                makeAvailableAddressMapper,
+                makeAvailableGeneratedClass,
+                java(
+                        readResource("fixtures/shouldReplaceMappersGetMapperInGeneratedField/before/CustomerMapper.java"),
+                        readResource("fixtures/shouldReplaceMappersGetMapperInGeneratedField/after/CustomerMapper.java"),
+                        spec -> spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
+                )
+        );
+    }
+
+    @Test
     void shouldRemoveAfterMappingDecorators() throws IOException {
         SourceSpecs makeAvailableCustomerDto = java(
                 readResource("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerDto.java"),

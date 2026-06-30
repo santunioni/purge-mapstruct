@@ -221,6 +221,13 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
 
             mapperImplFile = copyImports(mapperImplFile, mapperDeclFile);
 
+            // The generated impl body is taken from the scan-time accumulator and was never visited by
+            // this processor, so apply the reference rewrites to it directly (e.g. the Mappers.getMapper
+            // factory calls MapStruct emits for `uses` mappers, and any *Impl references).
+            if (visit(mapperImplClass, ctx) instanceof J.ClassDeclaration rewrittenImplClass) {
+                mapperImplClass = rewrittenImplClass;
+            }
+
             // ==========================================================
             // STEP B: PREPARE GENERATED METHODS (Remove @Override and rename constructors)
             // ==========================================================
