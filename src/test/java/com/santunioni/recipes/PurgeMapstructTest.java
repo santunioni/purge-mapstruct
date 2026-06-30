@@ -84,6 +84,36 @@ class PurgeMapstructTest implements RewriteTest {
     }
 
     @Test
+    void shouldReplaceMappersGetMapper() throws IOException {
+        SourceSpecs makeAvailableCustomerDto = java(
+                readResource("fixtures/shouldReplaceMappersGetMapper/context/CustomerDto.java"),
+                spec -> spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
+        );
+
+        SourceSpecs makeAvailableCustomerEntity = java(
+                readResource("fixtures/shouldReplaceMappersGetMapper/context/CustomerEntity.java"),
+                spec -> spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
+        );
+
+        SourceSpecs makeAvailableGeneratedClass = java(
+                readResource("fixtures/shouldReplaceMappersGetMapper/context/CustomerMapperImpl.java"),
+                (String) null,
+                spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java")
+        );
+
+        rewriteRun(
+                makeAvailableCustomerDto,
+                makeAvailableCustomerEntity,
+                makeAvailableGeneratedClass,
+                java(
+                        readResource("fixtures/shouldReplaceMappersGetMapper/before/CustomerMapper.java"),
+                        readResource("fixtures/shouldReplaceMappersGetMapper/after/CustomerMapper.java"),
+                        spec -> spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
+                )
+        );
+    }
+
+    @Test
     void shouldRemoveAfterMappingDecorators() throws IOException {
         SourceSpecs makeAvailableCustomerDto = java(
                 readResource("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerDto.java"),
