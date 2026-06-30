@@ -65,6 +65,9 @@ used only to format test output. The recipe is registered/published as
 
 ## Developing
 
+- **Trunk-based development**: this project commits and pushes directly to `main`. There is no
+  feature-branch / PR flow here — make your change, ensure `./gradlew test` is green, commit to
+  `main`, and `git push`. Keep commits small and self-contained so the trunk stays releasable.
 - Java 17 toolchain (see `.sdkmanrc` — `sdk env` to match). Gradle wrapper is committed.
 - Dependencies resolve to `latest.release` against the OpenRewrite BOM, so a network fetch is needed
   on first build.
