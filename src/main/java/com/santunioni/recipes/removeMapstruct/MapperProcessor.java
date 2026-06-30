@@ -285,6 +285,93 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     /**
+     * Replaces the MapStruct factory lookup {@code Mappers.getMapper(SomeMapper.class)} with a direct
+     * constructor call {@code new SomeMapper()}. After inlining, the mapper is a concrete class, so the
+     * factory call (which resolved the now-deleted generated implementation) becomes a plain
+     * instantiation. The {@code org.mapstruct.factory.Mappers} import is dropped by {@link #copyImports}.
+     */
+    @Override
+    public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+        J visited = super.visitMethodInvocation(method, ctx);
+        if (!(visited instanceof J.MethodInvocation invocation)) {
+            return visited;
+        }
+
+        if (!isMappersGetMapper(invocation) || invocation.getArguments().size() != 1) {
+            return invocation;
+        }
+
+        // The single argument is a class literal: SomeMapper.class
+        if (!(invocation.getArguments().get(0) instanceof J.FieldAccess classLiteral)
+                || !classLiteral.getName().getSimpleName().equals("class")) {
+            return invocation;
+        }
+
+        TypeTree mapperType;
+        if (classLiteral.getTarget() instanceof J.Identifier identifier) {
+            mapperType = identifier.withPrefix(Space.SINGLE_SPACE);
+        } else if (classLiteral.getTarget() instanceof J.FieldAccess fieldAccess) {
+            mapperType = fieldAccess.withPrefix(Space.SINGLE_SPACE);
+        } else {
+            return invocation;
+        }
+
+        JavaType.FullyQualified mapperFqn = TypeUtils.asFullyQualified(mapperType.getType());
+        if (mapperFqn == null) {
+            return invocation;
+        }
+
+        // Synthesize the no-arg constructor type so the new J.NewClass carries a valid type.
+        JavaType.Method constructorType = new JavaType.Method(
+                null, Flag.Public.getBitMask(), mapperFqn, "<constructor>", mapperFqn,
+                Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                Collections.emptyList(), null, null
+        );
+
+        Expression noArguments = new J.Empty(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY);
+        JContainer<Expression> arguments = JContainer.build(
+                Space.EMPTY,
+                Collections.singletonList(JRightPadded.build(noArguments)),
+                Markers.EMPTY
+        );
+
+        // Mappers.getMapper(SomeMapper.class) -> new SomeMapper()
+        return new J.NewClass(
+                UUID.randomUUID(),
+                invocation.getPrefix(),
+                invocation.getMarkers(),
+                null,
+                Space.EMPTY,
+                mapperType,
+                arguments,
+                null,
+                constructorType
+        );
+    }
+
+    private static boolean isMappersGetMapper(J.MethodInvocation invocation) {
+        if (!"getMapper".equals(invocation.getSimpleName())) {
+            return false;
+        }
+
+        JavaType.Method methodType = invocation.getMethodType();
+        if (methodType != null && methodType.getDeclaringType() != null) {
+            return "org.mapstruct.factory.Mappers"
+                    .equals(methodType.getDeclaringType().getFullyQualifiedName());
+        }
+
+        // Fall back to the select's simple name when type attribution is missing.
+        Expression select = invocation.getSelect();
+        if (select instanceof J.Identifier identifier) {
+            return "Mappers".equals(identifier.getSimpleName());
+        }
+        if (select instanceof J.FieldAccess fieldAccess) {
+            return "Mappers".equals(fieldAccess.getName().getSimpleName());
+        }
+        return false;
+    }
+
+    /**
      * Replaces references of UserMapperImpl.class to UserMapper.class
      */
     @Override
