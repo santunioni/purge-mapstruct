@@ -26,6 +26,8 @@ import org.openrewrite.TreeVisitor;
  * implementation class.
  * 5. Renames the implementation class to match the original interface name and removes
  * "implements" declarations.
+ * 6. Deletes the original Mapstruct-generated implementation source file, since its content has
+ * been merged into the original mapper file.
  * <p>
  * This recipe assumes that the generated implementation is available in the source files being processed.
  * The gradle plugin should be configured to include generated sources in the context.

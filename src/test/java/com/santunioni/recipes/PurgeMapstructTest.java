@@ -62,6 +62,7 @@ class PurgeMapstructTest implements RewriteTest {
 
         SourceSpecs makeAvailableGeneratedClass = java(
                 readResource("fixtures/shouldReplaceInterfaceMapper/context/UserMapperImpl.java"),
+                (String) null,
                 spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/UserMapperImpl.java")
         );
 
@@ -97,6 +98,7 @@ class PurgeMapstructTest implements RewriteTest {
 
         SourceSpecs makeAvailableGeneratedClass = java(
                 readResource("fixtures/shouldReplaceAbstractMapper/context/CustomerMapperImpl.java"),
+                (String) null,
                 spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java")
         );
 
