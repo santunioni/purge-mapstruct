@@ -1,4 +1,8 @@
 package com.santunioni.fixtures;
 
-public class AddressMapper {
+import org.mapstruct.Mapper;
+
+@Mapper
+public interface AddressMapper {
+    CustomerDto toCustomerDto(CustomerEntity customerEntity);
 }

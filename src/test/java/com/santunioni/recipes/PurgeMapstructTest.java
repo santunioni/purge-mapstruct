@@ -127,7 +127,14 @@ class PurgeMapstructTest implements RewriteTest {
 
         SourceSpecs makeAvailableAddressMapper = java(
                 readResource("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/AddressMapper.java"),
+                readResource("fixtures/shouldReplaceMappersGetMapperInGeneratedField/after/AddressMapper.java"),
                 spec -> spec.path("src/main/java/com/santunioni/fixtures/AddressMapper.java")
+        );
+
+        SourceSpecs makeAvailableAddressMapperImpl = java(
+                readResource("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/AddressMapperImpl.java"),
+                (String) null,
+                spec -> spec.path("build/generated/annotationProcessor/main/java/com/santunioni/fixtures/AddressMapperImpl.java")
         );
 
         SourceSpecs makeAvailableGeneratedClass = java(
@@ -140,6 +147,7 @@ class PurgeMapstructTest implements RewriteTest {
                 makeAvailableCustomerDto,
                 makeAvailableCustomerEntity,
                 makeAvailableAddressMapper,
+                makeAvailableAddressMapperImpl,
                 makeAvailableGeneratedClass,
                 java(
                         readResource("fixtures/shouldReplaceMappersGetMapperInGeneratedField/before/CustomerMapper.java"),
