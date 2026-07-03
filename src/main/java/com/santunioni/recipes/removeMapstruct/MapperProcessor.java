@@ -380,7 +380,9 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     /**
-     * Replaces references of UserMapperImpl.class to UserMapper.class
+     * Replaces references of UserMapperImpl.class to UserMapper.class, both for the
+     * simple-name case ({@code UserMapperImpl.class}) and the fully-qualified case
+     * ({@code com.foo.UserMapperImpl.class}).
      */
     @Override
     public J visitFieldAccess(J.FieldAccess fieldAccess_, ExecutionContext ctx) {
@@ -391,35 +393,56 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
 
         final var target = fieldAccess.getTarget();
 
-        if (!(target instanceof J.Identifier targetIdentifier)) {
-            return fieldAccess;
+        // Case A: simple-name target, e.g. `UserMapperImpl.class` or `UserMapperImpl.FIELD`.
+        // Rewrite the identifier itself to point at the super type.
+        if (target instanceof J.Identifier targetIdentifier) {
+            final var targetType = targetIdentifier.getType();
+            if (targetType == null) {
+                return fieldAccess;
+            }
+
+            final var targetFqn = targetType.toString();
+            final var superFqn = acc.getSuperFqnFromImplFqn(targetFqn);
+
+            if (superFqn == null) {
+                return fieldAccess;
+            }
+
+            final var superSimpleName = extractSimpleName(superFqn);
+            final var superType = JavaType.buildType(superFqn);
+            final Expression superTarget = new J.Identifier(
+                    UUID.randomUUID(),
+                    targetIdentifier.getPrefix(),
+                    targetIdentifier.getMarkers(),
+                    Collections.emptyList(),
+                    superSimpleName,
+                    superType,
+                    targetIdentifier.getFieldType()
+            );
+
+            return fieldAccess.withTarget(superTarget).withType(superType);
         }
 
-        final var targetType = targetIdentifier.getType();
-        if (targetType == null) {
-            return fieldAccess;
+        // Case B: fully-qualified target, e.g. `com.foo.UserMapperImpl.class`.
+        // The target is itself a FieldAccess chain whose FQN (from the name chain, not the
+        // possibly-stale type attribution) is the impl type. Rename the final segment.
+        if (target instanceof J.FieldAccess targetFieldAccess) {
+            String targetFqn = extractFqnFromFieldAccess(targetFieldAccess);
+            if (targetFqn == null) {
+                return fieldAccess;
+            }
+            String superFqn = acc.getSuperFqnFromImplFqn(targetFqn);
+            if (superFqn == null) {
+                return fieldAccess;
+            }
+
+            String superSimpleName = extractSimpleName(superFqn);
+            JavaType superType = JavaType.buildType(superFqn);
+            J.Identifier newFinalName = targetFieldAccess.getName().withSimpleName(superSimpleName);
+            J.FieldAccess newTarget = targetFieldAccess.withName(newFinalName).withType(superType);
+
+            return fieldAccess.withTarget(newTarget);
         }
-
-        final var targetFqn = targetType.toString();
-        final var superFqn = acc.getSuperFqnFromImplFqn(targetFqn);
-
-        if (superFqn == null) {
-            return fieldAccess;
-        }
-
-        final var superSimpleName = extractSimpleName(superFqn);
-        final var superType = JavaType.buildType(superFqn);
-        final Expression superTarget = new J.Identifier(
-                UUID.randomUUID(),
-                targetIdentifier.getPrefix(),
-                targetIdentifier.getMarkers(),
-                Collections.emptyList(),
-                superSimpleName,
-                superType,
-                targetIdentifier.getFieldType()
-        );
-
-        fieldAccess = fieldAccess.withTarget(superTarget).withType(superType);
 
         return fieldAccess;
     }
