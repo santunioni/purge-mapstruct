@@ -66,8 +66,6 @@ subprojects {
 }
 ```
 
-Add `src/generated/` to `.gitignore` — it is still build output, just placed where OpenRewrite can reach it.
-
 **Maven** (`pom.xml`):
 
 ```xml
