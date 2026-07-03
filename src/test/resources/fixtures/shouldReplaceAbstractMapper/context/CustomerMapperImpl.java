@@ -1,4 +1,4 @@
-package com.santunioni.fixtures;
+package io.github.santunioni.fixtures;
 
 import lombok.Getter;
 import lombok.Setter;

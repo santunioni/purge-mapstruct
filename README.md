@@ -136,7 +136,7 @@ dependencies {
 }
 
 rewrite {
-    activeRecipe("com.santunioni.recipes.PurgeMapstruct")
+    activeRecipe("io.github.santunioni.recipes.PurgeMapstruct")
 }
 ```
 
@@ -150,7 +150,7 @@ rewrite {
     <version>LATEST</version>
     <configuration>
         <activeRecipes>
-            <recipe>com.santunioni.recipes.PurgeMapstruct</recipe>
+            <recipe>io.github.santunioni.recipes.PurgeMapstruct</recipe>
         </activeRecipes>
     </configuration>
     <dependencies>
@@ -222,7 +222,7 @@ dependencies {
 }
 
 rewrite {
-    activeRecipe("com.santunioni.recipes.PurgeMapstruct")
+    activeRecipe("io.github.santunioni.recipes.PurgeMapstruct")
     activeRecipe("org.openrewrite.staticanalysis.CodeCleanup")
     activeRecipe("org.openrewrite.staticanalysis.CommonStaticAnalysis")
 }
@@ -238,7 +238,7 @@ rewrite {
     <version>LATEST</version>
     <configuration>
         <activeRecipes>
-            <recipe>com.santunioni.recipes.PurgeMapstruct</recipe>
+            <recipe>io.github.santunioni.recipes.PurgeMapstruct</recipe>
             <recipe>org.openrewrite.staticanalysis.CodeCleanup</recipe>
             <recipe>org.openrewrite.staticanalysis.CommonStaticAnalysis</recipe>
         </activeRecipes>

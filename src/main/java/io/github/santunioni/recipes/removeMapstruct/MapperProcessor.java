@@ -1,4 +1,4 @@
-package com.santunioni.recipes.removeMapstruct;
+package io.github.santunioni.recipes.removeMapstruct;
 
 import lombok.extern.java.Log;
 import org.jspecify.annotations.NullMarked;
@@ -14,8 +14,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.santunioni.recipes.removeMapstruct.Functions.isMapperDeclaration;
-import static com.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation;
+import static io.github.santunioni.recipes.removeMapstruct.Functions.isMapperDeclaration;
+import static io.github.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation;
 
 @Log
 @NullMarked
