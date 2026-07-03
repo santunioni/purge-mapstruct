@@ -17,11 +17,13 @@ your mapping logic.
 
 MapStruct's greatest feature is its greatest flaw: it auto-maps your value objects by matching field names. When it
 can't match, you either get a silently unmapped field (null in production) or you write the mapping logic as annotation
-attributes — strings that bypass the compiler and lose type safety.
+attributes — strings that bypass the compiler and lose type safety. The worst part: there is often no signal that
+anything is wrong. The field is simply absent in the output, invisibly, until it matters in production.
 
 The result is a codebase where mappings are invisible, bugs are silent, and understanding what actually happens requires
-reading both the interface and the generated implementation. MapStruct optimises for writing less code, not for reading
-or maintaining it.
+reading both the interface and the generated implementation — a file that lives in `build/`, is never committed, and
+disappears on a clean build. That is not encapsulation; it is obscurity. MapStruct optimises for writing less code, not
+for reading or maintaining it.
 
 In any long-lived codebase, code is read far more often than it is written. Writing a mapper is a one-time act;
 reading and reasoning about it happens continuously — by reviewers, by on-call engineers, by teammates who have never
@@ -32,13 +34,13 @@ This recipe removes MapStruct from your project by replacing every `@Mapper` int
 implementation, renamed back to the original interface name. The output code will not be pretty — generated code never
 is. But it will be yours to read, understand, and improve.
 
+> *"Software should be designed for ease of reading, not ease of writing."*
+> — John Ousterhout, [A Philosophy of Software Design](https://web.stanford.edu/~ouster/cgi-bin/book.php)
+
 **Start with the naive approach.** Run the recipe as-is, look at the diff, make sure your project compiles and your
 tests pass. This builds intuition for what the recipe does and surfaces any edge cases specific to your codebase before
 you invest in the full cleanup pipeline. Once you are confident the inlining is correct, revert and redo it with the
 smart approach to produce clean, readable code before your final commit.
-
-> *"Software should be designed for ease of reading, not ease of writing."*
-> — John Ousterhout, [A Philosophy of Software Design](https://web.stanford.edu/~ouster/cgi-bin/book.php)
 
 ---
 
