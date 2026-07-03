@@ -133,7 +133,9 @@ mvn compile test-compile \
   && mvn compile test-compile test
 ```
 
-If the build and tests pass, congratulations — you have working plain Java code with no MapStruct dependency. Take a moment to read the diff. The generated code is ugly, but it is yours now: no hidden annotation magic, no field-name matching, no silent nulls. Once you are comfortable with what the recipe produced, roll back the changes and follow the smart approach below to get clean, readable code before your final commit. The `*Impl` source files under `src/generated/` have been deleted by the recipe (they were merged into the original mapper files). You can remove the `src/generated/` source root configuration from your build file — it is no longer needed.
+If the build and tests pass, congratulations — you have working plain Java code with no MapStruct dependency. Take a moment to read the diff. The generated code is ugly, but it is yours now: no hidden annotation magic, no field-name matching, no silent nulls.
+
+Now **revert everything** (`git checkout .`) and do it again using the smart approach below. The naive run was just a rehearsal to build confidence. Your actual commit should go through the full cleanup pipeline so the code you ship is something your team can actually read and maintain. The `*Impl` source files under `src/generated/` have been deleted by the recipe (they were merged into the original mapper files). You can remove the `src/generated/` source root configuration from your build file — it is no longer needed.
 
 > **Note on Mockito `@Spy`:** If your tests spy on mapper fields using `when(myMapper.someMethod(...)).thenReturn(...)`, those stubs will break after inlining because the mapper is now a concrete class and Mockito will invoke the real method during stubbing setup. The recipe automatically rewrites those stubs to `doReturn(...).when(myMapper).someMethod(...)`, which is the correct pattern for concrete-class spies.
 
