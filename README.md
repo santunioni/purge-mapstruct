@@ -25,10 +25,12 @@ reading both the interface and the generated implementation — a file that live
 disappears on a clean build. That is not encapsulation; it is obscurity. MapStruct optimises for writing less code, not
 for reading or maintaining it.
 
-In any long-lived codebase, code is read far more often than it is written. Writing a mapper is a one-time act;
-reading and reasoning about it happens continuously — by reviewers, by on-call engineers, by teammates who have never
-seen it before. AI has made writing even cheaper, but every line generated is still paid for in full, every time a
-human has to read it.
+In any long-lived codebase, code is read far more often than it is written — and the two are inseparable: every
+change requires understanding what is already there. With MapStruct, that cost rises steeply as complexity grows.
+Simple field-matching is manageable; but once a mapping requires logic, you are writing Java expressions inside
+annotation strings, referencing methods by name in a context the compiler cannot reach. Every subsequent change means
+reconstructing the generated output in your head before you can touch the source. AI has made writing even cheaper,
+but every line generated is still paid for in full, every time a human has to reason about it.
 
 This recipe removes MapStruct from your project by replacing every `@Mapper` interface with its generated
 implementation, renamed back to the original interface name. The output code will not be pretty — generated code never
