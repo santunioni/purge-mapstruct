@@ -272,6 +272,22 @@ rewrite {
 | `org.openrewrite.staticanalysis.LambdaBlockToExpression`          | Collapses single-statement lambda blocks to expressions                                                                      | [link](https://docs.openrewrite.org/recipes/staticanalysis/lambdablocktoexpression)          |
 | `org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference` | Replaces `x -> foo(x)` with `Foo::foo` where applicable                                                                      | [link](https://docs.openrewrite.org/recipes/staticanalysis/replacelambdawithmethodreference) |
 
+**Spring-specific** — add `org.openrewrite.recipe:rewrite-spring` to your `rewrite` dependencies to use these:
+
+| Recipe                                                                    | What it fixes                                                                                                                                                                                | Docs                                                                                                                          |
+|---------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| `io.moderne.java.spring.boot.FieldToConstructorInjection`                 | Converts `@Autowired` field injection to constructor injection; marks fields `final`; moves `@Qualifier` to parameters. The generated MapStruct `*Impl` code typically relies heavily on field injection, so this is the first Spring recipe to reach for. | [link](https://docs.openrewrite.org/recipes/java/spring/boot/fieldtoconstructorinjection) |
+| `org.openrewrite.java.spring.NoAutowiredOnConstructor`                    | Removes the redundant `@Autowired` annotation from single-constructor beans where Spring infers injection automatically                                                                       | [link](https://docs.openrewrite.org/recipes/java/spring/noautowiredonconstructor)                                            |
+
+> **Note:** `FieldToConstructorInjection` is part of Moderne's extended recipe set (`io.moderne.recipe:rewrite-spring`).
+> Add it alongside the standard `org.openrewrite.recipe:rewrite-spring` dependency:
+> ```groovy
+> dependencies {
+>     rewrite "org.openrewrite.recipe:rewrite-spring:latest.release"
+>     rewrite "io.moderne.recipe:rewrite-spring:latest.release"
+> }
+> ```
+
 Browse the full catalog at [docs.openrewrite.org/recipes](https://docs.openrewrite.org/recipes) to find recipes suited
 to your framework and Java version.
 
