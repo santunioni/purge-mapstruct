@@ -344,6 +344,13 @@ for all formatter options.
 Running the quality recipes and formatter both before the inlining and after is even better: a cleaner codebase going in
 means cleaner output coming out.
 
+> **Minimising the diff footprint of your PR.**
+> The cleanup recipes and formatter will touch many files across your codebase — files that have nothing to do with MapStruct.
+> If you bundle all of that into the same PR as the inlining, reviewers will struggle to tell which changes are structural
+> (the purge) and which are cosmetic (the cleanup).
+> To keep the purge PR focused and reviewable, run the auto-refactors first — without the purge — commit and ship that as a
+> separate PR, then come back and run the purge on its own. The inlining diff will be much smaller and easier to reason about.
+
 ---
 
 ## Feedback
