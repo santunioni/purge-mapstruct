@@ -299,6 +299,30 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                 clazz = mutatedClazz;
             }
 
+            // Replace every simple-name type identifier with its FQN so the class compiles
+            // without any imports.
+            J qualified = new JavaVisitor<ExecutionContext>() {
+                @Override
+                public J visitIdentifier(J.Identifier identifier, ExecutionContext ctx) {
+                    // Skip variable / field references.
+                    if (identifier.getFieldType() != null) return identifier;
+                    if (!(identifier.getType() instanceof JavaType.FullyQualified fqType)) return identifier;
+                    String fqn = fqType.getFullyQualifiedName();
+                    // Skip types in the default package (no dots — already unqualifiable).
+                    if (!fqn.contains(".")) return identifier;
+                    // Skip the name segment of an already-qualified J.FieldAccess chain.
+                    J.FieldAccess nearestFa = getCursor().firstEnclosing(J.FieldAccess.class);
+                    if (nearestFa != null && nearestFa.getName() == identifier) return identifier;
+                    // Only replace when the identifier is currently using the simple name.
+                    String simpleName = fqn.substring(fqn.lastIndexOf('.') + 1);
+                    if (!identifier.getSimpleName().equals(simpleName)) return identifier;
+                    return buildFqnTypeTree(fqn, identifier.getPrefix());
+                }
+            }.visit(clazz, ctx);
+            if (qualified instanceof J.ClassDeclaration qualifiedClazz) {
+                clazz = qualifiedClazz;
+            }
+
             return mapperImplFile
                     .withClasses(Collections.singletonList(clazz))
                     .withId(mapperDeclFile.getId())
@@ -595,24 +619,30 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     private J.CompilationUnit copyImports(J.CompilationUnit mapperImplementationFile,
                                           J.CompilationUnit originalCompilationUnit
     ) {
-        List<J.Import> allImports = ListUtils.concatAll(
-                mapperImplementationFile.getImports(), originalCompilationUnit.getImports());
+        return mapperImplementationFile.withImports(Collections.emptyList());
+    }
 
-        var forbiddenImports = new HashSet<>(Arrays.asList(
-                "javax.annotation.processing.Generated",
-                "jakarta.annotation.Generated"
-        ));
-
-        var imports = new ArrayList<J.Import>();
-        for (J.Import imp : allImports) {
-            String importFqn = imp.getQualid().printTrimmed(getCursor());
-            if (!forbiddenImports.contains(importFqn) && !importFqn.startsWith(MAPSTRUCT_GROUP)) {
-                imports.add(imp);
-            }
-            forbiddenImports.add(importFqn);
+    /**
+     * Builds a fully-qualified type tree (a chain of {@link J.FieldAccess} nodes) from a
+     * dot-separated FQN string — the AST equivalent of writing {@code com.example.Foo} as a
+     * type reference in source code without an import.
+     */
+    private static TypeTree buildFqnTypeTree(String fqn, Space prefix) {
+        String[] parts = fqn.split("\\.");
+        Expression current = new J.Identifier(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY,
+                Collections.emptyList(), parts[0], null, null);
+        for (int i = 1; i < parts.length; i++) {
+            boolean isLast = i == parts.length - 1;
+            JavaType type = isLast ? JavaType.buildType(fqn) : null;
+            J.Identifier namePart = new J.Identifier(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY,
+                    Collections.emptyList(), parts[i], type, null);
+            current = new J.FieldAccess(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY,
+                    current, JLeftPadded.build(namePart), type);
         }
-
-        return mapperImplementationFile.withImports(imports);
+        if (parts.length == 1) {
+            return ((J.Identifier) current).withPrefix(prefix);
+        }
+        return ((J.FieldAccess) current).withPrefix(prefix);
     }
 
     /**

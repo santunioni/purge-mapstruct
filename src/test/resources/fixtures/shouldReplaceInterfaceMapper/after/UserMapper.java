@@ -1,41 +1,39 @@
 package io.github.santunioni.fixtures;
 
-import lombok.Setter;
-
 public class UserMapper {
-    public static final String INTERFACE_FIELD = "VALUE";
-    public static final String FINAL_INTERFACE_FIELD = "VALUE";
-    public static final String STATIC_FINAL_INTERFACE_FIELD = "VALUE";
+    public static final java.lang.String INTERFACE_FIELD = "VALUE";
+    public static final java.lang.String FINAL_INTERFACE_FIELD = "VALUE";
+    public static final java.lang.String STATIC_FINAL_INTERFACE_FIELD = "VALUE";
 
-    @Setter
-    private Long childField;
+    @lombok.Setter
+    private java.lang.Long childField;
 
     public UserMapper() {
     }
 
-    static String formatFullNameStatic(String firstName, String lastName) {
+    static java.lang.String formatFullNameStatic(java.lang.String firstName, java.lang.String lastName) {
         return firstName + " " + lastName;
     }
 
-    public UserEntity toUserEntity(UserDto userDto) {
-        String fullName = formatFullNameDefault(userDto.getFirstName(), userDto.getLastName());
-        return new UserEntity(fullName);
+    public io.github.santunioni.fixtures.UserEntity toUserEntity(io.github.santunioni.fixtures.UserDto userDto) {
+        java.lang.String fullName = formatFullNameDefault(userDto.getFirstName(), userDto.getLastName());
+        return new io.github.santunioni.fixtures.UserEntity(fullName);
     }
 
-    public UserDto toUserDto(UserEntity userEntity) {
-        String fullName = userEntity.getFullName();
+    public io.github.santunioni.fixtures.UserDto toUserDto(io.github.santunioni.fixtures.UserEntity userEntity) {
+        java.lang.String fullName = userEntity.getFullName();
         int split = fullName.indexOf(' ');
-        UserDto userDto = new UserDto(fullName.substring(0, split), fullName.substring(split + 1));
+        io.github.santunioni.fixtures.UserDto userDto = new io.github.santunioni.fixtures.UserDto(fullName.substring(0, split), fullName.substring(split + 1));
         setLastName(userDto, userEntity);
         return userDto;
     }
 
-    public String formatFullNameDefault(String firstName, String lastName) {
+    public java.lang.String formatFullNameDefault(java.lang.String firstName, java.lang.String lastName) {
         return firstName + " " + lastName;
     }
 
-    protected void setLastName(final UserDto userDto,
-                               final UserEntity userEntity) {
+    protected void setLastName(final io.github.santunioni.fixtures.UserDto userDto,
+                               final io.github.santunioni.fixtures.UserEntity userEntity) {
         userDto.setLastName(userEntity.getFullName());
     }
 }

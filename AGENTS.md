@@ -253,7 +253,7 @@ one of:
 
 ```bash
 ./gradlew refreshLocks                                   # custom task, if available
-./gradlew resolveAndLockAll --write-locks --refresh-dependencies --no-build-cache --no-configuration-cache
+./gradlew resolveAndLockAll --write-locks --refresh-dependencies
 ./gradlew dependencies --write-locks                     # vanilla Gradle lock update
 ```
 
