@@ -115,7 +115,7 @@ configure<PublishingExtension> {
                 developers {
                     developer {
                         id.set("santunioni")
-                        name.set("santunioni")
+                        name.set("Vinícius Vargas")
                         url.set("https://github.com/santunioni")
                     }
                 }
