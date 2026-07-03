@@ -39,14 +39,14 @@ is. But it will be yours to read, understand, and improve.
 > *"Software should be designed for ease of reading, not ease of writing."*
 > — John Ousterhout, [A Philosophy of Software Design](https://web.stanford.edu/~ouster/cgi-bin/book.php)
 
-**Start with the naive approach.** Run the recipe as-is, look at the diff, make sure your project compiles and your
-tests pass. This builds intuition for what the recipe does and surfaces any edge cases specific to your codebase before
-you invest in the full cleanup pipeline. Once you are confident the inlining is correct, revert and redo it with the
-smart approach to produce clean, readable code before your final commit.
-
 ---
 
 ## How to use naively
+
+**Start here.** Run the recipe as-is, look at the diff, make sure your project compiles and your tests pass. This
+builds intuition for what the recipe does and surfaces any edge cases specific to your codebase before you invest in
+the full cleanup pipeline. Once you are confident the inlining is correct, revert and redo it with the smart approach
+to produce clean, readable code before your final commit.
 
 ### Step 1: install the OpenRewrite plugin
 
