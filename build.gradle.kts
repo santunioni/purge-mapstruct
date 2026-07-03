@@ -63,6 +63,9 @@ dependencies {
     annotationProcessor("org.mapstruct:mapstruct-processor:latest.release")
     testImplementation("org.mapstruct:mapstruct:latest.release")
     annotationProcessor("org.mapstruct:mapstruct-processor:latest.release")
+
+    // Mockito is exercised by the spy-stubbing rewrite test fixtures.
+    testRuntimeOnly("org.mockito:mockito-core:latest.release")
 }
 
 signing {
