@@ -348,7 +348,7 @@ means cleaner output coming out.
 
 ## Feedback
 
-Tried the recipe? We'd love to hear from you — open an issue or start a discussion on the [GitHub repository](https://github.com/santunioni/purge-mapstruct/issues).
+Tried the recipe? We'd love to hear from you — [open an issue](https://github.com/santunioni/purge-mapstruct/issues/new) on GitHub.
 
 Some things worth sharing:
 
