@@ -1,5 +1,5 @@
 type: specs.openrewrite.org/v1beta/style
-name: com.santunioni.styles.AutoFormatRecipeOutputForTest
+name: io.github.santunioni.styles.AutoFormatRecipeOutputForTest
 displayName: Auto Format Test Output
 description: |
   Automatically cleanup code, e.g. remove unnecessary parentheses, simplify expressions.

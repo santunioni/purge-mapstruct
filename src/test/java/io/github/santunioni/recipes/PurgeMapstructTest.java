@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.santunioni.recipes;
+package io.github.santunioni.recipes;
 
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,7 @@ class PurgeMapstructTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipes(new PurgeMapstruct(), new AutoFormat("com.santunioni.styles.AutoFormatRecipeOutputForTest"))
+        spec.recipes(new PurgeMapstruct(), new AutoFormat("io.github.santunioni.styles.AutoFormatRecipeOutputForTest"))
                 .parser(JavaParser.fromJavaVersion()
                         .classpath("mapstruct", "lombok", "junit-jupiter-api"));
     }

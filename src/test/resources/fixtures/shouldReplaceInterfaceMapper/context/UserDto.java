@@ -1,4 +1,4 @@
-package com.santunioni.fixtures;
+package io.github.santunioni.fixtures;
 
 public class UserDto {
     private final String firstName;

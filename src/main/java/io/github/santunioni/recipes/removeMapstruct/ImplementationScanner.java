@@ -1,4 +1,4 @@
-package com.santunioni.recipes.removeMapstruct;
+package io.github.santunioni.recipes.removeMapstruct;
 
 import org.jspecify.annotations.NullMarked;
 import org.openrewrite.ExecutionContext;
@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import static com.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation;
+import static io.github.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation;
 
 @NullMarked
 public class ImplementationScanner extends JavaIsoVisitor<ExecutionContext> {

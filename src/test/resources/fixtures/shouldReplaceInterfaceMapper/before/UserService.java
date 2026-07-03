@@ -1,9 +1,9 @@
-package com.santunioni.fixtures;
+package io.github.santunioni.fixtures;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.Extensions;
 
-@ExtendWith(com.santunioni.fixtures.UserMapperImpl.class)
+@ExtendWith(io.github.santunioni.fixtures.UserMapperImpl.class)
 @Extensions(classes = {
         UserMapperImpl.class,
 })
