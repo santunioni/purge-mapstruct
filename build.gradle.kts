@@ -101,6 +101,29 @@ configure<io.github.gradlenexus.publishplugin.NexusPublishExtension> {
     }
 }
 
+configure<PublishingExtension> {
+    publications {
+        named("nebula", MavenPublication::class.java) {
+            suppressPomMetadataWarningsFor("runtimeElements")
+            pom {
+                url.set("https://github.com/santunioni/purge-mapstruct")
+                scm {
+                    url.set("https://github.com/santunioni/purge-mapstruct")
+                    connection.set("scm:git:git://github.com/santunioni/purge-mapstruct.git")
+                    developerConnection.set("scm:git:ssh://git@github.com/santunioni/purge-mapstruct.git")
+                }
+                developers {
+                    developer {
+                        id.set("santunioni")
+                        name.set("santunioni")
+                        url.set("https://github.com/santunioni")
+                    }
+                }
+            }
+        }
+    }
+}
+
 tasks.register("licenseFormat") {
     println("License format task not implemented for rewrite-recipe-starter")
 }
