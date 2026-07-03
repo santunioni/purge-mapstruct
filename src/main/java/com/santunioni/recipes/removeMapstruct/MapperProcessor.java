@@ -212,6 +212,9 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         // Collect @Spy-annotated field names up front so that nested visits can rewrite
         // when(spy.x(a)).thenReturn(v) into doReturn(v).when(spy).x(a).
         Set<String> spyFieldNames = collectSpyFieldNames(mapperDeclFile_);
+        if (!spyFieldNames.isEmpty()) {
+            log.fine("[PurgeMapstruct] Found spy fields in " + mapperDeclFile_.getSourcePath() + ": " + spyFieldNames);
+        }
         getCursor().putMessage(SPY_FIELD_NAMES_KEY, spyFieldNames);
 
         J visited = super.visitCompilationUnit(mapperDeclFile_, ctx);
@@ -797,6 +800,8 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
             return null;
         }
         Set<String> spyNames = getCursor().getNearestMessage(SPY_FIELD_NAMES_KEY);
+        log.fine("[PurgeMapstruct] Checking when-spy: candidate=" + spyIdent.getSimpleName()
+                + " known-spies=" + spyNames);
         if (spyNames == null || !spyNames.contains(spyIdent.getSimpleName())) {
             return null;
         }
