@@ -242,7 +242,9 @@ Browse the full catalog at [docs.openrewrite.org/recipes](https://docs.openrewri
 
 After the recipes run, the code will be syntactically correct but may not match your team's formatting conventions. Use **Spotless** to apply formatting automatically.
 
-> **Avoid Checkstyle** in your codebase altogether. Checkstyle reports violations but cannot fix them, which means someone has to fix them manually. No one should be formatting files by hand. Use Spotless instead: it enforces the same rules and applies them automatically.
+> **Avoid Checkstyle** in your codebase altogether. Checkstyle reports violations but cannot fix them, which means 
+> someone has to fix them manually. No one should be formatting files by hand. Use Spotless instead: it 
+> automatically applies all rules it enforces..
 
 **Gradle** (`build.gradle`):
 
