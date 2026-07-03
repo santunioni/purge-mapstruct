@@ -1,16 +1,16 @@
 package io.github.santunioni.fixtures;
 
 public class CustomerMapper {
-    public static final CustomerMapper INSTANCE = new CustomerMapper();
+    public static final io.github.santunioni.fixtures.CustomerMapper INSTANCE = new io.github.santunioni.fixtures.CustomerMapper();
 
-    public CustomerDto toCustomerDto(CustomerEntity customerEntity) {
+    public io.github.santunioni.fixtures.CustomerDto toCustomerDto(io.github.santunioni.fixtures.CustomerEntity customerEntity) {
         if (customerEntity == null) {
             return null;
         }
 
-        String name = customerEntity.getName();
-        String email = customerEntity.getEmail();
+        java.lang.String name = customerEntity.getName();
+        java.lang.String email = customerEntity.getEmail();
 
-        return new CustomerDto(name, email);
+        return new io.github.santunioni.fixtures.CustomerDto(name, email);
     }
 }

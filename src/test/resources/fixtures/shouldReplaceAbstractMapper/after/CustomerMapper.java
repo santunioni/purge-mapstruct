@@ -1,48 +1,44 @@
 package io.github.santunioni.fixtures;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.java.Log;
-
-@Log
+@lombok.extern.java.Log
 public class CustomerMapper {
-    protected static final String PERSONAL_DATA_TYPE = "PERSONAL_DATA";
+    protected static final java.lang.String PERSONAL_DATA_TYPE = "PERSONAL_DATA";
 
-    @Getter
-    @Setter
-    private Long myChildField;
+    @lombok.Getter
+    @lombok.Setter
+    private java.lang.Long myChildField;
 
-    @Getter
-    @Setter
-    private Long myParentField;
+    @lombok.Getter
+    @lombok.Setter
+    private java.lang.Long myParentField;
 
-    public CustomerDto toCustomerDto(CustomerEntity customerEntity) {
+    public io.github.santunioni.fixtures.CustomerDto toCustomerDto(io.github.santunioni.fixtures.CustomerEntity customerEntity) {
         if (customerEntity == null) {
             return null;
         }
 
-        String name = customerEntity.getName();
-        String email = customerEntity.getEmail();
+        java.lang.String name = customerEntity.getName();
+        java.lang.String email = customerEntity.getEmail();
 
-        return new CustomerDto(name, email);
+        return new io.github.santunioni.fixtures.CustomerDto(name, email);
     }
 
-    public CustomerEntity toCustomerEntity(CustomerDto customerDto) {
+    public io.github.santunioni.fixtures.CustomerEntity toCustomerEntity(io.github.santunioni.fixtures.CustomerDto customerDto) {
         if (customerDto == null) {
             return null;
         }
 
-        String name = customerDto.getName();
-        String email = customerDto.getEmail();
+        java.lang.String name = customerDto.getName();
+        java.lang.String email = customerDto.getEmail();
 
-        CustomerEntity customerEntity = new CustomerEntity(name, email);
+        io.github.santunioni.fixtures.CustomerEntity customerEntity = new io.github.santunioni.fixtures.CustomerEntity(name, email);
         if (customerEntity != null && customerEntity.getEmail() != null) {
             customerEntity.setEmail(customerEntity.getEmail().toLowerCase());
         }
         return customerEntity;
     }
 
-    public String getSignature(CustomerEntity customerEntity) {
+    public java.lang.String getSignature(io.github.santunioni.fixtures.CustomerEntity customerEntity) {
         return customerEntity.getName() + " <" + customerEntity.getEmail() + ">";
     }
 
