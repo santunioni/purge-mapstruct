@@ -15,17 +15,45 @@ your mapping logic.
 
 ## Philosophy
 
-MapStruct's greatest feature is its greatest flaw: it auto-maps your value objects by matching field names. When it
-can't match, you either get a silently unmapped field (null in production) or you write the mapping logic as annotation
-attributes — strings that bypass the compiler and lose type safety.
+> *"Software should be designed for ease of reading, not ease of writing."*
+> — John Ousterhout, [A Philosophy of Software Design](https://web.stanford.edu/~ouster/cgi-bin/book.php)
 
-The result is a codebase where mappings are invisible, bugs are silent, and understanding what actually happens requires
-reading both the interface and the generated implementation. MapStruct optimises for writing less code, not for reading
-or maintaining it.
+In any long-lived codebase, a given piece of code is read hundreds of times for every one time it is written. A
+developer traces through a mapper to understand a subtle bug, a new team member reads it to figure out what a field
+means, a reviewer reads it to assess correctness, an on-call engineer reads it at 2 AM to understand why production
+data is wrong. Writing is a one-time cost. Reading is a recurring cost paid by everyone, forever.
+
+This asymmetry has only sharpened. AI tools have made *writing* code cheaper than ever. The cost of producing a few
+extra lines is now negligible. The cost of reading, understanding, and reasoning about code is still paid in full,
+every time, by every human who touches it. Optimising for writing speed is optimising for the wrong variable.
+
+MapStruct is a tool that optimises squarely for writing. You write less code — an interface with annotations instead
+of an implementation — and MapStruct writes the rest. The problem is what this trades away.
+
+**Silent bugs through unknown unknowns.** Ousterhout identifies *unknown unknowns* as the most dangerous form of
+complexity: "there is something you need to know, but there is no way for you to find out what it is, or even whether
+there is an issue. You won't find out about it until bugs appear after you make a change." MapStruct's auto-mapping by
+field name is a factory for unknown unknowns. A field added to a source type silently produces `null` in the mapped
+output. A rename on one side silently breaks the match on the other. These failures are invisible at compile time and
+may be invisible in tests — the compiler sees nothing wrong, the field is just quietly left out. The bug waits in
+production.
+
+**Obscurity through indirection.** When mapping logic lives in annotation attributes on an interface — strings that
+reference field names, expression snippets, and custom qualifier types — the actual behaviour is only visible in the
+generated file, which lives in `build/` and is never committed. Understanding what a mapping does requires reading
+both the interface *and* the generated implementation. That is not encapsulation; it is obscurity. Obscurity, as
+Ousterhout puts it, is one of the two root causes of all software complexity, and it accumulates silently, one
+annotation at a time.
+
+**Strategic vs. tactical.** Using MapStruct to avoid writing mapping code is a tactical choice: it finishes the
+current task faster but adds complexity that must be paid for, with interest, by everyone who reads the code
+afterwards. The strategic choice is to write the mapping explicitly, in plain Java, where it can be read without
+tools, understood without generated files, and modified with compiler support. It costs a few more minutes today; it
+saves hours across the life of the codebase.
 
 This recipe removes MapStruct from your project by replacing every `@Mapper` interface with its generated
 implementation, renamed back to the original interface name. The output code will not be pretty — generated code never
-is. But it will be yours to read, understand, and improve.
+is. But it will be yours to read, understand, and improve. A little ugly and obvious beats elegant and obscure.
 
 **Start with the naive approach.** Run the recipe as-is, look at the diff, make sure your project compiles and your
 tests pass. This builds intuition for what the recipe does and surfaces any edge cases specific to your codebase before
