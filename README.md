@@ -10,7 +10,7 @@ The result is a codebase where mappings are invisible, bugs are silent, and unde
 
 This recipe removes MapStruct from your project by replacing every `@Mapper` interface with its generated implementation, renamed back to the original interface name. The output code will not be pretty — generated code never is. But it will be yours to read, understand, and improve.
 
-Don't commit right away. First make sure the project compiles and your tests pass. Then read the rest of this document to learn how to automatically clean up the generated code before committing.
+**Start with the naive approach.** Run the recipe as-is, look at the diff, make sure your project compiles and your tests pass. This builds intuition for what the recipe does and surfaces any edge cases specific to your codebase before you invest in the full cleanup pipeline. Once you are confident the inlining is correct, follow the smart approach to clean up the generated code automatically before committing.
 
 ---
 
@@ -133,7 +133,7 @@ mvn compile test-compile \
   && mvn compile test-compile test
 ```
 
-If the build and tests pass, you have working plain Java code. The `*Impl` source files under `src/generated/` have been deleted by the recipe (they were merged into the original mapper files). You can remove the `src/generated/` source root configuration from your build file — it is no longer needed.
+If the build and tests pass, congratulations — you have working plain Java code with no MapStruct dependency. Take a moment to read the diff. The generated code is ugly, but it is yours now: no hidden annotation magic, no field-name matching, no silent nulls. Once you are comfortable with what the recipe produced, roll back the changes and follow the smart approach below to get clean, readable code before your final commit. The `*Impl` source files under `src/generated/` have been deleted by the recipe (they were merged into the original mapper files). You can remove the `src/generated/` source root configuration from your build file — it is no longer needed.
 
 > **Note on Mockito `@Spy`:** If your tests spy on mapper fields using `when(myMapper.someMethod(...)).thenReturn(...)`, those stubs will break after inlining because the mapper is now a concrete class and Mockito will invoke the real method during stubbing setup. The recipe automatically rewrites those stubs to `doReturn(...).when(myMapper).someMethod(...)`, which is the correct pattern for concrete-class spies.
 
