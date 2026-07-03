@@ -179,9 +179,9 @@ compile again to verify the output.
 **Maven:**
 
 ```bash
-mvn compile test-compile \
-  && mvn rewrite:run \
-  && mvn compile test-compile test
+./mvnw compile test-compile \
+  && ./mvnw rewrite:run \
+  && ./mvnw compile test-compile test
 ```
 
 If the build and tests pass, congratulations — you have working plain Java code with no MapStruct dependency. Take a
@@ -344,7 +344,7 @@ See [Spotless Gradle docs](https://github.com/diffplug/spotless/tree/main/plugin
 </plugin>
 ```
 
-Run with `mvn spotless:apply`. See [Spotless Maven docs](https://github.com/diffplug/spotless/tree/main/plugin-maven)
+Run with `./mvnw spotless:apply`. See [Spotless Maven docs](https://github.com/diffplug/spotless/tree/main/plugin-maven)
 for all formatter options.
 
 ### Full workflow
