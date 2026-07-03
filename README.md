@@ -34,7 +34,7 @@ but every line generated is still paid for in full, every time a human has to re
 
 This recipe removes MapStruct from your project by replacing every `@Mapper` interface with its generated
 implementation, renamed back to the original interface name. The output code will not be pretty — generated code never
-is. But it will be yours to read, understand, and improve.
+is. But it will be yours to read, understand, and improve. In this guide I instruct you on how to improve the generated code automatically.
 
 > *"Software should be designed for ease of reading, not ease of writing."*
 > — John Ousterhout, [A Philosophy of Software Design](https://web.stanford.edu/~ouster/cgi-bin/book.php)
