@@ -346,6 +346,20 @@ means cleaner output coming out.
 
 ---
 
+## Feedback
+
+Tried the recipe? We'd love to hear from you — open an issue or start a discussion on the [GitHub repository](https://github.com/santunioni/purge-mapstruct/issues).
+
+Some things worth sharing:
+
+- **Were the instructions clear?** If a step confused you or required extra research, let us know so we can improve the guide.
+- **Did you hit any problems?** Edge cases in generated code, unexpected compilation errors after the rewrite, or anything the recipe didn't handle — file an issue with a minimal reproducer and we'll look into it.
+- **How was the generated code quality after running the smart approach?** Did the cleanup recipes and formatter leave you with readable, maintainable code? Or are there patterns they still miss?
+
+Your experience — good or bad — directly shapes what gets fixed and prioritised next.
+
+---
+
 ## Further reading
 
 - [OpenRewrite documentation](https://docs.openrewrite.org/)
