@@ -2,12 +2,19 @@ plugins {
     id("org.openrewrite.build.recipe-library-base") version "latest.release"
     id("org.openrewrite.build.publish") version "latest.release"
     id("org.openrewrite.build.recipe-repositories") version "latest.release"
+    id("nebula.release") version "21.0.0"
     kotlin("jvm") version "1.9.24"
 }
 
+// Version is managed by nebula.release:
+//   snapshot build → ./gradlew snapshot publish
+//   release build  → ./gradlew final publish closeAndReleaseSonatypeStagingRepository
 group = "io.github.santunioni"
 description = "Purge Mapstruct"
-version = "0.1.0-SNAPSHOT"
+
+// Apply the Nexus publish plugin (already on the classpath via rewrite-build-gradle-plugin)
+// to get the `closeAndReleaseSonatypeStagingRepository` task and proper staging workflow.
+apply(plugin = "io.github.gradle-nexus.publish-plugin")
 
 recipeDependencies {
     parserClasspath("org.jspecify:jspecify:1.0.0")
@@ -69,8 +76,29 @@ dependencies {
 }
 
 signing {
-    // To enable signing have your CI workflow set the "signingKey" and "signingPassword" Gradle project properties
-    isRequired = false
+    // Signing is only required for release artifacts; snapshots skip it.
+    // CI sets signingKey and signingPassword as Gradle project properties via
+    // ORG_GRADLE_PROJECT_signingKey / ORG_GRADLE_PROJECT_signingPassword env vars.
+    isRequired = !version.toString().endsWith("SNAPSHOT")
+    useInMemoryPgpKeys(
+        findProperty("signingKey") as String?,
+        findProperty("signingPassword") as String?
+    )
+}
+
+configure<nebula.plugin.release.git.base.ReleasePluginExtension> {
+    defaultVersionStrategy = nebula.plugin.release.NetflixOssStrategies.SNAPSHOT(project)
+}
+
+configure<io.github.gradlenexus.publishplugin.NexusPublishExtension> {
+    repositories {
+        sonatype {
+            // Sonatype Central Portal endpoints (the modern OSSRH replacement)
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
+            // Credentials are read from ORG_GRADLE_PROJECT_sonatypeUsername / sonatypePassword
+        }
+    }
 }
 
 tasks.register("licenseFormat") {
