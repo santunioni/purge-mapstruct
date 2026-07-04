@@ -16,19 +16,17 @@ compile-checked Java that is *yours to change*.
 
 | Recipe | Class | What it does |
 | --- | --- | --- |
-| `PurgeMapstructBare` | `PurgeMapstructBare.kt` | Core inlining only. No formatting. |
-| `PurgeMapstruct` | `PurgeMapstruct.kt` | **Recommended.** Extends `PurgeMapstructBare`, overrides `getVisitor` to apply targeted cleanup after inlining — but only on the files it changes. |
+| `PurgeMapstruct` | `PurgeMapstruct.kt` | **Recommended.** Inlines mappers and applies targeted cleanup after inlining — but only on the files it changes. |
 
-`PurgeMapstruct` extends `PurgeMapstructBare` (inheriting `getInitialValue` and `getScanner`) and
-only overrides `getVisitor` to apply cleanup visitors to files that
-`MapperProcessor` actually modified (detected via object-identity `result === tree`).
+`PurgeMapstruct` applies cleanup visitors to files that `MapperProcessor` actually modified
+(detected via object-identity `result === tree`).
 
 `rewrite-static-analysis` and `rewrite-spring` are bundled as `implementation` dependencies, so
 consumers only need to declare `purge-mapstruct` itself on the rewrite classpath.
 
 ## How the recipes work
 
-All three are `ScanningRecipe<Accumulator>` — two passes:
+Both are `ScanningRecipe<Accumulator>` — two passes:
 
 1. **Scan pass** (`ImplementationScanner`): visits every compilation unit, finds
    MapStruct-generated implementations (detected via `@Generated` carrying `org.mapstruct`), and
@@ -49,8 +47,7 @@ All three are `ScanningRecipe<Accumulator>` — two passes:
 
 | File | Responsibility |
 | --- | --- |
-| `PurgeMapstructBare.kt` | Core recipe: wires scanner + `MapperProcessor`. `open` so `PurgeMapstruct` can extend it. |
-| `PurgeMapstruct.kt` | Extends `PurgeMapstructBare`; overrides `getVisitor` to apply targeted cleanup after inlining. |
+| `PurgeMapstruct.kt` | Recipe: wires scanner + `MapperProcessor`. |
 | `removeMapstruct/Accumulator.kt` | Shared state between passes: the super↔impl linkings. |
 | `removeMapstruct/ImplementationScanner.kt` | Scan pass — records linkings. |
 | `removeMapstruct/MapperProcessor.kt` | Edit pass — does the merge, reference rewrites, impl deletion, and targeted cleanup. |
