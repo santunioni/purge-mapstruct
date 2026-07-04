@@ -187,13 +187,6 @@ spotless {
         endWithNewline()
     }
 
-    groovyGradle {
-        target("*.gradle")
-        targetExclude("**/build/**")
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
-
     format("misc") {
         target(
             "*.md",
