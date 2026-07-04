@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test
 import org.openrewrite.DocumentExample
 import org.openrewrite.java.Assertions.java
 import org.openrewrite.java.JavaParser
-import org.openrewrite.java.format.AutoFormat
 import org.openrewrite.test.RecipeSpec
 import org.openrewrite.test.RewriteTest
 import org.openrewrite.test.SourceSpecs
@@ -29,7 +28,7 @@ internal class PurgeMapstructTest : RewriteTest {
     override fun defaults(spec: RecipeSpec) {
         spec
             .recipes(
-                PurgeMapstructRecommended(),
+                PurgeMapstructCleanerCode(),
             ).parser(JavaParser.fromJavaVersion().classpath("mapstruct", "lombok", "junit-jupiter-api"))
     }
 
