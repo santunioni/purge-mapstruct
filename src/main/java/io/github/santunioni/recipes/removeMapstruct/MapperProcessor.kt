@@ -637,6 +637,7 @@ class MapperProcessor(
 
         private fun collectSpyFieldNames(cu: J.CompilationUnit): Set<String> =
             cu.classes
+                .asSequence()
                 .flatMap { it.body.statements }
                 .filterIsInstance<J.VariableDeclarations>()
                 .filter { stmt ->
