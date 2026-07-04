@@ -1,8 +1,6 @@
 package io.github.santunioni.recipes
 
-import org.openrewrite.ExecutionContext
 import org.openrewrite.Recipe
-import org.openrewrite.TreeVisitor
 import org.openrewrite.java.RemoveUnusedImports
 import org.openrewrite.java.format.AutoFormat
 import org.openrewrite.java.spring.NoAutowiredOnConstructor
@@ -19,16 +17,14 @@ import org.openrewrite.staticanalysis.UnnecessaryParentheses
  * The Spring recipe ([NoAutowiredOnConstructor]) is a no-op on non-Spring projects.
  *
  * Intended to be run after [PurgeMapstruct], or independently as a general cleanup pass.
- * When you want the cleanup limited to only the files [PurgeMapstruct] changed, use
- * [PurgeMapstructCleanerCode] instead.
  *
  * Required on the rewrite classpath:
- *   io.github.santunioni:purge-mapstruct          (contains this class)
+ *   io.github.santunioni:purge-mapstruct (contains this class)
  *   org.openrewrite.recipe:rewrite-static-analysis (UnnecessaryParentheses, InlineVariable, …)
- *   org.openrewrite.recipe:rewrite-spring          (NoAutowiredOnConstructor)
+ *   org.openrewrite.recipe:rewrite-spring (NoAutowiredOnConstructor)
  */
 class RecommendedCleanUps : Recipe() {
-    override fun getDisplayName(): String = "Recommended Refactors"
+    override fun getDisplayName(): String = "Recommended refactors"
 
     override fun getDescription(): String =
         "A curated set of cleanup and formatting recipes that improve readability after MapStruct " +
@@ -53,22 +49,4 @@ class RecommendedCleanUps : Recipe() {
             // Apply standard Java formatting: blank lines, whitespace padding, indentation
             AutoFormat(null),
         )
-
-    companion object {
-        /**
-         * Returns the same cleanup steps as visitors, for use by recipes that need to apply
-         * them selectively (e.g. only to files changed by another recipe).
-         */
-        internal fun buildCleanupVisitors(): List<TreeVisitor<*, ExecutionContext>> =
-            listOf(
-                UnnecessaryParentheses().visitor,
-                InlineVariable().visitor,
-                RemoveUnusedLocalVariables(null, null, false).visitor,
-                RemoveUnusedImports().visitor,
-                LambdaBlockToExpression().visitor,
-                ReplaceLambdaWithMethodReference().visitor,
-                NoAutowiredOnConstructor().visitor,
-                AutoFormat(null).visitor,
-            )
-    }
 }

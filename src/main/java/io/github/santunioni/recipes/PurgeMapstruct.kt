@@ -18,7 +18,7 @@ import org.openrewrite.java.tree.J
  * For a general cleanup pass that touches all Java files, use [RecommendedCleanUps] directly.
  */
 class PurgeMapstruct : PurgeMapstructBare() {
-    override fun getDisplayName(): String = "Purge MapStruct — Cleaner Code"
+    override fun getDisplayName(): String = "Purge MapStruct — cleaner code"
 
     override fun getDescription(): String =
         "Inlines every @Mapper interface/abstract class into plain Java, then applies " +
@@ -26,7 +26,7 @@ class PurgeMapstruct : PurgeMapstructBare() {
 
     override fun getVisitor(acc: Accumulator): TreeVisitor<*, ExecutionContext> {
         val mapperProcessor = super.getVisitor(acc)
-        val cleanupVisitors = RecommendedCleanUps.buildCleanupVisitors()
+        val cleanupVisitors = RecommendedCleanUps().recipeList.map { it.visitor }
 
         return object : TreeVisitor<Tree, ExecutionContext>() {
             override fun isAcceptable(
