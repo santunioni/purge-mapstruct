@@ -3,4 +3,5 @@ dataSources/
 modules/
 !.idea/ktlint-plugin.xml
 !.idea/google-java-format.xml
+!.idea/palantir-java-format.xml
 !.idea/externalDependencies.xml

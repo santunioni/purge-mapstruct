@@ -1,16 +1,15 @@
 package io.github.santunioni.recipes.removeMapstruct;
 
+import static io.github.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeTree;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-
-import static io.github.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation;
 
 @NullMarked
 public class ImplementationScanner extends JavaIsoVisitor<ExecutionContext> {
@@ -31,9 +30,8 @@ public class ImplementationScanner extends JavaIsoVisitor<ExecutionContext> {
                 continue;
             }
 
-            List<TypeTree> implInterfaces = Objects
-                    .requireNonNullElse(classDecl.getImplements(),
-                            Collections.emptyList());
+            List<TypeTree> implInterfaces =
+                    Objects.requireNonNullElse(classDecl.getImplements(), Collections.emptyList());
             for (TypeTree interfaceDecl : implInterfaces) {
                 acc.addLinking(interfaceDecl, mapperImpl);
             }
@@ -41,9 +39,7 @@ public class ImplementationScanner extends JavaIsoVisitor<ExecutionContext> {
             if (classDecl.getExtends() != null) {
                 acc.addLinking(classDecl.getExtends(), mapperImpl);
             }
-
         }
         return super.visitCompilationUnit(mapperImpl, ctx);
     }
-
 }

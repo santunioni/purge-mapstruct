@@ -1,17 +1,16 @@
 package io.github.santunioni.recipes.removeMapstruct;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import lombok.extern.java.Log;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeTree;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 @Log
 @NullMarked
@@ -35,8 +34,7 @@ public class Accumulator {
 
     J.@Nullable CompilationUnit getImplementer(J.ClassDeclaration compilationUnit) {
         if (compilationUnit.getType() == null) {
-            log.severe("Could not find fully qualified name for " + compilationUnit +
-                    ". Skipping.");
+            log.severe("Could not find fully qualified name for " + compilationUnit + ". Skipping.");
             return null;
         }
 
@@ -50,9 +48,8 @@ public class Accumulator {
         return implementers.get(0);
     }
 
-    @Nullable String getSuperFqnFromImplFqn(String implFqn) {
+    @Nullable
+    String getSuperFqnFromImplFqn(String implFqn) {
         return mapImplementerToItsSup.get(implFqn);
     }
-
 }
-

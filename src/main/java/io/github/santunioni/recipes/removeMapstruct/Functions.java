@@ -1,26 +1,25 @@
 package io.github.santunioni.recipes.removeMapstruct;
 
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.TypeUtils;
-
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.TypeUtils;
 
 class Functions {
     static boolean isMapperImplementation(J.CompilationUnit compilationUnit) {
         final Optional<J.Annotation> generatedAnnotationOpt = compilationUnit.getClasses().stream()
                 .flatMap(cd -> {
-                    if (!((cd.getImplements() != null
-                            && !cd.getImplements().isEmpty()) || cd.getExtends() != null)) {
+                    if (!((cd.getImplements() != null && !cd.getImplements().isEmpty()) || cd.getExtends() != null)) {
                         return Stream.empty();
                     }
 
-                    return cd.getLeadingAnnotations().stream().filter(an -> TypeUtils.isOfClassType(
-                            an.getType(),
-                            "javax.annotation.processing.Generated"));
-                }).findFirst();
+                    return cd.getLeadingAnnotations().stream()
+                            .filter(an ->
+                                    TypeUtils.isOfClassType(an.getType(), "javax.annotation.processing.Generated"));
+                })
+                .findFirst();
 
         if (generatedAnnotationOpt.isPresent()) {
             final var generatedAnnotation = generatedAnnotationOpt.get();
@@ -36,9 +35,7 @@ class Functions {
     }
 
     static boolean isMapperDeclaration(J.CompilationUnit originalCu) {
-        return originalCu.getClasses().stream()
-                .anyMatch(cd -> cd.getLeadingAnnotations().stream()
-                        .anyMatch(a -> a.getType() != null && TypeUtils.isOfClassType(
-                                a.getType(), "org.mapstruct.Mapper")));
+        return originalCu.getClasses().stream().anyMatch(cd -> cd.getLeadingAnnotations().stream()
+                .anyMatch(a -> a.getType() != null && TypeUtils.isOfClassType(a.getType(), "org.mapstruct.Mapper")));
     }
 }
