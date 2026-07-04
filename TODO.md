@@ -15,9 +15,9 @@ how.
 These are stripped from the codebase:
 - The @DecoratedWith annotation
 - The decorator class, `SomeDecorator.class`, when its purpose was to be
-  referenced by the mapper interface. 
+  referenced by the mapper interface.
   - Generated code already covers the functionality? So delete the `SomeDecorator.class`.
-  - Generated code doesn't cover the functionality and user as using `SomeDecorator.class` directly? Then refactor the 
+  - Generated code doesn't cover the functionality and user as using `SomeDecorator.class` directly? Then refactor the
     class to the minimal thing that doesn't bother about mapstruct.
 
 ---
