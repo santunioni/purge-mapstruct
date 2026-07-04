@@ -55,8 +55,8 @@ class MapperProcessor(
         }
         cursor.putMessage(SPY_FIELD_NAMES_KEY, spyFieldNames)
 
-        val visited = super.visitCompilationUnit(mapperDeclFile, ctx)
-        if (visited !is J.CompilationUnit || !isMapperDeclaration(visited)) return visited
+        val superResult = super.visitCompilationUnit(mapperDeclFile, ctx)
+        val visited = superResult as? J.CompilationUnit ?: return superResult
         if (!isMapperDeclaration(visited)) return visited
 
         val mapperDeclClass = visited.classes[0]
@@ -71,42 +71,25 @@ class MapperProcessor(
             mapperImplFile = copyImports(mapperImplFile)
 
             // STEP B: PREPARE GENERATED METHODS (Remove @Override and rename constructors)
-            val copiedClassStatements = mutableListOf<Statement>()
-
-            for (implStatement in mapperImplClass.body.statements) {
-                if (implStatement is J.MethodDeclaration) {
-                    copiedClassStatements.add(
-                        transformMapperImplMethod(
-                            implStatement,
-                            mapperImplClassName,
-                            mapperDeclClassName,
-                        ),
-                    )
-                } else {
-                    copiedClassStatements.add(implStatement)
-                }
-            }
-
-            for (mapperDeclStatement in mapperDeclClass.body.statements) {
-                when (mapperDeclStatement) {
-                    is J.MethodDeclaration -> {
-                        val m = transformMapperDeclMethod(mapperDeclStatement)
-                        if (m != null) copiedClassStatements.add(m)
+            val copiedClassStatements = (
+                mapperImplClass.body.statements.map { implStatement ->
+                    when (implStatement) {
+                        is J.MethodDeclaration -> transformMapperImplMethod(implStatement, mapperImplClassName, mapperDeclClassName)
+                        else -> implStatement
                     }
-
-                    is J.VariableDeclarations -> {
-                        val field =
+                } + mapperDeclClass.body.statements.mapNotNull { mapperDeclStatement ->
+                    when (mapperDeclStatement) {
+                        is J.MethodDeclaration -> transformMapperDeclMethod(mapperDeclStatement)
+                        is J.VariableDeclarations ->
                             if (mapperDeclClass.kind == J.ClassDeclaration.Kind.Type.Interface) {
                                 transformMapperDeclInterfaceField(mapperDeclStatement)
                             } else {
                                 mapperDeclStatement
                             }
-                        copiedClassStatements.add(field)
+                        else -> null
                     }
                 }
-            }
-
-            copiedClassStatements.sortWith(StatementDefinitionOrder())
+            ).sortedWith(StatementDefinitionOrder())
 
             var clazz =
                 mapperImplClass
@@ -124,33 +107,26 @@ class MapperProcessor(
 
             // Visit the merged class so reference rewrites (Mappers.getMapper, *Impl refs, etc.)
             // apply to the copied impl body too.
-            val visitedClazz = visit(clazz, ctx)
-            if (visitedClazz is J.ClassDeclaration) {
-                clazz = visitedClazz
-            }
+            clazz = visit(clazz, ctx) as? J.ClassDeclaration ?: clazz
 
             // Replace every simple-name type identifier with its FQN so the class compiles
             // without any imports.
-            val qualified =
-                object : JavaVisitor<ExecutionContext>() {
-                    override fun visitIdentifier(
-                        identifier: J.Identifier,
-                        ctx: ExecutionContext,
-                    ): J {
-                        if (identifier.fieldType != null) return identifier
-                        val fqType = identifier.type as? JavaType.FullyQualified ?: return identifier
-                        val fqn = fqType.fullyQualifiedName
-                        if (!fqn.contains(".")) return identifier
-                        val nearestFa = cursor.firstEnclosing(J.FieldAccess::class.java)
-                        if (nearestFa != null && nearestFa.name === identifier) return identifier
-                        val simpleName = fqn.substring(fqn.lastIndexOf('.') + 1)
-                        if (identifier.simpleName != simpleName) return identifier
-                        return buildFqnTypeTree(fqn, identifier.prefix)
-                    }
-                }.visit(clazz, ctx)
-            if (qualified is J.ClassDeclaration) {
-                clazz = qualified
-            }
+            clazz = object : JavaVisitor<ExecutionContext>() {
+                override fun visitIdentifier(
+                    identifier: J.Identifier,
+                    ctx: ExecutionContext,
+                ): J {
+                    if (identifier.fieldType != null) return identifier
+                    val fqType = identifier.type as? JavaType.FullyQualified ?: return identifier
+                    val fqn = fqType.fullyQualifiedName
+                    if (!fqn.contains(".")) return identifier
+                    val nearestFa = cursor.firstEnclosing(J.FieldAccess::class.java)
+                    if (nearestFa != null && nearestFa.name === identifier) return identifier
+                    val simpleName = fqn.substringAfterLast('.')
+                    if (identifier.simpleName != simpleName) return identifier
+                    return buildFqnTypeTree(fqn, identifier.prefix)
+                }
+            }.visit(clazz, ctx) as? J.ClassDeclaration ?: clazz
 
             return mapperImplFile
                 .withClasses(listOf(clazz))
@@ -173,8 +149,8 @@ class MapperProcessor(
         method: J.MethodInvocation,
         ctx: ExecutionContext,
     ): J {
-        val visited = super.visitMethodInvocation(method, ctx)
-        if (visited !is J.MethodInvocation) return visited
+        val superResult = super.visitMethodInvocation(method, ctx)
+        val visited = superResult as? J.MethodInvocation ?: return superResult
 
         val rewrittenSpyStub = rewriteWhenOnSpyIfApplicable(visited)
         if (rewrittenSpyStub != null) return rewrittenSpyStub
@@ -238,43 +214,28 @@ class MapperProcessor(
         fieldAccess_: J.FieldAccess,
         ctx: ExecutionContext,
     ): J {
-        val visited = super.visitFieldAccess(fieldAccess_, ctx)
-        if (visited !is J.FieldAccess) return visited
+        val superResult = super.visitFieldAccess(fieldAccess_, ctx)
+        val visited = superResult as? J.FieldAccess ?: return superResult
 
-        val target = visited.target
-
-        // Case A: simple-name target, e.g. `UserMapperImpl.class`
-        if (target is J.Identifier) {
-            val targetFqn = target.type?.toString() ?: return visited
-            val superFqn = acc.getSuperFqnFromImplFqn(targetFqn) ?: return visited
-
-            val superSimpleName = extractSimpleName(superFqn)
-            val superType = JavaType.buildType(superFqn)
-            val superTarget: Expression =
-                J.Identifier(
-                    UUID.randomUUID(),
-                    target.prefix,
-                    target.markers,
-                    emptyList(),
-                    superSimpleName,
-                    superType,
-                    target.fieldType,
-                )
-            return visited.withTarget(superTarget).withType(superType)
+        return when (val target = visited.target) {
+            // Case A: simple-name target, e.g. `UserMapperImpl.class`
+            is J.Identifier -> {
+                val targetFqn = target.type?.toString() ?: return visited
+                val superFqn = acc.getSuperFqnFromImplFqn(targetFqn) ?: return visited
+                val superType = JavaType.buildType(superFqn)
+                visited.withTarget(
+                    J.Identifier(UUID.randomUUID(), target.prefix, target.markers, emptyList(), extractSimpleName(superFqn), superType, target.fieldType),
+                ).withType(superType)
+            }
+            // Case B: fully-qualified target, e.g. `com.foo.UserMapperImpl.class`
+            is J.FieldAccess -> {
+                val targetFqn = extractFqnFromFieldAccess(target)
+                val superFqn = acc.getSuperFqnFromImplFqn(targetFqn) ?: return visited
+                val superType = JavaType.buildType(superFqn)
+                visited.withTarget(target.withName(target.name.withSimpleName(extractSimpleName(superFqn))).withType(superType))
+            }
+            else -> visited
         }
-
-        // Case B: fully-qualified target, e.g. `com.foo.UserMapperImpl.class`
-        if (target is J.FieldAccess) {
-            val targetFqn = extractFqnFromFieldAccess(target) ?: return visited
-            val superFqn = acc.getSuperFqnFromImplFqn(targetFqn) ?: return visited
-            val superSimpleName = extractSimpleName(superFqn)
-            val superType = JavaType.buildType(superFqn)
-            val newTarget =
-                target.withName(target.name.withSimpleName(superSimpleName)).withType(superType)
-            return visited.withTarget(newTarget)
-        }
-
-        return visited
     }
 
     /** Replaces import references of `UserMapperImpl` to `UserMapper`. */
@@ -282,10 +243,10 @@ class MapperProcessor(
         imp: J.Import,
         ctx: ExecutionContext,
     ): J {
-        val visited = super.visitImport(imp, ctx)
-        if (visited !is J.Import) return visited
+        val superResult = super.visitImport(imp, ctx)
+        val visited = superResult as? J.Import ?: return superResult
 
-        val importFqn = extractFqnFromFieldAccess(visited.qualid) ?: return visited
+        val importFqn = extractFqnFromFieldAccess(visited.qualid)
         val superFqn = acc.getSuperFqnFromImplFqn(importFqn) ?: return visited
 
         if (importFqn == superFqn) return visited
@@ -304,8 +265,8 @@ class MapperProcessor(
         newClass: J.NewClass,
         ctx: ExecutionContext,
     ): J {
-        val visited = super.visitNewClass(newClass, ctx)
-        if (visited !is J.NewClass) return visited
+        val superResult = super.visitNewClass(newClass, ctx)
+        val visited = superResult as? J.NewClass ?: return superResult
 
         val clazz = visited.clazz ?: return visited
         val replacedClazz = replaceTypeTreeIfNeeded(clazz)
@@ -318,8 +279,8 @@ class MapperProcessor(
         multiVariable: J.VariableDeclarations,
         p: ExecutionContext,
     ): J {
-        val visited = super.visitVariableDeclarations(multiVariable, p)
-        if (visited !is J.VariableDeclarations) return visited
+        val superResult = super.visitVariableDeclarations(multiVariable, p)
+        val visited = superResult as? J.VariableDeclarations ?: return superResult
 
         val typeExpression = visited.typeExpression ?: return visited
         val replacedTypeExpression = replaceTypeTreeIfNeeded(typeExpression)
@@ -336,14 +297,11 @@ class MapperProcessor(
         instanceOf_: J.InstanceOf,
         ctx: ExecutionContext,
     ): J {
-        val visited = super.visitInstanceOf(instanceOf_, ctx)
-        if (visited !is J.InstanceOf) return visited
+        val superResult = super.visitInstanceOf(instanceOf_, ctx)
+        val visited = superResult as? J.InstanceOf ?: return superResult
 
-        val clazzExpr = visited.clazz
-        if (clazzExpr !is J.ControlParentheses<*>) return visited
-
-        val treeObj = clazzExpr.tree
-        if (treeObj !is TypeTree) return visited
+        val clazzExpr = visited.clazz as? J.ControlParentheses<*> ?: return visited
+        val treeObj = clazzExpr.tree as? TypeTree ?: return visited
 
         val replacedClazz = replaceTypeTreeIfNeeded(treeObj)
         if (replacedClazz === treeObj) return visited
@@ -355,31 +313,17 @@ class MapperProcessor(
     private fun copyImports(mapperImplementationFile: J.CompilationUnit): J.CompilationUnit =
         mapperImplementationFile.withImports(emptyList())
 
-    private fun extractFqnFromFieldAccess(fieldAccess: J.FieldAccess): String? {
-        val parts = mutableListOf<String>()
-        var current = fieldAccess
-        while (true) {
-            parts.add(current.name.simpleName)
-            when (val target = current.target) {
-                is J.FieldAccess -> {
-                    current = target
-                }
-
-                is J.Identifier -> {
-                    parts.add(target.simpleName)
-                    break
-                }
-
-                else -> {
-                    break
-                }
+    private fun extractFqnFromFieldAccess(fieldAccess: J.FieldAccess): String {
+        val parts = buildList {
+            add(fieldAccess.name.simpleName)
+            var current: Expression = fieldAccess.target
+            while (current is J.FieldAccess) {
+                add(current.name.simpleName)
+                current = current.target
             }
+            if (current is J.Identifier) add(current.simpleName)
         }
-        parts.reverse()
-        if (parts.isNotEmpty()) return parts.joinToString(".")
-
-        val type = fieldAccess.type ?: return null
-        return if (type is JavaType.FullyQualified) type.fullyQualifiedName else type.toString()
+        return parts.reversed().joinToString(".")
     }
 
     private fun replaceTypeTreeIfNeeded(typeTree: TypeTree): TypeTree {
@@ -409,18 +353,10 @@ class MapperProcessor(
         return import_.withQualid(newQualid)
     }
 
-    private fun extractSimpleName(fqn: String): String {
-        val lastDot = fqn.lastIndexOf('.')
-        return if (lastDot >= 0) fqn.substring(lastDot + 1) else fqn
-    }
+    private fun extractSimpleName(fqn: String): String = fqn.substringAfterLast('.')
 
-    private fun getFinalIdentifierName(fieldAccess: J.FieldAccess): String {
-        var current = fieldAccess
-        while (current.target is J.FieldAccess) {
-            current = current.target as J.FieldAccess
-        }
-        return current.name.simpleName
-    }
+    private fun getFinalIdentifierName(fieldAccess: J.FieldAccess): String =
+        generateSequence(fieldAccess) { it.target as? J.FieldAccess }.last().name.simpleName
 
     /**
      * If `invocation` matches `when(spy.method(args)).thenReturn(value)` where `spy` is a locally
@@ -442,7 +378,7 @@ class MapperProcessor(
         log.fine(
             "[PurgeMapstruct] Checking when-spy: candidate=${spyIdent.simpleName} known-spies=$spyNames",
         )
-        if (spyNames == null || !spyNames.contains(spyIdent.simpleName)) return null
+        if (spyNames == null || spyIdent.simpleName !in spyNames) return null
 
         val doStubName = if (stubName == "thenReturn") "doReturn" else "doThrow"
         val stubValue = invocation.arguments[0]
@@ -576,10 +512,9 @@ class MapperProcessor(
             // Replace `default` modifier with `public`
             val newModifiers =
                 ListUtils.map(mapperDeclMethod.modifiers) { modifier ->
-                    if (modifier.type == J.Modifier.Type.Default) {
-                        modifier.withType(J.Modifier.Type.Public)
-                    } else {
-                        modifier
+                    when (modifier.type) {
+                        J.Modifier.Type.Default -> modifier.withType(J.Modifier.Type.Public)
+                        else -> modifier
                     }
                 } ?: mapperDeclMethod.modifiers
             var method = mapperDeclMethod.withModifiers(newModifiers)
@@ -594,70 +529,32 @@ class MapperProcessor(
             // Strip MapStruct annotations from method parameters
             val filteredParameters =
                 ListUtils.map(method.parameters) { param ->
-                    if (param is J.VariableDeclarations) {
-                        param.withLeadingAnnotations(
-                            ListUtils.filter(param.leadingAnnotations) { excludeMapstructAnnotations(it) }
-                                ?: emptyList(),
+                    when (param) {
+                        is J.VariableDeclarations -> param.withLeadingAnnotations(
+                            ListUtils.filter(param.leadingAnnotations) { excludeMapstructAnnotations(it) } ?: emptyList(),
                         )
-                    } else {
-                        param
+                        else -> param
                     }
                 } ?: method.parameters
             return method.withParameters(filteredParameters)
         }
 
         private fun transformMapperDeclInterfaceField(mapperDeclField: J.VariableDeclarations): J.VariableDeclarations {
-            val accessModifiers =
-                setOf(
-                    J.Modifier.Type.Public,
-                    J.Modifier.Type.Protected,
-                    J.Modifier.Type.Private,
-                )
-            val modifiersSetManually =
-                accessModifiers + setOf(J.Modifier.Type.Static, J.Modifier.Type.Final)
-
-            val modifiers = mutableListOf<J.Modifier>()
+            val accessModifiers = setOf(J.Modifier.Type.Public, J.Modifier.Type.Protected, J.Modifier.Type.Private)
+            val modifiersSetManually = accessModifiers + setOf(J.Modifier.Type.Static, J.Modifier.Type.Final)
 
             val existingAccess = mapperDeclField.modifiers.firstOrNull { it.type in accessModifiers }
-            modifiers.add(
-                existingAccess
-                    ?: J.Modifier(
-                        UUID.randomUUID(),
-                        Space.EMPTY,
-                        Markers.EMPTY,
-                        null,
-                        J.Modifier.Type.Public,
-                        emptyList(),
-                    ),
-            )
-            modifiers.add(
-                J.Modifier(
-                    UUID.randomUUID(),
-                    Space.SINGLE_SPACE,
-                    Markers.EMPTY,
-                    null,
-                    J.Modifier.Type.Static,
-                    emptyList(),
-                ),
-            )
-            modifiers.add(
-                J.Modifier(
-                    UUID.randomUUID(),
-                    Space.SINGLE_SPACE,
-                    Markers.EMPTY,
-                    null,
-                    J.Modifier.Type.Final,
-                    emptyList(),
-                ),
-            )
-            mapperDeclField.modifiers
-                .filter { it.type !in modifiersSetManually }
-                .forEach { modifiers.add(it.withPrefix(Space.SINGLE_SPACE)) }
+            val modifiers = buildList {
+                add(
+                    existingAccess ?: J.Modifier(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Public, emptyList()),
+                )
+                add(J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE, Markers.EMPTY, null, J.Modifier.Type.Static, emptyList()))
+                add(J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE, Markers.EMPTY, null, J.Modifier.Type.Final, emptyList()))
+                addAll(mapperDeclField.modifiers.filter { it.type !in modifiersSetManually }.map { it.withPrefix(Space.SINGLE_SPACE) })
+            }
 
             var field = mapperDeclField.withModifiers(modifiers)
-            field.typeExpression?.let {
-                field = field.withTypeExpression(it.withPrefix(Space.SINGLE_SPACE))
-            }
+            field.typeExpression?.let { field = field.withTypeExpression(it.withPrefix(Space.SINGLE_SPACE)) }
             return field
         }
 
@@ -702,38 +599,35 @@ class MapperProcessor(
 
         private fun excludeMapstructAnnotations(a: J.Annotation): Boolean {
             val type = a.type
-            if (type != null && type !is JavaType.Unknown) {
-                return !type.toString().startsWith(MAPSTRUCT_GROUP)
+            return when {
+                type != null && type !is JavaType.Unknown -> !type.toString().startsWith(MAPSTRUCT_GROUP)
+                else -> a.simpleName !in MAPSTRUCT_ANNOTATION_SIMPLE_NAMES
             }
-            return !MAPSTRUCT_ANNOTATION_SIMPLE_NAMES.contains(a.simpleName)
         }
 
-        private fun collectSpyFieldNames(cu: J.CompilationUnit): Set<String> {
-            val names = mutableSetOf<String>()
-            for (clazz in cu.classes) {
-                for (stmt in clazz.body.statements) {
-                    if (stmt !is J.VariableDeclarations) continue
-                    val isSpy =
-                        stmt.leadingAnnotations.any { a ->
-                            a.simpleName == "Spy" || TypeUtils.isOfClassType(a.type, "org.mockito.Spy")
-                        }
-                    if (!isSpy) continue
-                    stmt.variables.forEach { names.add(it.simpleName) }
+        private fun collectSpyFieldNames(cu: J.CompilationUnit): Set<String> =
+            cu.classes
+                .flatMap { it.body.statements }
+                .filterIsInstance<J.VariableDeclarations>()
+                .filter { stmt ->
+                    stmt.leadingAnnotations.any { a ->
+                        a.simpleName == "Spy" || TypeUtils.isOfClassType(a.type, "org.mockito.Spy")
+                    }
                 }
-            }
-            return names
-        }
+                .flatMap { it.variables }
+                .map { it.simpleName }
+                .toSet()
 
         private fun isMappersGetMapper(invocation: J.MethodInvocation): Boolean {
             if (invocation.simpleName != "getMapper") return false
-            val methodType = invocation.methodType
-            if (methodType?.declaringType != null) {
-                return methodType.declaringType.fullyQualifiedName == "org.mapstruct.factory.Mappers"
-            }
-            return when (val select = invocation.select) {
-                is J.Identifier -> select.simpleName == "Mappers"
-                is J.FieldAccess -> select.name.simpleName == "Mappers"
-                else -> false
+            val declaringType = invocation.methodType?.declaringType
+            return when {
+                declaringType != null -> declaringType.fullyQualifiedName == "org.mapstruct.factory.Mappers"
+                else -> when (val select = invocation.select) {
+                    is J.Identifier -> select.simpleName == "Mappers"
+                    is J.FieldAccess -> select.name.simpleName == "Mappers"
+                    else -> false
+                }
             }
         }
 
@@ -746,43 +640,16 @@ class MapperProcessor(
             prefix: Space,
         ): TypeTree {
             val parts = fqn.split(".")
-            var current: Expression =
-                J.Identifier(
-                    UUID.randomUUID(),
-                    Space.EMPTY,
-                    Markers.EMPTY,
-                    emptyList(),
-                    parts[0],
-                    null,
-                    null,
-                )
-            for (i in 1 until parts.size) {
-                val isLast = i == parts.size - 1
-                val type: JavaType? = if (isLast) JavaType.buildType(fqn) else null
-                val namePart =
-                    J.Identifier(
-                        UUID.randomUUID(),
-                        Space.EMPTY,
-                        Markers.EMPTY,
-                        emptyList(),
-                        parts[i],
-                        type,
-                        null,
-                    )
-                current =
-                    J.FieldAccess(
-                        UUID.randomUUID(),
-                        Space.EMPTY,
-                        Markers.EMPTY,
-                        current,
-                        JLeftPadded.build(namePart),
-                        type,
-                    )
+            val seed: Expression = J.Identifier(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY, emptyList(), parts[0], null, null)
+            val result = parts.drop(1).foldIndexed(seed) { index, current, part ->
+                val type: JavaType? = if (index == parts.size - 2) JavaType.buildType(fqn) else null
+                val namePart = J.Identifier(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY, emptyList(), part, type, null)
+                J.FieldAccess(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY, current, JLeftPadded.build(namePart), type)
             }
-            return if (parts.size == 1) {
-                (current as J.Identifier).withPrefix(prefix)
-            } else {
-                (current as J.FieldAccess).withPrefix(prefix)
+            return when (result) {
+                is J.Identifier -> result.withPrefix(prefix)
+                is J.FieldAccess -> result.withPrefix(prefix)
+                else -> result as TypeTree
             }
         }
     }

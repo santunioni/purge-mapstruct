@@ -18,11 +18,8 @@ class ImplementationScanner(
             return super.visitCompilationUnit(mapperImpl, ctx)
         }
 
-        for (classDecl in mapperImpl.classes) {
-            for (interfaceDecl in classDecl.implements.orEmpty()) {
-                acc.addLinking(interfaceDecl, mapperImpl)
-            }
-
+        mapperImpl.classes.forEach { classDecl ->
+            classDecl.implements.orEmpty().forEach { acc.addLinking(it, mapperImpl) }
             classDecl.extends?.let { acc.addLinking(it, mapperImpl) }
         }
 
