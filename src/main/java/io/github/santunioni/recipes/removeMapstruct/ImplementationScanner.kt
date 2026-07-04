@@ -14,16 +14,18 @@ class ImplementationScanner(
         if (!isMapperImplementation(mapperImpl)) {
             return mapperImpl
         }
+        if (mapperImpl.packageDeclaration == null) {
+            return super.visitCompilationUnit(mapperImpl, ctx)
+        }
 
         for (classDecl in mapperImpl.classes) {
-            if (mapperImpl.packageDeclaration == null) continue
-
             for (interfaceDecl in classDecl.implements.orEmpty()) {
                 acc.addLinking(interfaceDecl, mapperImpl)
             }
 
             classDecl.extends?.let { acc.addLinking(it, mapperImpl) }
         }
+
         return super.visitCompilationUnit(mapperImpl, ctx)
     }
 }
