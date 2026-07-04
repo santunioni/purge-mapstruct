@@ -17,11 +17,10 @@ compile-checked Java that is *yours to change*.
 | Recipe | Class | What it does |
 | --- | --- | --- |
 | `PurgeMapstructBare` | `PurgeMapstructBare.kt` | Core inlining only. No formatting. |
-| `RecommendedCleanUps` | `RecommendedCleanUps.kt` | Standalone cleanup pass: unused imports, redundant parens, lambda simplification, `@Autowired` removal, `AutoFormat`. |
-| `PurgeMapstruct` | `PurgeMapstruct.kt` | **Recommended.** Extends `PurgeMapstructBare`, overrides `getVisitor` to wrap `MapperProcessor` with `RecommendedCleanUps` — but only on the files it changes. |
+| `PurgeMapstruct` | `PurgeMapstruct.kt` | **Recommended.** Extends `PurgeMapstructBare`, overrides `getVisitor` to apply targeted cleanup after inlining — but only on the files it changes. |
 
 `PurgeMapstruct` extends `PurgeMapstructBare` (inheriting `getInitialValue` and `getScanner`) and
-only overrides `getVisitor` to apply `RecommendedCleanUps.buildCleanupVisitors()` to files that
+only overrides `getVisitor` to apply cleanup visitors to files that
 `MapperProcessor` actually modified (detected via object-identity `result === tree`).
 
 `rewrite-static-analysis` and `rewrite-spring` are bundled as `implementation` dependencies, so
@@ -52,14 +51,13 @@ All three are `ScanningRecipe<Accumulator>` — two passes:
 | --- | --- |
 | `PurgeMapstructBare.kt` | Core recipe: wires scanner + `MapperProcessor`. `open` so `PurgeMapstruct` can extend it. |
 | `PurgeMapstruct.kt` | Extends `PurgeMapstructBare`; overrides `getVisitor` to apply targeted cleanup after inlining. |
-| `RecommendedCleanUps.kt` | Composite cleanup `Recipe` (`getRecipeList`). `buildCleanupVisitors()` companion derives visitors from `getRecipeList()` for targeted use by `PurgeMapstruct`. |
 | `removeMapstruct/Accumulator.kt` | Shared state between passes: the super↔impl linkings. |
 | `removeMapstruct/ImplementationScanner.kt` | Scan pass — records linkings. |
-| `removeMapstruct/MapperProcessor.kt` | Edit pass — does the merge, reference rewrites, and impl deletion. |
+| `removeMapstruct/MapperProcessor.kt` | Edit pass — does the merge, reference rewrites, impl deletion, and targeted cleanup. |
 | `removeMapstruct/Functions.kt` | `isMapperImplementation` / `isMapperDeclaration` detection helpers. |
 | `removeMapstruct/StatementDefinitionOrder.kt` | Comparator that orders the merged class members sensibly. |
 
-There is no `rewrite.yml`. Formatting is handled entirely within `RecommendedCleanUps` via
+There is no `rewrite.yml`. Formatting is handled entirely within `MapperProcessor` via
 `AutoFormat(null)` (OpenRewrite default style).
 
 ## Philosophy / conventions
@@ -73,8 +71,8 @@ There is no `rewrite.yml`. Formatting is handled entirely within `RecommendedCle
 - **Work on the LST, not strings**: manipulate OpenRewrite `J.*` tree nodes with `withX(...)` and
   `ListUtils`; preserve `Space`/prefixes so formatting survives.
 - **Targeted cleanup**: `PurgeMapstruct` uses object-identity (`result === tree`) to detect whether
-  `MapperProcessor` changed a file before applying `RecommendedCleanUps` visitors to it. Do not
-  break this guard — it is what keeps unrelated files untouched.
+ `MapperProcessor` changed a file before applying cleanup visitors to it. Do not
+ break this guard — it is what keeps unrelated files untouched.
 - Java 17 source/target, Java toolchain 17.
 
 ## Developing

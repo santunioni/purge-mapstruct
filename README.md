@@ -178,7 +178,7 @@ See [Spotless Maven docs](https://github.com/diffplug/spotless/tree/main/plugin-
 | Recipe                                              | What it does                                                                                                                                                                                                 |
 |-----------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `io.github.santunioni.recipes.PurgeMapstructBare`   | Inlines mappers only. Leaves formatting as-is.                                                                                                                                                               |
-| **`io.github.santunioni.recipes.PurgeMapstruct`** ✅ | **Recommended.** Wraps `PurgeMapstructBare` and `RecommendedCleanUps` — inlines mappers *and* applies cleanup, but only to the files it changes. Unrelated files are left untouched, keeping the diff small. |
+| **`io.github.santunioni.recipes.PurgeMapstruct`** ✅ | **Recommended.** Inlines mappers *and* applies cleanup (unused imports, redundant parens, lambda simplification, formatting), but only to the files it changes. Unrelated files are left untouched, keeping the diff small. |
 
 **Gradle** (`build.gradle`):
 
