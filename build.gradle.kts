@@ -83,12 +83,14 @@ signing {
     isRequired = !version.toString().endsWith("SNAPSHOT")
     useInMemoryPgpKeys(
         findProperty("signingKey") as String?,
-        findProperty("signingPassword") as String?
+        findProperty("signingPassword") as String?,
     )
 }
 
 configure<nebula.plugin.release.git.base.ReleasePluginExtension> {
-    defaultVersionStrategy = nebula.plugin.release.NetflixOssStrategies.SNAPSHOT(project)
+    defaultVersionStrategy =
+        nebula.plugin.release.NetflixOssStrategies
+            .SNAPSHOT(project)
 }
 
 configure<io.github.gradlenexus.publishplugin.NexusPublishExtension> {
@@ -167,7 +169,6 @@ sourceSets {
     }
 }
 
-
 spotless {
     java {
         target("src/**/*.java")
@@ -196,7 +197,7 @@ spotless {
             "src/**/*.md",
             "src/**/*.yaml",
             "src/**/*.yml",
-            "src/**/*.properties"
+            "src/**/*.properties",
         )
         targetExclude("**/build/**")
         trimTrailingWhitespace()
