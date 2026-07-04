@@ -292,22 +292,3 @@ the migration. The Gradle daemon keeps an in-memory Virtual File System (VFS) th
 those deleted files. Without stopping the daemon first, the subsequent `compileJava` fails with
 `Failed to normalize content of '...Impl.java'` even though those files are gone. Stopping the
 daemon clears the VFS so the next build starts with a clean file-system view.
-
-### Known patterns that the recipe intentionally skips
-
-- **`@DecoratedWith` mappers** — the decorator class `implements` the mapper interface; converting
-  the interface to a class would break that pattern. The recipe detects `@DecoratedWith` during the
-  scan pass and leaves both the `@Mapper` interface and its generated `*Impl` unchanged.
-
-- **Mappers where exactly one generated impl cannot be found** — the recipe logs `severe` and skips
-  rather than producing broken code.
-
-### Common recipe-induced compile errors and their causes
-
-| Symptom after `rewriteRun` | Root cause | Recipe fix |
-|---|---|---|
-| `reference to Foo is ambiguous` | Two imports with the same simple name | Import conflict detection in `copyImports` drops the interface's import in favour of the impl's; interface methods are then visited to qualify the dropped type by FQN. |
-| `cannot find symbol: @Context` | `@Context` appears as a *type annotation* after `final` (`final @Context List<…>`), not as a leading annotation | `transformMapperDeclMethod` unwraps `J.AnnotatedType` on parameter type expressions before stripping MapStruct annotations. |
-| `X is not public in Mapper; cannot be accessed from outside package` | Interface `static` methods are implicitly `public`; the class conversion makes them package-private | `transformMapperDeclMethod` now adds an explicit `public` modifier to all interface methods that lack an access modifier. |
-| `incompatible types: cannot infer type-variable(s)` | Follows from the above access error on a method reference used as a generic `Function<…>` argument | Same fix as above. |
-| `interface expected here` (in a decorator class) | `@DecoratedWith` mapper was converted to a class | Handled by the skip logic described above. |

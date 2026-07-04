@@ -1,39 +1,28 @@
 # Open Issues
 
-## A.1 — `@DecoratedWith` mapper is not skipped
+## `@DecoratedWith` mapper is not skipped
 
 ### Problem
 
 MapStruct supports the `@DecoratedWith` pattern: a mapper interface carries
 `@DecoratedWith(SomeDecorator.class)`, and a hand-written decorator class
 `implements` that interface to add extra behaviour around the generated code.
-
-The recipe is supposed to detect this during the **scan pass** and leave both
-the `@Mapper` interface and its generated `*Impl` untouched (AGENTS.md, "Known
-patterns that the recipe intentionally skips"). However, at least one real
-codebase shows that a mapper annotated with both `@Mapper` and
-`@DecoratedWith(...)` is **not skipped**: the recipe converts the interface to a
-concrete class. This breaks the decorator because the decorator class has
-`implements SomeMapper` — which now refers to a class, not an interface — and
-the compiler emits `interface expected here`.
-
-### Root-cause hypothesis
-
-`ImplementationScanner` or `Functions.isMapperDeclaration` does not consult the
-`@DecoratedWith` annotation when deciding whether to process a mapper. The skip
-logic needs to also inspect the annotation list of the `@Mapper` class for
-`@DecoratedWith` and, when found, record the mapper's FQN in the accumulator as
-"do not process".
+We aren't inlining those structures yet, but we should. We should figure out
+how.
 
 ### Acceptance criterion
 
-Given a `@Mapper` interface that also carries `@DecoratedWith(Decorator.class)`,
-the recipe must leave the interface **and** the generated `*Impl` completely
-unchanged. A regression test should cover this case.
+These are stripped from the codebase:
+- The @DecoratedWith annotation
+- The decorator class, `SomeDecorator.class`, when its purpose was to be
+  referenced by the mapper interface. 
+  - Generated code already covers the functionality? So delete the `SomeDecorator.class`.
+  - Generated code doesn't cover the functionality and user as using `SomeDecorator.class` directly? Then refactor the 
+    class to the minimal thing that doesn't bother about mapstruct.
 
 ---
 
-## A.3 — `@Context` type annotation is not stripped from method parameters
+## `@Context` type annotation is not stripped from method parameters
 
 ### Problem
 
@@ -53,25 +42,14 @@ not as a leading annotation on the variable declaration. The current stripping
 logic does not unwrap `J.AnnotatedType`, so `@Context` survives the merge and
 causes a compile error once MapStruct is removed from the classpath.
 
-### Root-cause
-
-In `transformMapperDeclMethod`, the parameter transformation filters
-`varDecl.getLeadingAnnotations()` but does not inspect whether
-`varDecl.getTypeExpression()` is a `J.AnnotatedType`. When it is, the
-annotation inside needs to be checked and removed if it is a MapStruct
-annotation, and the `J.AnnotatedType` must be replaced with its unwrapped inner
-type.
-
 ### Acceptance criterion
 
-A mapper with a default/static method that has a `final @Context List<Foo>`
-parameter must have the `@Context` annotation stripped and the parameter
-reduced to `final List<Foo>` in the merged output. A regression test should
-cover this exact parameter form.
+The final code doesn't possess any `@Context` annotations, and the behavior is the behavior of using
+the generated mapper is the same as if one were still using MapStruct.
 
 ---
 
-## A.4 — Lombok-generated inner builder class imported by simple inner-class name
+## Lombok-generated inner builder class imported by a simple inner-class name
 
 ### Problem
 
@@ -79,7 +57,7 @@ When the generated `*Impl` references a **Lombok-generated nested builder
 class** by its inner-class import form — e.g.
 `import some.pkg.FooDTO.FooDTOBuilder;` — the recipe copies that import verbatim
 into the merged mapper class. At compile time this import resolves to a
-Lombok-synthesised static nested class inside `FooDTO`. In some configurations
+Lombok-synthesized static nested class inside `FooDTO`. In some configurations
 (Lombok version, `lombok-mapstruct-binding` ordering) the import causes a
 `cannot find symbol` error because the Lombok annotation processor has not yet
 generated the nested type when the import is resolved.
