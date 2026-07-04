@@ -34,19 +34,14 @@ but every line generated is still paid for in full, every time a human has to re
 
 This recipe removes MapStruct from your project by replacing every `@Mapper` interface with its generated
 implementation, renamed back to the original interface name. The output code will not be pretty — generated code never
-is. But it will be yours to read, understand, and improve. In this guide I instruct you on how to improve the generated code automatically.
+is. But it will be yours to read, understand, and improve.
 
 > *"Software should be designed for ease of reading, not ease of writing."*
 > — John Ousterhout, [A Philosophy of Software Design](https://web.stanford.edu/~ouster/cgi-bin/book.php)
 
 ---
 
-## How to use naively
-
-**Start here.** Run the recipe as-is, look at the diff, make sure your project compiles and your tests pass. This
-builds intuition for what the recipe does and surfaces any edge cases specific to your codebase before you invest in
-the full cleanup pipeline. Once you are confident the inlining is correct, revert and redo it with the smart approach
-to produce clean, readable code before your final commit.
+## How to use
 
 ### Step 1: install the OpenRewrite plugin
 
@@ -58,13 +53,11 @@ plugins {
 }
 ```
 
-> Find the latest version on the [Gradle Plugin Portal](https://plugins.gradle.org/plugin/org.openrewrite.rewrite). Full
-> configuration reference: [Gradle plugin docs](https://docs.openrewrite.org/reference/gradle-plugin-configuration).
+> Find the latest version on the [Gradle Plugin Portal](https://plugins.gradle.org/plugin/org.openrewrite.rewrite).
 
 **Maven** — add to your root `pom.xml`:
 
 ```xml
-
 <plugin>
     <groupId>org.openrewrite.maven</groupId>
     <artifactId>rewrite-maven-plugin</artifactId>
@@ -72,17 +65,12 @@ plugins {
 </plugin>
 ```
 
-> Find the latest version
-> on [Maven Central](https://central.sonatype.com/artifact/org.openrewrite.maven/rewrite-maven-plugin). Full configuration
-> reference: [Maven plugin docs](https://docs.openrewrite.org/reference/rewrite-maven-plugin).
+> Find the latest version on [Maven Central](https://central.sonatype.com/artifact/org.openrewrite.maven/rewrite-maven-plugin).
 
 ### Step 2: redirect generated sources out of `build/`
 
-Both the Gradle and Maven OpenRewrite plugins deliberately exclude the `build/` (or `target/`) directory from scanning.
-This means that if MapStruct writes its `*Impl` classes into `build/generated/sources/annotationProcessor/` (the
-default), the recipe cannot see them and will do nothing.
-
-You need to redirect annotation processor output to a source directory inside `src/` before running the recipe.
+The OpenRewrite plugin deliberately excludes `build/` (or `target/`) from scanning. MapStruct writes its `*Impl`
+classes there by default, so you must redirect annotation processor output into `src/` first.
 
 **Gradle** (root `build.gradle`, applied to all subprojects):
 
@@ -103,10 +91,8 @@ subprojects {
 **Maven** (`pom.xml`):
 
 ```xml
-
 <build>
     <plugins>
-        <!-- redirect annotation processor output -->
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-compiler-plugin</artifactId>
@@ -114,8 +100,6 @@ subprojects {
                 <generatedSourcesDirectory>${project.basedir}/src/generated/java</generatedSourcesDirectory>
             </configuration>
         </plugin>
-
-        <!-- register the directory as a source root -->
         <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>
@@ -123,9 +107,7 @@ subprojects {
                 <execution>
                     <id>add-generated-sources</id>
                     <phase>generate-sources</phase>
-                    <goals>
-                        <goal>add-source</goal>
-                    </goals>
+                    <goals><goal>add-source</goal></goals>
                     <configuration>
                         <sources>
                             <source>${project.basedir}/src/generated/java</source>
@@ -138,92 +120,11 @@ subprojects {
 </build>
 ```
 
-### Step 3: add PurgeMapstruct as a recipe dependency
+### Step 3: add the recipe and run
 
-**Gradle** (`build.gradle`):
-
-```groovy
-dependencies {
-    rewrite "io.github.santunioni:purge-mapstruct:latest.release"
-}
-
-rewrite {
-    activeRecipe("io.github.santunioni.recipes.PurgeMapstruct")
-}
-```
-
-**Maven** (`pom.xml`, inside the `rewrite-maven-plugin` configuration):
-
-```xml
-
-<plugin>
-    <groupId>org.openrewrite.maven</groupId>
-    <artifactId>rewrite-maven-plugin</artifactId>
-    <version>LATEST</version>
-    <configuration>
-        <activeRecipes>
-            <recipe>io.github.santunioni.recipes.PurgeMapstruct</recipe>
-        </activeRecipes>
-    </configuration>
-    <dependencies>
-        <dependency>
-            <groupId>io.github.santunioni</groupId>
-            <artifactId>purge-mapstruct</artifactId>
-            <version>LATEST</version>
-        </dependency>
-    </dependencies>
-</plugin>
-```
-
-### Step 4: run the recipe
-
-The sequence matters. You must compile first so that MapStruct generates the `*Impl` files, then run the recipe, then
-compile again to verify the output.
-
-**Gradle:**
-
-```bash
-./gradlew compileJava compileTestJava \
-  && ./gradlew rewriteRun \
-  && ./gradlew compileJava compileTestJava test
-```
-
-**Maven:**
-
-```bash
-./mvnw compile test-compile \
-  && ./mvnw rewrite:run \
-  && ./mvnw compile test-compile test
-```
-
-If the build and tests pass, congratulations — you have working plain Java code with no MapStruct dependency. Take a
-moment to read the diff. The generated code is ugly, but it is yours now: no hidden annotation magic, no field-name
-matching, no silent nulls.
-
-Now **revert everything** (`git checkout .`) and do it again using the smart approach below. The naive run was just a
-rehearsal to build confidence. Your actual commit should go through the full cleanup pipeline so the code you ship is
-something your team can actually read and maintain.
-
-> **Note on Mockito `@Spy`:** If your tests spy on mapper fields using `when(myMapper.someMethod(...)).thenReturn(...)`,
-> those stubs will break after inlining because the mapper is now a concrete class and Mockito will invoke the real method
-> during stubbing setup. The recipe automatically rewrites those stubs to `doReturn(...).when(myMapper).someMethod(...)`,
-> which is the correct pattern for concrete-class spies.
-
----
-
-## How to use smartly
-
-The code produced by MapStruct's annotation processor is functional but mechanically ugly. Typical problems include:
-
-- Variables declared and assigned separately when a single declaration would do
-- Local variables that are only ever returned on the very next line
-- Unnecessary parentheses and verbose expressions
-- Imported types that are no longer used after inlining
-
-OpenRewrite has a large [recipe catalog](https://docs.openrewrite.org/recipes) with many recipes that fix these patterns
-automatically. Run them after `PurgeMapstruct` before committing.
-
-### Step 1: add cleanup recipe dependencies
+`io.github.santunioni.recipes.PurgeMapstructRecommended` is a pre-packaged pipeline that inlines your mappers and
+then applies a curated set of cleanup and Spring best-practice recipes, leaving the result readable and idiomatic.
+See [`rewrite.yml`](src/main/resources/META-INF/rewrite/rewrite.yml) for the full recipe list with descriptions.
 
 **Gradle** (`build.gradle`):
 
@@ -231,93 +132,70 @@ automatically. Run them after `PurgeMapstruct` before committing.
 dependencies {
     rewrite "io.github.santunioni:purge-mapstruct:latest.release"
     rewrite "org.openrewrite.recipe:rewrite-static-analysis:latest.release"
+    rewrite "org.openrewrite.recipe:rewrite-spring:latest.release"
+    rewrite "io.moderne.recipe:rewrite-spring:latest.release"
 }
 
 rewrite {
-    activeRecipe("io.github.santunioni.recipes.PurgeMapstruct")
-    activeRecipe("org.openrewrite.staticanalysis.CodeCleanup")
-    activeRecipe("org.openrewrite.staticanalysis.CommonStaticAnalysis")
+    activeRecipe("io.github.santunioni.recipes.PurgeMapstructRecommended")
 }
 ```
 
-**Maven** (`pom.xml`):
+**Maven** (`pom.xml`, inside the `rewrite-maven-plugin` configuration):
 
 ```xml
-
-<plugin>
-    <groupId>org.openrewrite.maven</groupId>
-    <artifactId>rewrite-maven-plugin</artifactId>
-    <version>LATEST</version>
-    <configuration>
-        <activeRecipes>
-            <recipe>io.github.santunioni.recipes.PurgeMapstruct</recipe>
-            <recipe>org.openrewrite.staticanalysis.CodeCleanup</recipe>
-            <recipe>org.openrewrite.staticanalysis.CommonStaticAnalysis</recipe>
-        </activeRecipes>
-    </configuration>
-    <dependencies>
-        <dependency>
-            <groupId>io.github.santunioni</groupId>
-            <artifactId>purge-mapstruct</artifactId>
-            <version>LATEST</version>
-        </dependency>
-        <dependency>
-            <groupId>org.openrewrite.recipe</groupId>
-            <artifactId>rewrite-static-analysis</artifactId>
-            <version>LATEST</version>
-        </dependency>
-    </dependencies>
-</plugin>
+<configuration>
+    <activeRecipes>
+        <recipe>io.github.santunioni.recipes.PurgeMapstructRecommended</recipe>
+    </activeRecipes>
+</configuration>
+<dependencies>
+    <dependency>
+        <groupId>io.github.santunioni</groupId>
+        <artifactId>purge-mapstruct</artifactId>
+        <version>LATEST</version>
+    </dependency>
+    <dependency>
+        <groupId>org.openrewrite.recipe</groupId>
+        <artifactId>rewrite-static-analysis</artifactId>
+        <version>LATEST</version>
+    </dependency>
+    <dependency>
+        <groupId>org.openrewrite.recipe</groupId>
+        <artifactId>rewrite-spring</artifactId>
+        <version>LATEST</version>
+    </dependency>
+    <dependency>
+        <groupId>io.moderne.recipe</groupId>
+        <artifactId>rewrite-spring</artifactId>
+        <version>LATEST</version>
+    </dependency>
+</dependencies>
 ```
 
-### Recommended recipes
+Compile first so MapStruct generates the `*Impl` files, run the recipe, then verify:
 
-| Recipe                                                            | What it fixes                                                                                                                | Docs                                                                                         |
-|-------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
-| `org.openrewrite.staticanalysis.CodeCleanup`                      | Composite: unnecessary parentheses, empty blocks, import ordering, and more                                                  | [link](https://docs.openrewrite.org/recipes/staticanalysis/codecleanup)                      |
-| `org.openrewrite.staticanalysis.CommonStaticAnalysis`             | Broader composite: includes `InlineVariable`, `LambdaBlockToExpression`, `ReplaceLambdaWithMethodReference`, and dozens more | [link](https://docs.openrewrite.org/recipes/staticanalysis/commonstaticanalysis)             |
-| `org.openrewrite.staticanalysis.InlineVariable`                   | Removes variables that exist only to be returned or thrown on the very next line                                             | [link](https://docs.openrewrite.org/recipes/staticanalysis/inlinevariable)                   |
-| `org.openrewrite.staticanalysis.RemoveUnusedLocalVariables`       | Removes local variables that are never read                                                                                  | [link](https://docs.openrewrite.org/recipes/staticanalysis/removeunusedlocalvariables)       |
-| `org.openrewrite.java.RemoveUnusedImports`                        | Drops imports no longer referenced after inlining                                                                            | [link](https://docs.openrewrite.org/recipes/java/removeunusedimports)                        |
-| `org.openrewrite.java.OrderImports`                               | Sorts and groups import statements                                                                                           | [link](https://docs.openrewrite.org/recipes/java/orderimports)                               |
-| `org.openrewrite.staticanalysis.UnnecessaryParentheses`           | Removes redundant parentheses                                                                                                | [link](https://docs.openrewrite.org/recipes/staticanalysis/unnecessaryparentheses)           |
-| `org.openrewrite.staticanalysis.LambdaBlockToExpression`          | Collapses single-statement lambda blocks to expressions                                                                      | [link](https://docs.openrewrite.org/recipes/staticanalysis/lambdablocktoexpression)          |
-| `org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference` | Replaces `x -> foo(x)` with `Foo::foo` where applicable                                                                      | [link](https://docs.openrewrite.org/recipes/staticanalysis/replacelambdawithmethodreference) |
+```bash
+# Gradle
+./gradlew compileJava compileTestJava \
+  && ./gradlew rewriteRun \
+  && ./gradlew compileJava compileTestJava test
 
-**Spring-specific** — add `org.openrewrite.recipe:rewrite-spring` to your `rewrite` dependencies to use these:
+# Maven
+./mvnw compile test-compile \
+  && ./mvnw rewrite:run \
+  && ./mvnw compile test-compile test
+```
 
-| Recipe                                                                    | What it fixes                                                                                                                                                                                                                                              | Docs                                                                                                          |
-|---------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| `io.moderne.java.spring.boot.FieldToConstructorInjection`                 | Converts `@Autowired` field injection to constructor injection; marks fields `final`; moves `@Qualifier` to parameters. Generated MapStruct `*Impl` code relies heavily on field injection — reach for this first.                                          | [link](https://docs.moderne.io/user-documentation/recipes/recipe-catalog/java/spring/boot/fieldtoconstructorinjection) |
-| `org.openrewrite.java.spring.NoAutowiredOnConstructor`                    | Removes the redundant `@Autowired` annotation from single-constructor beans where Spring can infer injection automatically                                                                                                                                   | [link](https://docs.openrewrite.org/recipes/java/spring/noautowiredonconstructor)                             |
-| `org.openrewrite.java.spring.framework.BeanMethodsNotPublic`              | Removes the unnecessary `public` modifier from `@Bean` methods — Spring does not require it and generated code often has it                                                                                                                                 | [link](https://docs.openrewrite.org/recipes/java/spring/framework/beanmethodsnotpublic)                       |
-| `org.openrewrite.java.spring.NoRequestMappingAnnotation`                  | Replaces verbose `@RequestMapping(method = GET)` with the dedicated shorthand annotations (`@GetMapping`, `@PostMapping`, etc.)                                                                                                                             | [link](https://docs.openrewrite.org/recipes/java/spring/norequestmappingannotation)                           |
-| `org.openrewrite.java.spring.boot3.PreciseBeanType`                       | Changes `@Bean` methods that declare a return type of an interface or abstract class to return the concrete type, making the bean graph easier to reason about                                                                                              | [link](https://docs.openrewrite.org/recipes/java/spring/boot3/precisebeantype)                                |
-| `org.openrewrite.java.spring.NoRepoAnnotationOnRepoInterface`             | Removes redundant `@Repository` annotations from Spring Data `Repository` sub-interfaces — Spring Data already registers them                                                                                                                               | [link](https://docs.openrewrite.org/recipes/java/spring/norepoannotationonrepointerface)                      |
-| `org.openrewrite.java.spring.boot3.SpringBoot3BestPracticesOnly`          | Composite: normalise properties to kebab-case, enable virtual threads, remove `public` from `@Bean` methods, precise bean types, Spring security best practices — all without touching your Spring Boot version                                              | [link](https://docs.openrewrite.org/recipes/java/spring/boot3/springboot3bestpracticesonly)                   |
+> **Note on Mockito `@Spy`:** If your tests spy on mapper fields using `when(myMapper.someMethod(...)).thenReturn(...)`,
+> those stubs will break after inlining because the mapper is now a concrete class. The recipe automatically rewrites
+> them to `doReturn(...).when(myMapper).someMethod(...)`, which is the correct pattern for concrete-class spies.
 
-> **Note:** `FieldToConstructorInjection` is part of Moderne's extended recipe set (`io.moderne.recipe:rewrite-spring`).
-> Add it alongside the standard `org.openrewrite.recipe:rewrite-spring` dependency:
-> ```groovy
-> dependencies {
->     rewrite "org.openrewrite.recipe:rewrite-spring:latest.release"
->     rewrite "io.moderne.recipe:rewrite-spring:latest.release"
-> }
-> ```
+### Step 4: apply a formatter
 
-Browse the full catalog at [docs.openrewrite.org/recipes](https://docs.openrewrite.org/recipes) to find recipes suited
-to your framework and Java version.
+After the recipes run, use **Spotless** to normalise formatting to your team's conventions.
 
-### Step 2: use a formatter, not a linter
-
-After the recipes run, the code will be syntactically correct but may not match your team's formatting conventions. Use
-**Spotless** to apply formatting automatically.
-
-> **Avoid Checkstyle** in your codebase altogether. Checkstyle reports violations but cannot fix them, which means
-> someone has to fix them manually. No one should be formatting files by hand. Use Spotless instead: it
-> automatically applies all rules it enforces..
-
-**Gradle** (`build.gradle`):
+**Gradle:**
 
 ```groovy
 plugins {
@@ -334,13 +212,11 @@ spotless {
 }
 ```
 
-Run with `./gradlew spotlessApply`.
-See [Spotless Gradle docs](https://github.com/diffplug/spotless/tree/main/plugin-gradle) for all formatter options.
+Run with `./gradlew spotlessApply`. See [Spotless Gradle docs](https://github.com/diffplug/spotless/tree/main/plugin-gradle).
 
-**Maven** (`pom.xml`):
+**Maven:**
 
 ```xml
-
 <plugin>
     <groupId>com.diffplug.spotless</groupId>
     <artifactId>spotless-maven-plugin</artifactId>
@@ -356,33 +232,26 @@ See [Spotless Gradle docs](https://github.com/diffplug/spotless/tree/main/plugin
 </plugin>
 ```
 
-Run with `./mvnw spotless:apply`. See [Spotless Maven docs](https://github.com/diffplug/spotless/tree/main/plugin-maven)
-for all formatter options.
+Run with `./mvnw spotless:apply`. See [Spotless Maven docs](https://github.com/diffplug/spotless/tree/main/plugin-maven).
 
 ### Full workflow
 
 ```
 1.  Configure generated sources to go to src/generated/java  (Step 2 above)
 2.  Compile  →  MapStruct generates *Impl files
-3.  [Naive run]  Run PurgeMapstruct, verify compile + tests pass, read the diff
-4.  Revert  (git checkout .)
-5.  [Smart run]  Run PurgeMapstruct + CodeCleanup + CommonStaticAnalysis together
-6.  Run Spotless apply
-7.  Compile + test  →  verify everything still passes
-8.  Remove the src/generated/ source root from your build config
-9.  Remove MapStruct dependencies from your build file
-10. Commit
+3.  Run PurgeMapstructRecommended  →  mappers inlined, code cleaned up
+4.  Run Spotless apply  →  formatting normalised
+5.  Compile + test  →  verify everything still passes
+6.  Remove the src/generated/ source root from your build config
+7.  Remove MapStruct dependencies from your build file
+8.  Commit
 ```
-
-Running the quality recipes and formatter both before the inlining and after is even better: a cleaner codebase going in
-means cleaner output coming out.
 
 > **Minimising the diff footprint of your PR.**
 > The cleanup recipes and formatter will touch many files across your codebase — files that have nothing to do with MapStruct.
-> If you bundle all of that into the same PR as the inlining, reviewers will struggle to tell which changes are structural
-> (the purge) and which are cosmetic (the cleanup).
-> To keep the purge PR focused and reviewable, run the auto-refactors first — without the purge — commit and ship that as a
-> separate PR, then come back and run the purge on its own. The inlining diff will be much smaller and easier to reason about.
+> To keep the purge PR focused and reviewable, run the auto-refactors first — without the purge — commit and ship that
+> as a separate PR, then come back and run the purge on its own. The inlining diff will be much smaller and easier to
+> reason about.
 
 ---
 
