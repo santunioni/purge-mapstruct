@@ -48,5 +48,9 @@ class RecommendedCleanUps : Recipe() {
             NoAutowiredOnConstructor(),
             // Apply standard Java formatting: blank lines, whitespace padding, indentation
             AutoFormat(null),
+            // Inline 2
+            InlineVariable(),
+            // Inline 3
+            InlineVariable(),
         )
 }
