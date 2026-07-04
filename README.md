@@ -122,13 +122,10 @@ subprojects {
 
 ### Step 3: pick a recipe and run
 
-Three recipes are available — use the one that fits your workflow:
-
 | Recipe | What it does |
 |---|---|
 | `io.github.santunioni.recipes.PurgeMapstructBare` | Inlines mappers only. Leaves formatting as-is. |
-| `io.github.santunioni.recipes.RecommendedCleanUps` | General cleanup pass (unused imports, redundant parens, lambda simplification, formatting). No MapStruct involvement — safe to run on any codebase. |
-| **`io.github.santunioni.recipes.PurgeMapstruct`** ✅ | **Recommended.** Inlines mappers *and* applies the cleanup — but only to the files it changes. Unrelated files are left untouched, keeping the diff small. |
+| **`io.github.santunioni.recipes.PurgeMapstruct`** ✅ | **Recommended.** Wraps `PurgeMapstructBare` and `RecommendedCleanUps` — inlines mappers *and* applies cleanup, but only to the files it changes. Unrelated files are left untouched, keeping the diff small. |
 
 **Gradle** (`build.gradle`):
 
@@ -238,8 +235,8 @@ Run with `./mvnw spotless:apply`. See [Spotless Maven docs](https://github.com/d
 ```
 
 > **Minimising the diff footprint of your PR.**
-> If you want to separate the cleanup from the purge into two distinct commits or PRs, run `RecommendedCleanUps`
-> first across the whole codebase, ship that as a clean-up PR, then come back and run `PurgeMapstructBare` on its own.
+> If you want to separate cleanup from the purge into two commits or PRs, run `PurgeMapstruct` first on a throwaway
+> branch to see the cleanup-only diff, cherry-pick that, then run `PurgeMapstructBare` for the inlining.
 > The inlining diff will be much smaller and easier to review.
 
 ---
