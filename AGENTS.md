@@ -84,8 +84,7 @@ used only to format test output. The recipe is registered/published as
 Tests use OpenRewrite's `RewriteTest` harness with the `org.openrewrite.java.Assertions.java(...)`
 DSL. The suite lives in `src/test/java/com/santunioni/recipes/PurgeMapstructTest.java`.
 
-- Run all tests: `./gradlew test`
-- Run one test: `./gradlew test --tests "com.santunioni.recipes.PurgeMapstructTest.<method>"`
+- Run build: `./gradlew build`
 - The recipe under test is configured in `defaults(RecipeSpec)`: it runs `PurgeMapstruct` followed
   by `AutoFormat`, with `mapstruct`, `lombok`, and `junit-jupiter-api` on the parser classpath.
 
