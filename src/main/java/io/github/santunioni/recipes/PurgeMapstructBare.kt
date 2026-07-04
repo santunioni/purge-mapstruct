@@ -2,7 +2,7 @@ package io.github.santunioni.recipes
 
 import io.github.santunioni.recipes.removeMapstruct.Accumulator
 import io.github.santunioni.recipes.removeMapstruct.ImplementationScanner
-import io.github.santunioni.recipes.removeMapstruct.MapperProcessor
+import io.github.santunioni.recipes.removeMapstruct.MapperProcessorBare
 import org.openrewrite.ExecutionContext
 import org.openrewrite.ScanningRecipe
 import org.openrewrite.TreeVisitor
@@ -34,7 +34,7 @@ import org.openrewrite.TreeVisitor
  * following this recipe to handle any redundant imports or formatting inconsistencies introduced
  * during the process.
  */
-open class PurgeMapstructBare : ScanningRecipe<Accumulator>() {
+class PurgeMapstructBare : ScanningRecipe<Accumulator>() {
     override fun getDisplayName(): String = "Replace MapStruct interface with implementation"
 
     override fun getDescription(): String =
@@ -46,5 +46,5 @@ open class PurgeMapstructBare : ScanningRecipe<Accumulator>() {
 
     override fun getScanner(acc: Accumulator): TreeVisitor<*, ExecutionContext> = ImplementationScanner(acc)
 
-    override fun getVisitor(acc: Accumulator): TreeVisitor<*, ExecutionContext> = MapperProcessor(acc)
+    override fun getVisitor(acc: Accumulator): TreeVisitor<*, ExecutionContext> = MapperProcessorBare(acc)
 }
