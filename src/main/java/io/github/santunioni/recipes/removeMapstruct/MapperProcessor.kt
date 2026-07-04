@@ -36,7 +36,7 @@ open class MapperProcessor(
 
         // MapperProcessor changed this file — apply targeted cleanup
         var cu = result as? J.CompilationUnit ?: return result
-        for (visitor in cleanupVisitors) {
+        for (visitor in postInliningRecipes) {
             @Suppress("UNCHECKED_CAST")
             cu = (visitor as TreeVisitor<Tree, ExecutionContext>).visit(cu, ctx) as? J.CompilationUnit ?: cu
         }
@@ -49,7 +49,7 @@ open class MapperProcessor(
          * Built once per JVM — [Environment.Builder.scanRuntimeClasspath] is expensive and the visitor
          * list is stateless, so sharing it across all [MapperProcessor] instances is safe.
          */
-        private val cleanupVisitors: List<TreeVisitor<*, ExecutionContext>> by lazy {
+        private val postInliningRecipes: List<TreeVisitor<*, ExecutionContext>> by lazy {
             listOf(
                 // Remove redundant parentheses (also inside CodeCleanup, but running it first
                 // gives AutoFormat cleaner input)
