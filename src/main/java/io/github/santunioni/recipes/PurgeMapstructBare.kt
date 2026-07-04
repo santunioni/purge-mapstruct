@@ -15,14 +15,12 @@ import org.openrewrite.TreeVisitor
  * the generated implementation class to match the original mapper interface name.
  *
  * The recipe performs the following key steps:
- * <ol>
- *      <li>1. Identifies classes annotated with Mapstruct's @Mapper annotation.</li>
- *      <li>2. Locates the corresponding Mapstruct-generated implementation class (e.g., `MyMapperImpl`) from the source files in context.</li>
- *      <li>2. Merges imports from the original interface into the implementation class.</li>
- *      <li>3. Removes unnecessary annotations (such as @Override from methods and @Generated from classes) from the implementation class.</li>
- *      <li>4. Renames the implementation class to match the original interface name and removes "implements" declarations.</li>
- *      <li>5. Deletes the original Mapstruct-generated implementation source file, since its content has been merged into the original mapper file.</li>
- * </ol>
+ * 1. Identifies classes annotated with Mapstruct's @Mapper annotation.</li>
+ * 2. Locates the corresponding Mapstruct-generated implementation class (e.g., `MyMapperImpl`) from the source files in context.</li>
+ * 2. Merges imports from the original interface into the implementation class.</li>
+ * 3. Removes unnecessary annotations (such as @Override from methods and @Generated from classes) from the implementation class.</li>
+ * 4. Renames the implementation class to match the original interface name and removes "implements" declarations.</li>
+ * 5. Deletes the original Mapstruct-generated implementation source file, since its content has been merged into the original mapper file.</li>
  *
  * This recipe assumes that the generated implementation is available in the source files being
  * processed. The Gradle plugin should be configured to include generated sources in the context.
