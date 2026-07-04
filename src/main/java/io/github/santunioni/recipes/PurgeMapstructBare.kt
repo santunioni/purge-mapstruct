@@ -34,7 +34,7 @@ import org.openrewrite.TreeVisitor
  * following this recipe to handle any redundant imports or formatting inconsistencies introduced
  * during the process.
  */
-class PurgeMapstructBare : ScanningRecipe<Accumulator>() {
+open class PurgeMapstructBare : ScanningRecipe<Accumulator>() {
     override fun getDisplayName(): String = "Replace MapStruct interface with implementation"
 
     override fun getDescription(): String =
