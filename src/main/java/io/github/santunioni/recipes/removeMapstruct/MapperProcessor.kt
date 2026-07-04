@@ -44,18 +44,18 @@ class MapperProcessor(
      */
     @Suppress("TooGenericExceptionCaught", "TooGenericExceptionThrown")
     override fun visitCompilationUnit(
-        mapperDeclFile_: J.CompilationUnit,
+        mapperDeclFile: J.CompilationUnit,
         ctx: ExecutionContext,
     ): J {
         // Collect @Spy-annotated field names up front so that nested visits can rewrite
         // when(spy.x(a)).thenReturn(v) into doReturn(v).when(spy).x(a).
-        val spyFieldNames = collectSpyFieldNames(mapperDeclFile_)
+        val spyFieldNames = collectSpyFieldNames(mapperDeclFile)
         if (spyFieldNames.isNotEmpty()) {
-            log.fine("[PurgeMapstruct] Found spy fields in ${mapperDeclFile_.sourcePath}: $spyFieldNames")
+            log.fine("[PurgeMapstruct] Found spy fields in ${mapperDeclFile.sourcePath}: $spyFieldNames")
         }
         cursor.putMessage(SPY_FIELD_NAMES_KEY, spyFieldNames)
 
-        val visited = super.visitCompilationUnit(mapperDeclFile_, ctx)
+        val visited = super.visitCompilationUnit(mapperDeclFile, ctx)
         if (visited !is J.CompilationUnit) return visited
         if (!isMapperDeclaration(visited)) return visited
 
