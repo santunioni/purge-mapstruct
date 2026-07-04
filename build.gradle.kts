@@ -167,36 +167,46 @@ sourceSets {
     }
 }
 
-//spotless {
-//    java {
-//        target "src/**/*.java"
-//        targetExclude "**/build/**"
-//        googleJavaFormat()
-//        removeUnusedImports()
-//        forbidWildcardImports()
-//        trimTrailingWhitespace()
-//        endWithNewline()
-//    }
-//
-//    kotlin {
-//        target "src/**/*.kt", "src/**/*.kts"
-//        targetExclude "**/build/**"
-//        ktlint()
-//        trimTrailingWhitespace()
-//        endWithNewline()
-//    }
-//
-//    groovyGradle {
-//        target '*.gradle'
-//        targetExclude "**/build/**"
-//        trimTrailingWhitespace()
-//        endWithNewline()
-//    }
-//
-//    format "misc", {
-//    target "*.md", "*.yaml", "*.yml", "*.properties", "src/**/*.md", "src/**/*.yaml", "src/**/*.yml", "src/**/*.properties"
-//    targetExclude "**/build/**"
-//    trimTrailingWhitespace()
-//    endWithNewline()
-//}
-//}
+
+spotless {
+    java {
+        target("src/**/*.java")
+        targetExclude("**/build/**")
+        googleJavaFormat()
+        removeUnusedImports()
+        forbidWildcardImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+
+    kotlin {
+        target("src/**/*.kt", "src/**/*.kts")
+        targetExclude("**/build/**")
+        ktlint()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+
+    groovyGradle {
+        target("*.gradle")
+        targetExclude("**/build/**")
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+
+    format("misc") {
+        target(
+            "*.md",
+            "*.yaml",
+            "*.yml",
+            "*.properties",
+            "src/**/*.md",
+            "src/**/*.yaml",
+            "src/**/*.yml",
+            "src/**/*.properties"
+        )
+        targetExclude("**/build/**")
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
