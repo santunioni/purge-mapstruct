@@ -31,7 +31,7 @@ dependencies {
 
     implementation("org.openrewrite:rewrite-java")
 
-    // Bundled so that PurgeMapstructCleanerCode / RecommendedCleanUps work out-of-the-box
+    // Bundled so that PurgeMapstruct cleanup visitors work out-of-the-box
     // without requiring consumers to add extra rewrite dependencies.
     implementation("org.openrewrite.recipe:rewrite-static-analysis")
     implementation("org.openrewrite.recipe:rewrite-spring")

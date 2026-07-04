@@ -9,13 +9,11 @@ import org.openrewrite.ScanningRecipe
 import org.openrewrite.TreeVisitor
 
 /**
- * Extends [PurgeMapstructBare] with [RecommendedCleanUps], applying the cleanup
+ * Extends [PurgeMapstructBare] with cleanup visitors, applying them
  * **only to files that [MapperProcessorBare] actually changes**.
  *
  * Files that [MapperProcessorBare] does not touch (unrelated services, DTOs, etc.) are
  * returned unchanged — keeping the diff of a purge PR as small as possible.
- *
- * For a general cleanup pass that touches all Java files, use [RecommendedCleanUps] directly.
  */
 class PurgeMapstruct : ScanningRecipe<Accumulator>() {
     override fun getDisplayName(): String = "Purge MapStruct — cleaner code"
