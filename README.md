@@ -229,19 +229,6 @@ After the recipe runs, apply the formatter again — now only the inlined mapper
 ./gradlew spotlessApply   # or ./mvnw spotless:apply
 ```
 
-### Full workflow
-
-```
-1.  Configure generated sources to go to src/generated/java  (Step 2 above)
-2.  Compile  →  MapStruct generates *Impl files
-3.  Run Spotless  →  normalise formatting across the whole codebase
-4.  Run PurgeMapstruct  →  mappers inlined, code cleaned up (changed files only)
-5.  Run Spotless again  →  only the inlined files are reformatted
-6.  Compile + test  →  verify everything still passes
-7.  Remove the src/generated/ source root from your build config
-8.  Remove MapStruct dependencies from your build file
-9.  Commit
-```
 
 ---
 
