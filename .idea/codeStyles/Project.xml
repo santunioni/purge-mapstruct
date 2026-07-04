@@ -5,8 +5,15 @@
       <option name="NAMES_COUNT_TO_USE_IMPORT_ON_DEMAND" value="9999" />
     </JavaCodeStyleSettings>
     <JetCodeStyleSettings>
-      <option name="NAME_COUNT_TO_USE_STAR_IMPORT" value="2147483647" />
-      <option name="NAME_COUNT_TO_USE_STAR_IMPORT_FOR_MEMBERS" value="2147483647" />
+      <option name="PACKAGES_TO_USE_STAR_IMPORTS">
+        <value>
+          <package name="java.util" alias="false" withSubpackages="false" />
+          <package name="kotlinx.android.synthetic" alias="false" withSubpackages="false" />
+          <package name="io.ktor" alias="false" withSubpackages="false" />
+        </value>
+      </option>
+      <option name="NAME_COUNT_TO_USE_STAR_IMPORT" value="100" />
+      <option name="NAME_COUNT_TO_USE_STAR_IMPORT_FOR_MEMBERS" value="100" />
     </JetCodeStyleSettings>
   </code_scheme>
 </component>
