@@ -4,6 +4,7 @@ plugins {
     id("org.openrewrite.build.recipe-repositories") version "latest.release"
     id("nebula.release") version "21.0.0"
     id("com.diffplug.spotless") version "8.4.0"
+    kotlin("jvm") version "2.1.21"
 }
 
 // Version is managed by nebula.release:
@@ -103,11 +104,22 @@ tasks.register("licenseFormat") {
     println("License format task not implemented for rewrite-recipe-starter")
 }
 
+kotlin {
+    jvmToolchain(17)
+    sourceSets {
+        main {
+            kotlin.srcDirs("src/main/java", "src/main/kotlin")
+        }
+        test {
+            kotlin.srcDirs("src/test/java", "src/test/kotlin")
+        }
+    }
+}
+
 tasks.withType<JavaCompile> {
     options.release.set(17)
     sourceCompatibility = "17"
     targetCompatibility = "17"
-    options.compilerArgs.add("-Arewrite.javaParserClasspathFrom=resources")
 }
 
 java {
@@ -135,13 +147,12 @@ listOf(21, 25).forEach { version ->
 }
 
 spotless {
-    java {
-        expandWildcardImports()
-        palantirJavaFormat()
-        removeUnusedImports()
-        forbidWildcardImports()
+    kotlin {
+        ktfmt()
         trimTrailingWhitespace()
         endWithNewline()
+        target("src/**/*.kt")
+        targetExclude("**/build/**")
     }
 
     format("misc") {
