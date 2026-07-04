@@ -242,3 +242,56 @@ org.gradle.jvmargs=-Xmx8g -XX:MaxMetaspaceSize=512m
 **Why `--stop` before step 6?** `rewriteRun` deletes the generated `*Impl.java` files. The Gradle
 daemon keeps an in-memory VFS that still references those paths. Without stopping it, the next
 `compileJava` fails with `Failed to normalize content of '...Impl.java'`.
+
+---
+
+## Releasing
+
+Versioning is managed by the `nebula.release` Gradle plugin. CI (`.github/workflows/pipeline.yml`)
+handles the actual publication to Sonatype; you only push a tag.
+
+### Release candidate
+
+```bash
+git tag v<major>.<minor>.<patch>-rc.<N>
+git push origin v<major>.<minor>.<patch>-rc.<N>
+```
+
+Example: `git tag v0.2.0-rc.5 && git push origin v0.2.0-rc.5`
+
+CI detects the `-rc.` tag and runs:
+```
+./gradlew candidate publish closeAndReleaseSonatypeStagingRepository
+```
+The artifact lands on Maven Central as a signed, versioned RC.
+
+### Final release
+
+```bash
+git tag v<major>.<minor>.<patch>
+git push origin v<major>.<minor>.<patch>
+```
+
+Example: `git tag v0.2.0 && git push origin v0.2.0`
+
+CI detects a plain version tag (no `-rc.`) and runs:
+```
+./gradlew final publish closeAndReleaseSonatypeStagingRepository
+```
+
+### Snapshot (every push to `main`)
+
+CI automatically publishes a snapshot on every push to `main` — no tag required.
+To publish a snapshot locally (e.g. to test in a target project):
+
+```bash
+./gradlew snapshot publishNebulaPublicationToMavenLocal
+```
+
+### Choosing the next version
+
+Check the latest tag to determine the correct next version:
+
+```bash
+git tag | sort -V | tail -5
+```
