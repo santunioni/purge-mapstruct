@@ -34,8 +34,6 @@ class RecommendedCleanUps : Recipe() {
         listOf(
             // Remove redundant parentheses
             UnnecessaryParentheses(),
-            // Inline variables that are only ever returned/thrown on the very next line
-            InlineVariable(),
             // Remove local variables that are declared but never read
             RemoveUnusedLocalVariables(null, null, false),
             // Drop imports no longer referenced after merging
@@ -46,11 +44,13 @@ class RecommendedCleanUps : Recipe() {
             ReplaceLambdaWithMethodReference(),
             // Remove redundant @Autowired from single-constructor beans (no-op without Spring)
             NoAutowiredOnConstructor(),
+            // Inline variables that are only ever returned/thrown on the very next line
+            InlineVariable(),
+            InlineVariable(),
+            InlineVariable(),
+            InlineVariable(),
+            InlineVariable(),
             // Apply standard Java formatting: blank lines, whitespace padding, indentation
             AutoFormat(null),
-            // Inline 2
-            InlineVariable(),
-            // Inline 3
-            InlineVariable(),
         )
 }
