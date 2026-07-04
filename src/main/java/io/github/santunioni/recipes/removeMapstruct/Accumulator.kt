@@ -22,18 +22,18 @@ class Accumulator {
     }
 
     fun getImplementer(compilationUnit: J.ClassDeclaration): J.CompilationUnit? {
-        val type = compilationUnit.type
-        if (type == null) {
-            log.severe("Could not find fully qualified name for $compilationUnit. Skipping.")
+        val type = compilationUnit.type ?: return null
+        val implementers = mapSuperToItsImplementers[type.fullyQualifiedName] ?: return null
+
+        if (implementers.size != 1) {
+            log.severe(
+                "${implementers.size} generated implementations found for ${type.fullyQualifiedName}. " +
+                    "I was expecting a single one. Skipping.",
+            )
             return null
         }
-        val fqn = type.fullyQualifiedName
-        val implementers = mapSuperToItsImplementers[fqn]
-        if (implementers == null || implementers.size != 1) {
-            log.severe("Multiple or no generated implementations found for $fqn. Skipping.")
-            return null
-        }
-        return implementers[0]
+
+        return implementers.first()
     }
 
     fun getSuperFqnFromImplFqn(implFqn: String): String? = mapImplementerToItsSup[implFqn]
