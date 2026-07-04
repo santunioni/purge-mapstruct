@@ -2,12 +2,17 @@ package io.github.santunioni.recipes.removeMapstruct
 
 import org.openrewrite.java.tree.J
 import org.openrewrite.java.tree.TypeTree
+import java.nio.file.Path
+import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Logger
 
 class Accumulator {
     private val mapSuperToItsImplementers: MutableMap<String, MutableList<J.CompilationUnit>> =
         HashMap()
     private val mapImplementerToItsSup: MutableMap<String, String> = HashMap()
+
+    /** Source paths of files that MapperProcessor successfully merged during the edit pass. */
+    val touchedSourcePaths: MutableSet<Path> = ConcurrentHashMap.newKeySet()
 
     fun addLinking(
         superDecl: TypeTree,

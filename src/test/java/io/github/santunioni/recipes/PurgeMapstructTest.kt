@@ -29,8 +29,7 @@ internal class PurgeMapstructTest : RewriteTest {
     override fun defaults(spec: RecipeSpec) {
         spec
             .recipes(
-                PurgeMapstruct(),
-                AutoFormat("io.github.santunioni.styles.AutoFormatRecipeOutputForTest"),
+                PurgeMapstructRecommended(),
             ).parser(JavaParser.fromJavaVersion().classpath("mapstruct", "lombok", "junit-jupiter-api"))
     }
 

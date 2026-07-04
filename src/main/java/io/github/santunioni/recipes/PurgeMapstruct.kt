@@ -14,19 +14,18 @@ import org.openrewrite.TreeVisitor
  * includes managing necessary imports, removing @Override annotations from methods, and renaming
  * the generated implementation class to match the original mapper interface name.
  *
- * The recipe performs the following key steps: 1. Identifies classes annotated with Mapstruct's
- *
- * @Mapper annotation. 2. Locates the corresponding Mapstruct-generated implementation class (e.g.,
- *   `MyMapperImpl`) from the source files in context. 3. Merges imports from the original interface
- *   into the implementation class. 4. Removes unnecessary annotations (such as @Override from
- *   methods and @Generated from classes) from the implementation class. 5. Renames the
- *   implementation class to match the original interface name and removes "implements"
- *   declarations.
- * 6. Deletes the original Mapstruct-generated implementation source file, since its content has
- *    been merged into the original mapper file.
+ * The recipe performs the following key steps:
+ * <ol>
+ *      <li>1. Identifies classes annotated with Mapstruct's @Mapper annotation.</li>
+ *      <li>2. Locates the corresponding Mapstruct-generated implementation class (e.g., `MyMapperImpl`) from the source files in context.</li>
+ *      <li>2. Merges imports from the original interface into the implementation class.</li>
+ *      <li>3. Removes unnecessary annotations (such as @Override from methods and @Generated from classes) from the implementation class.</li>
+ *      <li>4. Renames the implementation class to match the original interface name and removes "implements" declarations.</li>
+ *      <li>5. Deletes the original Mapstruct-generated implementation source file, since its content has been merged into the original mapper file.</li>
+ * </ol>
  *
  * This recipe assumes that the generated implementation is available in the source files being
- * processed. The gradle plugin should be configured to include generated sources in the context.
+ * processed. The Gradle plugin should be configured to include generated sources in the context.
  *
  * Note: This recipe copies default methods, static methods, and static fields from the interface to
  * the implementation class, removing the default modifier and preserving the static modifier.
@@ -36,7 +35,7 @@ import org.openrewrite.TreeVisitor
  * during the process.
  */
 class PurgeMapstruct : ScanningRecipe<Accumulator>() {
-    override fun getDisplayName(): String = "Replace mapstruct interface with implementation"
+    override fun getDisplayName(): String = "Replace MapStruct interface with implementation"
 
     override fun getDescription(): String =
         "Replaces @Mapper interfaces with their generated implementation. Copies imports and removes @Override" +
