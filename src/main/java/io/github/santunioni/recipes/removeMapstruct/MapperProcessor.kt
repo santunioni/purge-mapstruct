@@ -13,7 +13,6 @@ import org.openrewrite.java.tree.JLeftPadded
 import org.openrewrite.java.tree.JRightPadded
 import org.openrewrite.java.tree.JavaType
 import org.openrewrite.java.tree.Space
-import org.openrewrite.java.tree.Statement
 import org.openrewrite.java.tree.TypeTree
 import org.openrewrite.java.tree.TypeUtils
 import org.openrewrite.marker.Markers
@@ -462,7 +461,7 @@ class MapperProcessor(
                 whenInvocation.name.withPrefix(Space.EMPTY),
                 JContainer.build(
                     Space.EMPTY,
-                    listOf<JRightPadded<Expression>>(
+                    listOf(
                         JRightPadded.build(spyIdent.withPrefix(Space.EMPTY)),
                     ),
                     Markers.EMPTY,
