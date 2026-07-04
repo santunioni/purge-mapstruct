@@ -7,6 +7,7 @@ import org.openrewrite.SourceFile
 import org.openrewrite.Tree
 import org.openrewrite.TreeVisitor
 import org.openrewrite.java.tree.J
+import java.util.logging.Logger
 
 /**
  * Extends [PurgeMapstructBare] with [RecommendedCleanUps], applying the cleanup
@@ -18,6 +19,8 @@ import org.openrewrite.java.tree.J
  * For a general cleanup pass that touches all Java files, use [RecommendedCleanUps] directly.
  */
 class PurgeMapstruct : PurgeMapstructBare() {
+    private val log = Logger.getLogger(PurgeMapstruct::class.java.name)
+
     override fun getDisplayName(): String = "Purge MapStruct — cleaner code"
 
     override fun getDescription(): String =
@@ -53,6 +56,7 @@ class PurgeMapstruct : PurgeMapstructBare() {
                     @Suppress("UNCHECKED_CAST")
                     cu = (visitor as TreeVisitor<Tree, ExecutionContext>).visit(cu, ctx) as? J.CompilationUnit ?: cu
                 }
+                log.info("Finished formatting ${cu.sourcePath}")
                 return cu
             }
         }
