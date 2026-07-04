@@ -33,8 +33,10 @@ dependencies {
         exclude(group = "org.slf4j", module = "slf4j-nop")
     }
 
-    // Support for parsing Java 17 source
+    // Support for parsing Java source across supported versions
     testRuntimeOnly("org.openrewrite:rewrite-java-17")
+    testRuntimeOnly("org.openrewrite:rewrite-java-21")
+    testRuntimeOnly("org.openrewrite:rewrite-java-25")
 
     // Need to have a slf4j binding to see any output enabled from the parser.
     runtimeOnly("ch.qos.logback:logback-classic:1.5.+")
@@ -113,6 +115,22 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+// Re-run the test suite under each supported Java version.
+// JavaParser.fromJavaVersion() picks the right parser automatically based on the JVM.
+listOf(21, 25).forEach { version ->
+    val taskName = "testJava$version"
+    tasks.register<Test>(taskName) {
+        testClassesDirs = sourceSets["test"].output.classesDirs
+        classpath = sourceSets["test"].runtimeClasspath
+        javaLauncher.set(javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(version))
+        })
+    }
+    tasks.named("check") {
+        dependsOn(taskName)
     }
 }
 
