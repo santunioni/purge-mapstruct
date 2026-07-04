@@ -667,7 +667,7 @@ class MapperProcessor(
         }
 
         /**
-         * Builds a fully-qualified type tree (a chain of [J.FieldAccess] nodes) from a dot-separated
+         * Builds a fully qualified type tree (a chain of [J.FieldAccess] nodes) from a dot-separated
          * FQN string.
          */
         private fun buildFqnTypeTree(
