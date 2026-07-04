@@ -137,9 +137,11 @@ listOf(21, 25).forEach { version ->
     tasks.register<Test>(taskName) {
         testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
-        javaLauncher.set(javaToolchains.launcherFor {
-            languageVersion.set(JavaLanguageVersion.of(version))
-        })
+        javaLauncher.set(
+            javaToolchains.launcherFor {
+                languageVersion.set(JavaLanguageVersion.of(version))
+            },
+        )
     }
     tasks.named("check") {
         dependsOn(taskName)
@@ -148,11 +150,7 @@ listOf(21, 25).forEach { version ->
 
 spotless {
     kotlin {
-        ktfmt()
-        trimTrailingWhitespace()
-        endWithNewline()
-        target("src/**/*.kt")
-        targetExclude("**/build/**")
+        ktlint()
     }
 
     format("misc") {

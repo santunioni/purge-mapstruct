@@ -36,17 +36,16 @@ import org.openrewrite.TreeVisitor
  * during the process.
  */
 class PurgeMapstruct : ScanningRecipe<Accumulator>() {
-  override fun getDisplayName(): String = "Replace mapstruct interface with implementation"
+    override fun getDisplayName(): String = "Replace mapstruct interface with implementation"
 
-  override fun getDescription(): String =
-      "Replaces @Mapper interfaces with their generated implementation. Copies imports and removes @Override" +
-          " annotations from methods and @Generated annotations from classes. Copies default methods, " +
-          "static methods, and static fields from the interface."
+    override fun getDescription(): String =
+        "Replaces @Mapper interfaces with their generated implementation. Copies imports and removes @Override" +
+            " annotations from methods and @Generated annotations from classes. Copies default methods, " +
+            "static methods, and static fields from the interface."
 
-  override fun getInitialValue(ctx: ExecutionContext): Accumulator = Accumulator()
+    override fun getInitialValue(ctx: ExecutionContext): Accumulator = Accumulator()
 
-  override fun getScanner(acc: Accumulator): TreeVisitor<*, ExecutionContext> =
-      ImplementationScanner(acc)
+    override fun getScanner(acc: Accumulator): TreeVisitor<*, ExecutionContext> = ImplementationScanner(acc)
 
-  override fun getVisitor(acc: Accumulator): TreeVisitor<*, ExecutionContext> = MapperProcessor(acc)
+    override fun getVisitor(acc: Accumulator): TreeVisitor<*, ExecutionContext> = MapperProcessor(acc)
 }
