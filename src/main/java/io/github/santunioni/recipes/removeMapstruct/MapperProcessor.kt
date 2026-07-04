@@ -1,7 +1,5 @@
 package io.github.santunioni.recipes.removeMapstruct
 
-import io.github.santunioni.recipes.removeMapstruct.Functions.isMapperDeclaration
-import io.github.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation
 import org.openrewrite.ExecutionContext
 import org.openrewrite.Tree
 import org.openrewrite.internal.ListUtils
