@@ -171,8 +171,6 @@ sourceSets {
 
 spotless {
     java {
-        target("src/main/**/*.java")
-        targetExclude("**/build/**")
         expandWildcardImports()
         palantirJavaFormat()
         removeUnusedImports()
@@ -182,8 +180,6 @@ spotless {
     }
 
     kotlin {
-        target("src/**/*.kt", "src/**/*.kts")
-        targetExclude("**/build/**")
         ktlint()
         trimTrailingWhitespace()
         endWithNewline()
