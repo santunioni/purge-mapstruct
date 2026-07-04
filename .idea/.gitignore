@@ -1,5 +1,6 @@
-*
-!.idea/codeStyles
+*.xml
+dataSources/
+modules/
 !.idea/ktlint-plugin.xml
 !.idea/google-java-format.xml
 !.idea/externalDependencies.xml
