@@ -102,6 +102,7 @@ configure<PublishingExtension> {
 }
 
 tasks.register("licenseFormat") {
+    description = "License Format"
     println("License format task not implemented for rewrite-recipe-starter")
 }
 
@@ -136,6 +137,7 @@ java {
 listOf(21, 25).forEach { version ->
     val taskName = "testJava$version"
     tasks.register<Test>(taskName) {
+        description = "Testing purging mapstruct from Java $version code"
         testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
         javaLauncher.set(
