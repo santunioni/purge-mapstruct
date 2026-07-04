@@ -16,7 +16,7 @@ import org.openrewrite.java.tree.Space
 import org.openrewrite.java.tree.TypeTree
 import org.openrewrite.java.tree.TypeUtils
 import org.openrewrite.marker.Markers
-import java.util.*
+import java.util.UUID
 import java.util.logging.Logger
 
 class MapperProcessorBare(

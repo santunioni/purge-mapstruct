@@ -199,11 +199,8 @@ val configureWorkspace by tasks.registering {
         val component =
             """
             <component name="OptimizeOnSaveOptions">
-                <option name="myAllFileTypesSelected" value="true" />
-                <option name="mySelectedFileTypes">
-                  <set />
-                </option>
-              </component>
+                <option name="myRunOnSave" value="false" />
+            </component>
             """.trimIndent()
         if (!workspaceFile.exists()) {
             workspaceFile.parentFile.mkdirs()
