@@ -4,10 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6d2e7366-e838-4347-b008-812e3f26f038" name="Changes" comment="chore: introduce `PurgeMapstructRecommended` recipe and update dependencies&#10;&#10;- Added `PurgeMapstructRecommended.kt` to define a curated cleanup recipe combining `PurgeMapstruct` with further static analyses and formatting.&#10;- Removed `rewrite.yml` configuration in favor of inline recipe definitions.&#10;- Updated test setup to integrate `PurgeMapstructRecommended`.&#10;- Updated `build.gradle.kts` with optional and test runtime dependencies for cleanup recipes.">
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/io/github/santunioni/recipes/PurgeMapstruct.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/io/github/santunioni/recipes/PurgeMapstruct.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/io/github/santunioni/recipes/RecommendedCleanUps.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/io/github/santunioni/recipes/RecommendedCleanUps.kt" afterDir="false" />
+    <list default="true" id="6d2e7366-e838-4347-b008-812e3f26f038" name="Changes" comment="refactor: simplify RecommendedCleanUps and adjust cleanup visitor initialization&#10;&#10;- Removed unused imports and redundant comments.&#10;- Converted `buildCleanupVisitors` companion object to inline visitor mapping.&#10;- Adjusted display name casing in `RecommendedCleanUps` and `PurgeMapstruct`.">
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -91,61 +89,61 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="0.0" />
-      <entry key="MS500" value="0.0" />
-      <entry key="S2" value="9.99369738335267E-111" />
-      <entry key="S5" value="1.0000652828695678E-44" />
-      <entry key="S10" value="1.035421132192167E-22" />
-      <entry key="S30" value="8.834343986316614E-8" />
-      <entry key="S60" value="7.139121121476072E-4" />
-      <entry key="M2" value="0.08001720314152427" />
-      <entry key="M5" value="1.9870436912955356" />
-      <entry key="M10" value="8.097390710688401" />
-      <entry key="M15" value="15.564022521997634" />
-      <entry key="M30" value="45.15705825019476" />
-      <entry key="H1" value="120.82839264061536" />
-      <entry key="H2" value="252.41864811408803" />
-      <entry key="H4" value="396.256343306685" />
-      <entry key="D1" value="604.3039442814385" />
-      <entry key="W1" value="652.5137554596497" />
+      <entry key="MS100" value="1.0843373036586088" />
+      <entry key="MS500" value="1.995984018507663" />
+      <entry key="S2" value="2.6741858473147615" />
+      <entry key="S5" value="2.8621556161012194" />
+      <entry key="S10" value="2.9297559598484533" />
+      <entry key="S30" value="2.976284967484063" />
+      <entry key="S60" value="2.98875934703731" />
+      <entry key="M2" value="3.0706802794126946" />
+      <entry key="M5" value="4.950653119479993" />
+      <entry key="M10" value="11.02661118704473" />
+      <entry key="M15" value="18.47393055972584" />
+      <entry key="M30" value="48.0269327897607" />
+      <entry key="H1" value="123.6545103326424" />
+      <entry key="H2" value="255.2370652444489" />
+      <entry key="H4" value="399.1138181967332" />
+      <entry key="D1" value="607.2677172932748" />
+      <entry key="W1" value="655.50816725574" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="1.0" />
-      <entry key="MS500" value="1.0" />
-      <entry key="S2" value="1.0" />
-      <entry key="S5" value="1.0" />
-      <entry key="S10" value="1.0" />
-      <entry key="S30" value="1.0000000001059826" />
-      <entry key="S60" value="1.0000145374756508" />
-      <entry key="M2" value="1.0054033291686286" />
-      <entry key="M5" value="1.1988163783570036" />
-      <entry key="M10" value="1.7312075104152997" />
-      <entry key="M15" value="2.241395726347444" />
-      <entry key="M30" value="3.8574545794871185" />
-      <entry key="H1" value="7.067422847561425" />
-      <entry key="H2" value="11.675637053502106" />
-      <entry key="H4" value="16.224408071205538" />
-      <entry key="D1" value="22.381547726168538" />
-      <entry key="W1" value="23.759125653888653" />
+      <entry key="MS100" value="3.2363018682666363E-23" />
+      <entry key="MS500" value="3.176945793713717E-5" />
+      <entry key="S2" value="0.07507622914780174" />
+      <entry key="S5" value="0.35497762587659015" />
+      <entry key="S10" value="0.5957999881475243" />
+      <entry key="S30" value="0.8414600402948105" />
+      <entry key="S60" value="0.917324645800577" />
+      <entry key="M2" value="0.9629388153564916" />
+      <entry key="M5" value="1.1783003789843134" />
+      <entry key="M10" value="1.7163300343597818" />
+      <entry key="M15" value="2.2285360101285883" />
+      <entry key="M30" value="3.846372839849232" />
+      <entry key="H1" value="7.057263859502282" />
+      <entry key="H2" value="11.667242528705623" />
+      <entry key="H4" value="16.218574527196104" />
+      <entry key="D1" value="22.38020629758697" />
+      <entry key="W1" value="23.758922221073014" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.041234622211652944" />
-      <entry key="MS500" value="0.5285090202806901" />
-      <entry key="S2" value="0.8526348917679567" />
-      <entry key="S5" value="0.9382211965006712" />
-      <entry key="S10" value="0.9686181892266277" />
-      <entry key="S30" value="0.9894281090292812" />
-      <entry key="S60" value="0.9954178672784211" />
-      <entry key="M2" value="1.082189160637713" />
-      <entry key="M5" value="3.1798390521711957" />
-      <entry key="M10" value="9.820139771874713" />
-      <entry key="M15" value="17.79661824258169" />
-      <entry key="M30" value="49.00613778410923" />
-      <entry key="H1" value="127.88861452304876" />
-      <entry key="H2" value="264.0887971125888" />
-      <entry key="H4" value="412.4771171992988" />
-      <entry key="D1" value="626.6846878345121" />
-      <entry key="W1" value="676.2727598841038" />
+      <entry key="MS100" value="1.0620219646339204" />
+      <entry key="MS500" value="1.9877169824564298" />
+      <entry key="S2" value="2.7354194981804203" />
+      <entry key="S5" value="3.1940130594140688" />
+      <entry key="S10" value="3.5062495032222287" />
+      <entry key="S30" value="3.808642816352385" />
+      <entry key="S60" value="3.901108977605828" />
+      <entry key="M2" value="4.030472321914067" />
+      <entry key="M5" value="6.123014744132876" />
+      <entry key="M10" value="12.734545068486128" />
+      <entry key="M15" value="20.693710123352602" />
+      <entry key="M30" value="51.864951178689594" />
+      <entry key="H1" value="130.70458184521098" />
+      <entry key="H2" value="266.89882279753823" />
+      <entry key="H4" value="415.3287594188097" />
+      <entry key="D1" value="629.6471193937618" />
+      <entry key="W1" value="679.2669682381019" />
     </decayedShown>
   </component>
   <component name="OptimizeOnSaveOptions">
@@ -415,7 +413,7 @@
       <workItem from="1783121502024" duration="12000" />
       <workItem from="1783135131114" duration="3293000" />
       <workItem from="1783181699331" duration="7000" />
-      <workItem from="1783181710133" duration="11341000" />
+      <workItem from="1783181710133" duration="11704000" />
     </task>
     <task id="LOCAL-00001" summary="Clarify Spotless advantage over Checkstyle in README formatting guidance.">
       <option name="closed" value="true" />
@@ -737,7 +735,23 @@
       <option name="project" value="LOCAL" />
       <updated>1783193502563</updated>
     </task>
-    <option name="localTasksCounter" value="41" />
+    <task id="LOCAL-00041" summary="chore: idea">
+      <option name="closed" value="true" />
+      <created>1783195441660</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1783195441660</updated>
+    </task>
+    <task id="LOCAL-00042" summary="refactor: simplify RecommendedCleanUps and adjust cleanup visitor initialization&#10;&#10;- Removed unused imports and redundant comments.&#10;- Converted `buildCleanupVisitors` companion object to inline visitor mapping.&#10;- Adjusted display name casing in `RecommendedCleanUps` and `PurgeMapstruct`.">
+      <option name="closed" value="true" />
+      <created>1783195460137</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1783195460137</updated>
+    </task>
+    <option name="localTasksCounter" value="43" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -790,7 +804,9 @@
     <MESSAGE value="chore: remove old apply syntax" />
     <MESSAGE value="chore: update rewrite configuration and PurgeMapstruct documentation&#10;&#10;- Updated `rewrite.yml` with new `Default` style and added `PurgeMapstructRecommended` recipe.&#10;- Simplified and clarified usage instructions in the README for PurgeMapstruct, cleanup recipes, and formatting." />
     <MESSAGE value="chore: introduce `PurgeMapstructRecommended` recipe and update dependencies&#10;&#10;- Added `PurgeMapstructRecommended.kt` to define a curated cleanup recipe combining `PurgeMapstruct` with further static analyses and formatting.&#10;- Removed `rewrite.yml` configuration in favor of inline recipe definitions.&#10;- Updated test setup to integrate `PurgeMapstructRecommended`.&#10;- Updated `build.gradle.kts` with optional and test runtime dependencies for cleanup recipes." />
-    <option name="LAST_COMMIT_MESSAGE" value="chore: introduce `PurgeMapstructRecommended` recipe and update dependencies&#10;&#10;- Added `PurgeMapstructRecommended.kt` to define a curated cleanup recipe combining `PurgeMapstruct` with further static analyses and formatting.&#10;- Removed `rewrite.yml` configuration in favor of inline recipe definitions.&#10;- Updated test setup to integrate `PurgeMapstructRecommended`.&#10;- Updated `build.gradle.kts` with optional and test runtime dependencies for cleanup recipes." />
+    <MESSAGE value="chore: idea" />
+    <MESSAGE value="refactor: simplify RecommendedCleanUps and adjust cleanup visitor initialization&#10;&#10;- Removed unused imports and redundant comments.&#10;- Converted `buildCleanupVisitors` companion object to inline visitor mapping.&#10;- Adjusted display name casing in `RecommendedCleanUps` and `PurgeMapstruct`." />
+    <option name="LAST_COMMIT_MESSAGE" value="refactor: simplify RecommendedCleanUps and adjust cleanup visitor initialization&#10;&#10;- Removed unused imports and redundant comments.&#10;- Converted `buildCleanupVisitors` companion object to inline visitor mapping.&#10;- Adjusted display name casing in `RecommendedCleanUps` and `PurgeMapstruct`." />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
