@@ -5,6 +5,7 @@ import org.openrewrite.Tree
 import org.openrewrite.TreeVisitor
 import org.openrewrite.config.Environment
 import org.openrewrite.java.RemoveUnusedImports
+import org.openrewrite.java.ShortenFullyQualifiedTypeReferences
 import org.openrewrite.java.format.AutoFormat
 import org.openrewrite.java.spring.NoAutowiredOnConstructor
 import org.openrewrite.java.tree.J
@@ -45,6 +46,8 @@ open class MapperProcessor(
                 .scanRuntimeClasspath()
                 .build()
                 .activateRecipes("org.openrewrite.staticanalysis.CodeCleanup"),
+            // Remove the FQN types
+            ShortenFullyQualifiedTypeReferences(),
         ).map { it.visitor }
 
     override fun visit(
