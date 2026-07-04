@@ -58,6 +58,7 @@ plugins {
 **Maven** — add to your root `pom.xml`:
 
 ```xml
+
 <plugin>
     <groupId>org.openrewrite.maven</groupId>
     <artifactId>rewrite-maven-plugin</artifactId>
@@ -65,7 +66,8 @@ plugins {
 </plugin>
 ```
 
-> Find the latest version on [Maven Central](https://central.sonatype.com/artifact/org.openrewrite.maven/rewrite-maven-plugin).
+> Find the latest version
+> on [Maven Central](https://central.sonatype.com/artifact/org.openrewrite.maven/rewrite-maven-plugin).
 
 ### Step 2: redirect generated sources out of `build/`
 
@@ -91,6 +93,7 @@ sourceSets {
 **Maven** (`pom.xml`):
 
 ```xml
+
 <build>
     <plugins>
         <plugin>
@@ -107,7 +110,9 @@ sourceSets {
                 <execution>
                     <id>add-generated-sources</id>
                     <phase>generate-sources</phase>
-                    <goals><goal>add-source</goal></goals>
+                    <goals>
+                        <goal>add-source</goal>
+                    </goals>
                     <configuration>
                         <sources>
                             <source>${project.basedir}/src/generated/java</source>
@@ -143,11 +148,13 @@ spotless {
 }
 ```
 
-Run with `./gradlew spotlessApply`. See [Spotless Gradle docs](https://github.com/diffplug/spotless/tree/main/plugin-gradle).
+Run with `./gradlew spotlessApply`.
+See [Spotless Gradle docs](https://github.com/diffplug/spotless/tree/main/plugin-gradle).
 
 **Maven:**
 
 ```xml
+
 <plugin>
     <groupId>com.diffplug.spotless</groupId>
     <artifactId>spotless-maven-plugin</artifactId>
@@ -163,13 +170,14 @@ Run with `./gradlew spotlessApply`. See [Spotless Gradle docs](https://github.co
 </plugin>
 ```
 
-Run with `./mvnw spotless:apply`. See [Spotless Maven docs](https://github.com/diffplug/spotless/tree/main/plugin-maven).
+Run with `./mvnw spotless:apply`.
+See [Spotless Maven docs](https://github.com/diffplug/spotless/tree/main/plugin-maven).
 
 ### Step 4: pick a recipe and run
 
-| Recipe | What it does |
-|---|---|
-| `io.github.santunioni.recipes.PurgeMapstructBare` | Inlines mappers only. Leaves formatting as-is. |
+| Recipe                                              | What it does                                                                                                                                                                                                 |
+|-----------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `io.github.santunioni.recipes.PurgeMapstructBare`   | Inlines mappers only. Leaves formatting as-is.                                                                                                                                                               |
 | **`io.github.santunioni.recipes.PurgeMapstruct`** ✅ | **Recommended.** Wraps `PurgeMapstructBare` and `RecommendedCleanUps` — inlines mappers *and* applies cleanup, but only to the files it changes. Unrelated files are left untouched, keeping the diff small. |
 
 **Gradle** (`build.gradle`):
@@ -187,17 +195,18 @@ rewrite {
 **Maven** (`pom.xml`, inside the `rewrite-maven-plugin` configuration):
 
 ```xml
+
 <configuration>
     <activeRecipes>
         <recipe>io.github.santunioni.recipes.PurgeMapstruct</recipe>
     </activeRecipes>
 </configuration>
 <dependencies>
-    <dependency>
-        <groupId>io.github.santunioni</groupId>
-        <artifactId>purge-mapstruct</artifactId>
-        <version>LATEST</version>
-    </dependency>
+<dependency>
+    <groupId>io.github.santunioni</groupId>
+    <artifactId>purge-mapstruct</artifactId>
+    <version>LATEST</version>
+</dependency>
 </dependencies>
 ```
 
@@ -217,7 +226,8 @@ Compile first so MapStruct generates the `*Impl` files, run the recipe, then ver
 ```
 
 > **Why `--stop` before the final compile (Gradle only)?** `rewriteRun` deletes the generated `*Impl.java` files.
-> The Gradle daemon caches those paths in memory; stopping it clears the cache so the next compile sees a clean file system.
+> The Gradle daemon caches those paths in memory; stopping it clears the cache so the next compile sees a clean file
+> system.
 
 > **Note on Mockito `@Spy`:** If your tests spy on mapper fields using `when(myMapper.someMethod(...)).thenReturn(...)`,
 > those stubs will break after inlining because the mapper is now a concrete class. The recipe automatically rewrites
@@ -229,14 +239,24 @@ After the recipe runs, apply the formatter again — now only the inlined mapper
 ./gradlew spotlessApply   # or ./mvnw spotless:apply
 ```
 
+---
+
+## Unsupported features
+
+In the [TODO file](TODO.md) I am registering usages of MapStruct that the recipe currently doesn't support. I intend to
+cover them in future releases. But in the meantime, you can use the recipe if it is possible for you to remove those
+complex usages from your codebase manually as a pre-work.
 
 ---
 
 ## Feedback
 
-I iterated on this recipe until it successfully purged MapStruct from two large production codebases. But I don't know your patterns. Maybe you are doing something I didn't cover.
+I iterated on this recipe until it successfully purged MapStruct from two large production codebases. But I don't know
+your patterns. Maybe you are doing something I didn't cover.
 
-If the recipe fails, produces broken code, or leaves something behind — [open an issue](https://github.com/santunioni/purge-mapstruct/issues/new) on GitHub with a minimal reproducer and I'll look into it.
+If the recipe fails, produces broken code, or leaves something
+behind — [open an issue](https://github.com/santunioni/purge-mapstruct/issues/new) on GitHub with a minimal reproducer
+and I'll look into it.
 
 ---
 
