@@ -18,9 +18,10 @@ fun isMapperImplementation(compilationUnit: J.CompilationUnit): Boolean {
     }
 }
 
-fun isMapperDeclaration(originalCu: J.CompilationUnit): Boolean =
-    originalCu.classes.any { cd ->
-        cd.leadingAnnotations.any { a ->
-            a.type != null && TypeUtils.isOfClassType(a.type, "org.mapstruct.Mapper")
+fun isMapperDeclaration(originalCu: J): Boolean =
+    originalCu is J.CompilationUnit &&
+        originalCu.classes.any { cd ->
+            cd.leadingAnnotations.any { a ->
+                a.type != null && TypeUtils.isOfClassType(a.type, "org.mapstruct.Mapper")
+            }
         }
-    }

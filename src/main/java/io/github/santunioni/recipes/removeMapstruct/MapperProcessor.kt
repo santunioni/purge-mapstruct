@@ -56,7 +56,7 @@ class MapperProcessor(
         cursor.putMessage(SPY_FIELD_NAMES_KEY, spyFieldNames)
 
         val visited = super.visitCompilationUnit(mapperDeclFile, ctx)
-        if (visited !is J.CompilationUnit) return visited
+        if (visited !is J.CompilationUnit || !isMapperDeclaration(visited)) return visited
         if (!isMapperDeclaration(visited)) return visited
 
         val mapperDeclClass = visited.classes[0]
