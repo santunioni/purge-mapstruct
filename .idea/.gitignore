@@ -1,8 +1,8 @@
 *.xml
 dataSources/
 modules/
-!.idea/ktlint-plugin.xml
-!.idea/google-java-format.xml
-!.idea/palantir-java-format.xml
-!.idea/externalDependencies.xml
-!.idea/gradle.xml
+!ktlint-plugin.xml
+!google-java-format.xml
+!palantir-java-format.xml
+!externalDependencies.xml
+!gradle.xml
