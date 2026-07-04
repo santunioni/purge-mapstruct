@@ -9,7 +9,6 @@ import org.openrewrite.java.tree.Expression
 import org.openrewrite.java.tree.Flag
 import org.openrewrite.java.tree.J
 import org.openrewrite.java.tree.JContainer
-import org.openrewrite.java.tree.JLeftPadded
 import org.openrewrite.java.tree.JRightPadded
 import org.openrewrite.java.tree.JavaType
 import org.openrewrite.java.tree.Space
@@ -125,25 +124,6 @@ open class MapperProcessorBare(
             // Visit the merged class so reference rewrites (Mappers.getMapper, *Impl refs, etc.)
             // apply to the copied impl body too.
             clazz = visit(clazz, ctx) as? J.ClassDeclaration ?: clazz
-
-            // Replace every simple-name type identifier with its FQN so the class compiles
-            // without any imports.
-            clazz = object : JavaVisitor<ExecutionContext>() {
-                override fun visitIdentifier(
-                    identifier: J.Identifier,
-                    ctx: ExecutionContext,
-                ): J {
-                    if (identifier.fieldType != null) return identifier
-                    val fqType = identifier.type as? JavaType.FullyQualified ?: return identifier
-                    val fqn = fqType.fullyQualifiedName
-                    if (!fqn.contains(".")) return identifier
-                    val nearestFa = cursor.firstEnclosing(J.FieldAccess::class.java)
-                    if (nearestFa != null && nearestFa.name === identifier) return identifier
-                    val simpleName = fqn.substringAfterLast('.')
-                    if (identifier.simpleName != simpleName) return identifier
-                    return buildFqnTypeTree(fqn, identifier.prefix)
-                }
-            }.visit(clazz, ctx) as? J.ClassDeclaration ?: clazz
 
             acc.touchedSourcePaths.add(visited.sourcePath)
             return mapperImplFile
@@ -704,38 +684,6 @@ open class MapperProcessorBare(
                         else -> false
                     }
                 }
-            }
-        }
-
-        /**
-         * Builds a fully qualified type tree (a chain of [J.FieldAccess] nodes) from a dot-separated
-         * FQN string.
-         */
-        private fun buildFqnTypeTree(
-            fqn: String,
-            prefix: Space,
-        ): TypeTree {
-            val parts = fqn.split(".")
-            val seed: Expression =
-                J.Identifier(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY, emptyList(), parts[0], null, null)
-            val result =
-                parts.drop(1).foldIndexed(seed) { index, current, part ->
-                    val type: JavaType? = if (index == parts.size - 2) JavaType.buildType(fqn) else null
-                    val namePart =
-                        J.Identifier(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY, emptyList(), part, type, null)
-                    J.FieldAccess(
-                        UUID.randomUUID(),
-                        Space.EMPTY,
-                        Markers.EMPTY,
-                        current,
-                        JLeftPadded.build(namePart),
-                        type,
-                    )
-                }
-            return when (result) {
-                is J.Identifier -> result.withPrefix(prefix)
-                is J.FieldAccess -> result.withPrefix(prefix)
-                else -> result as TypeTree
             }
         }
     }

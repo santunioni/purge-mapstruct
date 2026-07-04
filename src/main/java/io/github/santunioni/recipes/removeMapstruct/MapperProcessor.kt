@@ -25,17 +25,23 @@ open class MapperProcessor(
         tree: Tree?,
         ctx: ExecutionContext,
     ): J? {
+        var pre = tree as? J.CompilationUnit ?: return super.visit(tree, ctx)
+        for (visitor in preInliningRecipes) {
+            @Suppress("UNCHECKED_CAST")
+            pre = (visitor as TreeVisitor<Tree, ExecutionContext>).visit(pre, ctx) as? J.CompilationUnit ?: pre
+        }
+
         // Delegate fully to MapperProcessorBare:
         //   - impl files → returns null (deletion)
         //   - mapper files → returns merged CompilationUnit
         //   - other files → return the same or rewritten CompilationUnit (Impl ref rewrites)
-        val result = super.visit(tree, ctx) ?: return null
+        val pos = super.visit(pre, ctx) ?: return null
 
         // Unchanged — skip cleanup entirely
-        if (result === tree) return result
+        if (pos === tree) return super.visit(tree, ctx)
 
         // MapperProcessor changed this file — apply targeted cleanup
-        var cu = result as? J.CompilationUnit ?: return result
+        var cu = pos as? J.CompilationUnit ?: return pos
         for (visitor in postInliningRecipes) {
             @Suppress("UNCHECKED_CAST")
             cu = (visitor as TreeVisitor<Tree, ExecutionContext>).visit(cu, ctx) as? J.CompilationUnit ?: cu
@@ -45,6 +51,12 @@ open class MapperProcessor(
     }
 
     companion object {
+        private val preInliningRecipes: List<TreeVisitor<*, ExecutionContext>> by lazy {
+            listOf(
+                FullyQualifyTypesInImplementation(),
+            )
+        }
+
         /**
          * Built once per JVM — [Environment.Builder.scanRuntimeClasspath] is expensive and the visitor
          * list is stateless, so sharing it across all [MapperProcessor] instances is safe.

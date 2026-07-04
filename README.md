@@ -173,12 +173,9 @@ See [Spotless Gradle docs](https://github.com/diffplug/spotless/tree/main/plugin
 Run with `./mvnw spotless:apply`.
 See [Spotless Maven docs](https://github.com/diffplug/spotless/tree/main/plugin-maven).
 
-### Step 4: pick a recipe and run
+### Step 4: run the recipe
 
-| Recipe                                              | What it does                                                                                                                                                                                                 |
-|-----------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `io.github.santunioni.recipes.PurgeMapstructBare`   | Inlines mappers only. Leaves formatting as-is.                                                                                                                                                               |
-| **`io.github.santunioni.recipes.PurgeMapstruct`** ✅ | **Recommended.** Inlines mappers *and* applies cleanup (unused imports, redundant parens, lambda simplification, formatting), but only to the files it changes. Unrelated files are left untouched, keeping the diff small. |
+Use `io.github.santunioni.recipes.PurgeMapstruct`. It inlines every `@Mapper` into plain Java and applies cleanup (unused imports, redundant parens, lambda simplification, formatting) — but only to the files it changes, keeping the diff small.
 
 **Gradle** (`build.gradle`):
 
