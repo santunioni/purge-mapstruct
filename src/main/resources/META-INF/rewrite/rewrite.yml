@@ -1,8 +1,8 @@
+---
+# Style applied by AutoFormat at the end of the recipe list.
 type: specs.openrewrite.org/v1beta/style
-name: io.github.santunioni.styles.AutoFormatRecipeOutputForTest
-displayName: Auto Format Test Output
-description: |
-  Automatically cleanup code, e.g. remove unnecessary parentheses, simplify expressions.
+name: io.github.santunioni.styles.Default
+displayName: Default Java Style
 styleConfigs:
   - org.openrewrite.java.style.BlankLinesStyle
   - org.openrewrite.java.style.MethodParamPadStyle
@@ -13,3 +13,66 @@ styleConfigs:
       useTabCharacter: false
       continuationIndent: 4
       indentSize: 4
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.github.santunioni.recipes.PurgeMapstructRecommended
+displayName: Purge MapStruct
+description: |
+  Replaces every @Mapper interface/abstract class with the plain Java that MapStruct
+  generated for it, then runs a curated set of cleanup recipes so the result is
+  readable and idiomatic.
+
+  The Spring recipes are no-ops when @Autowired is absent, so this recipe is safe
+  to activate on non-Spring projects.
+
+  Required dependencies (rewrite configuration):
+    io.github.santunioni:purge-mapstruct
+    org.openrewrite.recipe:rewrite-static-analysis
+    org.openrewrite.recipe:rewrite-spring
+    io.moderne.recipe:rewrite-spring   (for FieldToConstructorInjection)
+recipeList:
+  # Inlines each @Mapper into plain Java and deletes the generated *Impl source.
+  - io.github.santunioni.recipes.PurgeMapstruct
+
+  # Composite: removes unnecessary parentheses, empty blocks, sorts imports, and more.
+  - org.openrewrite.staticanalysis.CodeCleanup
+
+  # Broader composite: inlines single-use variables, collapses lambda blocks to
+  # expressions, replaces "x -> foo(x)" with method references, removes unused
+  # local variables, and dozens of other static-analysis fixes.
+  - org.openrewrite.staticanalysis.CommonStaticAnalysis
+
+  # Remove variables that exist only to be returned or thrown on the very next line.
+  - org.openrewrite.staticanalysis.InlineVariable
+
+  # Remove local variables that are declared but never read.
+  - org.openrewrite.staticanalysis.RemoveUnusedLocalVariables
+
+  # Drop imports that are no longer referenced after inlining.
+  - org.openrewrite.java.RemoveUnusedImports
+
+  # Sort and group import statements.
+  - org.openrewrite.java.OrderImports
+
+  # Remove redundant parentheses.
+  - org.openrewrite.staticanalysis.UnnecessaryParentheses
+
+  # Collapse single-statement lambda blocks to expressions.
+  - org.openrewrite.staticanalysis.LambdaBlockToExpression
+
+  # Replace "x -> foo(x)" with Foo::foo where applicable.
+  - org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
+
+  # Removes the redundant @Autowired annotation from single-constructor beans
+  # where Spring can infer injection automatically.
+  - org.openrewrite.java.spring.NoAutowiredOnConstructor
+
+  # Converts @Autowired field injection to constructor injection, marks those
+  # fields final, and moves @Qualifier annotations to the constructor parameters.
+  # MapStruct-generated *Impl classes rely heavily on field injection, so this
+  # recipe does most of its work right after PurgeMapstruct runs.
+  - io.moderne.java.spring.boot.FieldToConstructorInjection
+
+  # Apply the Default style defined above: blank lines, whitespace padding,
+  # no-whitespace-after/before, typecast padding, and tab/indent settings.
+  - org.openrewrite.java.format.AutoFormat
