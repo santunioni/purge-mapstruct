@@ -6,3 +6,4 @@ modules/
 !palantir-java-format.xml
 !externalDependencies.xml
 !gradle.xml
+!workspace.xml
