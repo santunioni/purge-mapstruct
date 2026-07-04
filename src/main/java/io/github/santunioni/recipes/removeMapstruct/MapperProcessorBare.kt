@@ -19,7 +19,7 @@ import org.openrewrite.marker.Markers
 import java.util.*
 import java.util.logging.Logger
 
-open class MapperProcessorBare(
+class MapperProcessorBare(
     private val acc: Accumulator,
 ) : JavaVisitor<ExecutionContext>() {
     /**
@@ -207,7 +207,7 @@ open class MapperProcessorBare(
         val arguments: JContainer<Expression> =
             JContainer.build(
                 Space.EMPTY,
-                listOf<JRightPadded<Expression>>(JRightPadded.build(noArguments)),
+                listOf(JRightPadded.build(noArguments)),
                 Markers.EMPTY,
             )
 
