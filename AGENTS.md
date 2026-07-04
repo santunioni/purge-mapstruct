@@ -4,25 +4,36 @@ Guidance for agents (and humans) working on this repository.
 
 ## What this project is
 
-`purge-mapstruct` is a single [OpenRewrite](https://docs.openrewrite.org/) recipe library. It
-publishes one recipe, **`PurgeMapstruct`**, that *inlines* MapStruct mappers: it replaces a
-`@Mapper` interface/abstract class with the plain Java code that MapStruct generated for it, then
-deletes the generated `*Impl` source.
+`purge-mapstruct` is an [OpenRewrite](https://docs.openrewrite.org/) recipe library. It publishes
+three recipes that *inline* MapStruct mappers: replacing a `@Mapper` interface/abstract class with
+the plain Java code that MapStruct generated for it, then deleting the generated `*Impl` source.
 
 The motivation is in `README.md`: MapStruct hides mapping logic behind annotations and field-name
 matching, which fails silently (nulls in production). This recipe gives you back ordinary,
-compile-checked Java that is *yours to change* — even if the first output is ugly. The intended
-workflow is: run quality recipes (CodeCleanup, Spring, etc.) before and after `PurgeMapstruct` to
-polish the generated code.
+compile-checked Java that is *yours to change*.
 
-## How the recipe works
+## Recipes
 
-`PurgeMapstruct` is an OpenRewrite `ScanningRecipe<Accumulator>` — it runs in two passes:
+| Recipe | Class | What it does |
+| --- | --- | --- |
+| `PurgeMapstructBare` | `PurgeMapstructBare.kt` | Core inlining only. No formatting. |
+| `RecommendedCleanUps` | `RecommendedCleanUps.kt` | Standalone cleanup pass: unused imports, redundant parens, lambda simplification, `@Autowired` removal, `AutoFormat`. |
+| `PurgeMapstruct` | `PurgeMapstruct.kt` | **Recommended.** Extends `PurgeMapstructBare`, overrides `getVisitor` to wrap `MapperProcessor` with `RecommendedCleanUps` — but only on the files it changes. |
 
-1. **Scan pass** (`ImplementationScanner`): visits every compilation unit, finds the
-   MapStruct-generated implementations (detected via the `@Generated` annotation carrying
-   `org.mapstruct`), and records the link `super interface FQN -> impl CompilationUnit` (and the
-   reverse `impl FQN -> super FQN`) in the `Accumulator`.
+`PurgeMapstruct` extends `PurgeMapstructBare` (inheriting `getInitialValue` and `getScanner`) and
+only overrides `getVisitor` to apply `RecommendedCleanUps.buildCleanupVisitors()` to files that
+`MapperProcessor` actually modified (detected via object-identity `result === tree`).
+
+`rewrite-static-analysis` and `rewrite-spring` are bundled as `implementation` dependencies, so
+consumers only need to declare `purge-mapstruct` itself on the rewrite classpath.
+
+## How the recipes work
+
+All three are `ScanningRecipe<Accumulator>` — two passes:
+
+1. **Scan pass** (`ImplementationScanner`): visits every compilation unit, finds
+   MapStruct-generated implementations (detected via `@Generated` carrying `org.mapstruct`), and
+   records the link `super interface FQN → impl CompilationUnit` (and reverse) in `Accumulator`.
 
 2. **Edit pass** (`MapperProcessor`, a `JavaVisitor`): for each `@Mapper` declaration file it:
    - finds the single linked generated impl,
@@ -31,84 +42,77 @@ polish the generated code.
      strips MapStruct/`@Generated` annotations,
    - renames the impl class to the original mapper name, drops `implements`/`extends`,
    - writes the result back onto the **original mapper file's** source path + id.
-   - It also rewrites references everywhere else: imports, `new FooMapperImpl()`, variable/parameter
-     types, `FooMapperImpl.class` field accesses, and `instanceof` checks — all `...Impl` -> the
-     original name.
-   - Finally, when it encounters the generated impl compilation unit itself, it returns `null` to
-     **delete** that now-redundant source file.
+   - Rewrites references everywhere else: imports, `new FooMapperImpl()`, variable/parameter
+     types, `FooMapperImpl.class` field accesses, and `instanceof` checks.
+   - Returns `null` when it encounters the generated impl file itself, **deleting** it.
 
-### Source files (`src/main/java/com/santunioni/recipes/`)
+### Source files (`src/main/java/io/github/santunioni/recipes/`)
 
 | File | Responsibility |
 | --- | --- |
-| `PurgeMapstruct.java` | The recipe entrypoint; wires scanner + visitor. Class Javadoc documents the full behavior. |
-| `removeMapstruct/Accumulator.java` | Shared state between passes: the super<->impl linkings. |
-| `removeMapstruct/ImplementationScanner.java` | Scan pass — records linkings. |
-| `removeMapstruct/MapperProcessor.java` | Edit pass — does the merge, reference rewrites, and impl deletion. |
-| `removeMapstruct/Functions.java` | `isMapperImplementation` / `isMapperDeclaration` detection helpers. |
-| `removeMapstruct/StatementDefinitionOrder.java` | Comparator that orders the merged class members sensibly. |
+| `PurgeMapstructBare.kt` | Core recipe: wires scanner + `MapperProcessor`. `open` so `PurgeMapstruct` can extend it. |
+| `PurgeMapstruct.kt` | Extends `PurgeMapstructBare`; overrides `getVisitor` to apply targeted cleanup after inlining. |
+| `RecommendedCleanUps.kt` | Composite cleanup `Recipe` (`getRecipeList`). `buildCleanupVisitors()` companion derives visitors from `getRecipeList()` for targeted use by `PurgeMapstruct`. |
+| `removeMapstruct/Accumulator.kt` | Shared state between passes: the super↔impl linkings. |
+| `removeMapstruct/ImplementationScanner.kt` | Scan pass — records linkings. |
+| `removeMapstruct/MapperProcessor.kt` | Edit pass — does the merge, reference rewrites, and impl deletion. |
+| `removeMapstruct/Functions.kt` | `isMapperImplementation` / `isMapperDeclaration` detection helpers. |
+| `removeMapstruct/StatementDefinitionOrder.kt` | Comparator that orders the merged class members sensibly. |
 
-`src/main/resources/META-INF/rewrite/rewrite.yml` defines the `AutoFormatRecipeOutputForTest` style
-used only to format test output. The recipe is registered/published as
-`io.github.santunioni` group, version in `build.gradle.kts`.
+There is no `rewrite.yml`. Formatting is handled entirely within `RecommendedCleanUps` via
+`AutoFormat(null)` (OpenRewrite default style).
 
 ## Philosophy / conventions
 
-- **Null-safety**: code is `@NullMarked` (JSpecify); use `org.jspecify.annotations.@Nullable` for
-  nullables. Returning `@Nullable J` from a visitor's `visitCompilationUnit` is how you delete a file.
+- **Source language**: recipe source is **Kotlin** (`.kt`). Java fixtures in `src/test/resources/`
+  are still `.java` — that is intentional; they are test inputs, not recipe source.
+- **Null-safety**: use `org.jspecify.annotations.@Nullable` for nullables. Returning `null` from a
+  visitor's `visit` / `visitCompilationUnit` is how you delete a file in OpenRewrite.
 - **Fail loud, recover gracefully**: `MapperProcessor` logs `severe` and rethrows on unexpected
   merge errors; it *skips* (leaves code untouched) when it can't find exactly one implementer.
 - **Work on the LST, not strings**: manipulate OpenRewrite `J.*` tree nodes with `withX(...)` and
-  `ListUtils`; preserve `Space`/prefixes so formatting survives. Reach for `AutoFormat` for cleanup
-  rather than hand-spacing where possible.
-- Java 17 source/target, Java toolchain 17. Kotlin is configured but currently unused for source.
+  `ListUtils`; preserve `Space`/prefixes so formatting survives.
+- **Targeted cleanup**: `PurgeMapstruct` uses object-identity (`result === tree`) to detect whether
+  `MapperProcessor` changed a file before applying `RecommendedCleanUps` visitors to it. Do not
+  break this guard — it is what keeps unrelated files untouched.
+- Java 17 source/target, Java toolchain 17.
 
 ## Developing
 
-- **Trunk-based development**: this project commits and pushes directly to `main`. There is no
-  feature-branch / PR flow here — make your change, ensure `./gradlew test` is green, commit to
-  `main`, and `git push`. Keep commits small and self-contained so the trunk stays releasable.
-- **Babysit CI after every push**: pushing to `main` triggers the pipeline. After each push, watch
-  the run until it goes green. If it fails, fix it (don't leave the trunk red) — push follow-up
-  commits until CI is green again.
+- **Trunk-based development**: commit and push directly to `main`. No feature-branch / PR flow.
+  Keep commits small and self-contained so the trunk stays releasable.
+- **Babysit CI after every push**: watch the pipeline after each push; fix failures immediately.
 - Java 17 toolchain (see `.sdkmanrc` — `sdk env` to match). Gradle wrapper is committed.
-- Dependencies resolve to `latest.release` against the OpenRewrite BOM, so a network fetch is needed
-  on first build.
+- The BOM is pinned to a specific version in `build.gradle.kts` (not `latest.release`) to ensure
+  reproducible builds for consumers. Update it deliberately.
 - Build: `./gradlew build`
-- The main loop you'll iterate on is `MapperProcessor`. When changing transformation behavior,
-  prefer adding/adjusting a fixture-based test (below) over reasoning in the abstract — OpenRewrite
-  LST behavior is easy to get subtly wrong on spacing/types.
+- The main loop you'll iterate on is `MapperProcessor.kt`. When changing transformation behavior,
+  prefer adding/adjusting a fixture-based test over reasoning in the abstract — OpenRewrite LST
+  behavior is easy to get subtly wrong on spacing/types.
 
 ## Testing
 
 Tests use OpenRewrite's `RewriteTest` harness with the `org.openrewrite.java.Assertions.java(...)`
-DSL. The suite lives in `src/test/java/com/santunioni/recipes/PurgeMapstructTest.java`.
+DSL. The suite lives in `src/test/java/io/github/santunioni/recipes/PurgeMapstructTest.kt`.
 
-- Run build: `./gradlew build`
-- The recipe under test is configured in `defaults(RecipeSpec)`: it runs `PurgeMapstruct` followed
-  by `AutoFormat`, with `mapstruct`, `lombok`, and `junit-jupiter-api` on the parser classpath.
+- Run all tests: `./gradlew test`
+- Run one test: `./gradlew test --tests "io.github.santunioni.recipes.PurgeMapstructTest.<method>"`
+- The recipe under test is configured in `defaults(RecipeSpec)`: it runs `PurgeMapstruct()` with
+  `mapstruct`, `lombok`, and `junit-jupiter-api` on the parser classpath.
 
 ### Work test-first (TDD)
 
 **Always develop changes to this recipe test-first.** OpenRewrite LST transformations are easy to
 get subtly wrong (spacing, types, member order), so the test fixture is how you discover what the
-recipe actually produces before you trust it. This is exactly how the
-`shouldRemoveAfterMappingDecorators` case (the `@AfterMapping`/`@MappingTarget` feature) was built:
+recipe actually produces before you trust it.
 
-1. **Write the failing test first.** Create the `before/` input that exercises the new behavior and
-   a *placeholder* `after/` file (e.g. just `PLACEHOLDER`). Wire up the `@Test` and run it.
-2. **Let the test print the real output.** The assertion fails with a `but was:` block showing the
-   recipe's actual output. Read it — that is ground truth for what the recipe does today.
-3. **Decide if the output is correct.** If it already does the right thing, copy the `but was:`
-   content verbatim into `after/` and you have a green regression test. If it's wrong, that block is
-   your bug reproduction — now go fix the recipe.
-4. **Fix the recipe, re-run, iterate** until the real output matches a hand-verified-correct
-   `after/`. Never hand-write the expected output from imagination and assume the recipe matches it;
-   confirm it empirically.
-5. **Run the full suite** (`./gradlew test`) to check for regressions before committing.
-
-A scratch test with inline source strings is fine for *exploring* behavior quickly, but the
-committed test must be fixture-based (below), matching the existing cases.
+1. **Write the failing test first.** Create the `before/` input and a placeholder `after/` (e.g.
+   just `PLACEHOLDER`). Wire up the `@Test` and run it.
+2. **Let the test print the real output.** The assertion fails with a `but was:` block — that is
+   ground truth for what the recipe does today.
+3. **Decide if the output is correct.** If yes, copy the `but was:` content verbatim into `after/`.
+   If not, fix the recipe and repeat.
+4. **Run the full suite** (`./gradlew test`) to check for regressions before committing.
 
 ### Fixture layout
 
@@ -116,48 +120,41 @@ Each test reads `.java` fixtures from `src/test/resources/fixtures/<testName>/`:
 
 ```
 fixtures/<testName>/
-  context/   # files that must exist for parsing/linking but whose final state we don't assert
-             # — DTOs, entities, AND the generated *MapperImpl.java (the recipe needs the generated
-             #   impl in context to do the merge)
-  before/    # input state of the file(s) we assert on — typically the @Mapper interface/abstract class
-  after/     # expected output state of those same file(s), filename-matched to before/
+  context/   # files needed for parsing/linking but not asserted on
+             # — DTOs, entities, AND the generated *MapperImpl.java
+  before/    # input state of the file(s) under assertion
+  after/     # expected output, filename-matched to before/
 ```
 
-Conventions, mirrored from the existing cases:
+Conventions:
 
-- One file per role, named after the type (e.g. `before/CustomerMapper.java` ⇄ `after/CustomerMapper.java`
-  ⇄ `context/CustomerMapperImpl.java`). Keep names consistent across the three dirs.
-- `context/` holds supporting types (`CustomerDto`, `CustomerEntity`) plus the MapStruct-generated
-  `*MapperImpl.java`. The generated impl must carry the real `@Generated(value = "org.mapstruct...")`
-  annotation so the scanner recognizes it.
-- Fixtures are loaded in the test with `readResource("fixtures/<testName>/<role>/<File>.java")`.
+- One file per role, named after the type (e.g. `before/CustomerMapper.java` ↔ `after/CustomerMapper.java`).
+- `context/` holds supporting types plus the MapStruct-generated `*MapperImpl.java`. The generated
+  impl must carry `@Generated(value = "org.mapstruct...")` so the scanner recognises it.
+- Fixtures are loaded with `readResource("fixtures/<testName>/<role>/<File>.java")`.
 
 A test wires fixtures to virtual source paths via `spec.path(...)`. **The path matters**: generated
 impls live under `build/generated/annotationProcessor/main/java/...` and real sources under
-`src/main/java/...`, mirroring a real Gradle project. The generated impl's `after` is `null` (it gets
-deleted — see below); the `@Mapper` file's `before`→`after` shows the inlined result.
+`src/main/java/...`. The generated impl's `after` is `null` (it gets deleted); the `@Mapper`
+file's `before`→`after` shows the inlined result.
 
 ### Asserting the generated impl is deleted
 
-To assert a source file is removed by the recipe, pass `null` as the `after` content:
-
-```java
+```kotlin
 java(
     readResource(".../context/UserMapperImpl.java"),
-    (String) null,                         // expect this file to be deleted
-    spec -> spec.path("build/generated/annotationProcessor/main/java/.../UserMapperImpl.java")
-);
+    null as String?,   // expect this file to be deleted
+) { spec ->
+    spec.path("build/generated/annotationProcessor/main/java/.../UserMapperImpl.java")
+}
 ```
 
 ### Adding a new test case (TDD order)
 
-1. Create a `fixtures/<newCase>/` directory with `context/`, `before/`, and an `after/` containing a
-   `PLACEHOLDER` for each asserted file.
-2. Add a `@Test` (optionally `@DocumentExample`) method following the existing ones as templates, and
-   wire each fixture with the correct `spec.path(...)`.
-3. Run just that test — read the `but was:` output to see what the recipe actually produces.
-4. Verify that output is correct (fix the recipe if not), then paste the confirmed output into the
-   `after/` files.
+1. Create `fixtures/<newCase>/` with `context/`, `before/`, and `after/` containing `PLACEHOLDER`.
+2. Add a `@Test` method following existing ones as templates; wire each fixture with `spec.path(...)`.
+3. Run just that test — read the `but was:` output.
+4. Verify the output is correct (fix the recipe if not), paste into `after/`.
 5. `./gradlew test` to confirm green with no regressions.
 
 ---
@@ -165,8 +162,7 @@ java(
 ## Testing the recipe against a real project
 
 The unit-test harness catches many issues, but the definitive validation is running the recipe on a
-real codebase. This section documents the setup steps and common pitfalls discovered through that
-experience.
+real codebase. This section documents the setup steps and common pitfalls.
 
 ### Publish a local snapshot
 
@@ -181,44 +177,23 @@ This produces version `x.y.z-SNAPSHOT` in `~/.m2/repository/io/github/santunioni
 
 **Do NOT use `includeBuild`** to wire the recipe into the target project. This recipe requires
 Gradle 9+, but target projects often run an older wrapper version. Gradle rejects composite builds
-between incompatible versions, and the resulting `LockOutOfDateException` cascade is very hard to
-debug.
+between incompatible versions.
 
 ### Wire the recipe into the target project's build
 
-**`settings.gradle` — no changes needed**, provided `gradlePluginPortal()` (or a Nexus mirror of it)
-is already listed in `pluginManagement.repositories`. The `org.openrewrite.rewrite` plugin is
-published to the Gradle Plugin Portal.
-
-In the target project's `build.gradle`, add the following blocks. Note that projects typically
-already have one or more `repositories { }` blocks; Gradle merges all of them, so it is cleanest to
-add a **dedicated new block** right after `configurations.rewrite` rather than editing existing ones:
-
 ```groovy
 plugins {
-    // ...existing plugins...
     id 'org.openrewrite.rewrite' version '7.35.0'
 }
 
-configurations.rewrite {
-    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
-}
-
-// Dedicated block — Gradle merges all repositories{} declarations.
-// mavenLocal() resolves the snapshot you published with publishNebulaPublicationToMavenLocal.
-// The Sonatype URL is only needed if you want to pull a published snapshot from Maven Central
-// instead of (or in addition to) a local one.
 repositories {
     mavenLocal()
-    maven {
-        url "https://central.sonatype.com/repository/maven-snapshots/"
-    }
+    maven { url "https://central.sonatype.com/repository/maven-snapshots/" }
 }
 
 dependencies {
     rewrite "io.github.santunioni:purge-mapstruct:0.2.0-SNAPSHOT"
-    // optional for cleanup passes:
-    // rewrite "org.openrewrite.recipe:rewrite-static-analysis:2.22.0"
+    // rewrite-static-analysis and rewrite-spring are bundled transitively — no extra deps needed
 }
 
 rewrite {
@@ -227,67 +202,45 @@ rewrite {
 }
 ```
 
-Also redirect annotation-processor output so the generated `*Impl` files land in a directory that
-OpenRewrite can parse:
+Also redirect annotation-processor output so generated `*Impl` files land where OpenRewrite scans:
 
 ```groovy
-compileJava {
+tasks.withType(JavaCompile).configureEach {
     options.generatedSourceOutputDirectory = file("$projectDir/src/generated/java")
 }
 sourceSets {
-    main {
-        java.srcDirs += "$projectDir/src/generated/java"
-    }
+    main { java.srcDirs += "$projectDir/src/generated/java" }
 }
 ```
 
-Without these two settings the generated `*Impl` sources are either missing from the source set or
-written into the `build/` tree where OpenRewrite may not scan them.
-
 ### Dependency locking
 
-Many monorepos enforce strict dependency locking. Adding the `rewrite` configuration introduces new
-dependencies that are not yet in the lock file. Depending on the locking plugin used, you may need
-one of:
+Adding the `rewrite` configuration introduces new dependencies. Update locks as needed:
 
 ```bash
-./gradlew refreshLocks                                   # custom task, if available
 ./gradlew resolveAndLockAll --write-locks --refresh-dependencies
-./gradlew dependencies --write-locks                     # vanilla Gradle lock update
 ```
-
-After updating locks, verify `gradle.lockfile` (or equivalent) no longer contains stale entries
-that reference artifacts no longer resolved (this can silently remain after a failed prior run).
 
 ### Memory
 
-`rewriteRun` parses every source file in memory. Large codebases easily exhaust the default JVM
-heap. Add to `gradle.properties` in the target project:
+`rewriteRun` parses every source file in memory. Add to `gradle.properties` in the target project:
 
 ```properties
 org.gradle.jvmargs=-Xmx8g -XX:MaxMetaspaceSize=512m
 ```
 
-Gradle workers (the processes that actually execute the task) respect `org.gradle.jvmargs`, unlike
-`GRADLE_OPTS` which only affects the Gradle client process.
-
 ### The iteration loop
 
-After setup, the recommended loop is:
-
 ```
-1. git checkout -- src/              # revert application sources to HEAD
-   rm -rf src/generated/            # clear generated sources
-2. ./gradlew --stop                  # clear Gradle daemon VFS (see note below)
-3. ./gradlew compileJava compileTestJava   # regenerate MapStruct *Impl files
+1. git checkout -- src/ && rm -rf src/generated/   # revert to HEAD, clear generated sources
+2. ./gradlew --stop                                 # clear Gradle daemon VFS
+3. ./gradlew compileJava compileTestJava            # regenerate MapStruct *Impl files
 4. ./gradlew rewriteRun
-5. ./gradlew --stop                  # mandatory before recompiling (see note)
-6. ./gradlew compileJava compileTestJava   # verify no compile errors
+5. ./gradlew --stop                                 # mandatory — daemon VFS still references deleted *Impl files
+6. ./gradlew compileJava compileTestJava            # verify no compile errors
 7. If errors → fix the recipe, publish new snapshot, goto 1
 ```
 
-**Why `--stop` before step 6?** `rewriteRun` deletes the generated `*Impl.java` files as part of
-the migration. The Gradle daemon keeps an in-memory Virtual File System (VFS) that still references
-those deleted files. Without stopping the daemon first, the subsequent `compileJava` fails with
-`Failed to normalize content of '...Impl.java'` even though those files are gone. Stopping the
-daemon clears the VFS so the next build starts with a clean file-system view.
+**Why `--stop` before step 6?** `rewriteRun` deletes the generated `*Impl.java` files. The Gradle
+daemon keeps an in-memory VFS that still references those paths. Without stopping it, the next
+`compileJava` fails with `Failed to normalize content of '...Impl.java'`.
