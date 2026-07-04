@@ -1,5 +1,15 @@
 package io.github.santunioni.recipes.removeMapstruct;
 
+import static io.github.santunioni.recipes.removeMapstruct.Functions.isMapperDeclaration;
+import static io.github.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.extern.java.Log;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -7,15 +17,18 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.AddImport;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.Flag;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JContainer;
+import org.openrewrite.java.tree.JLeftPadded;
+import org.openrewrite.java.tree.JRightPadded;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.TypeTree;
+import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
-
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static io.github.santunioni.recipes.removeMapstruct.Functions.isMapperDeclaration;
-import static io.github.santunioni.recipes.removeMapstruct.Functions.isMapperImplementation;
 
 @Log
 @NullMarked
@@ -33,31 +46,24 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
             return null;
         }
 
-        mapperDeclMethod = mapperDeclMethod.withModifiers(ListUtils.map(mapperDeclMethod.getModifiers(),
-                modifier -> {
-                    if (modifier.getType() == J.Modifier.Type.Default) {
-                        return modifier.withType(J.Modifier.Type.Public);
-                    }
-                    return modifier;
-                }));
+        mapperDeclMethod = mapperDeclMethod.withModifiers(ListUtils.map(mapperDeclMethod.getModifiers(), modifier -> {
+            if (modifier.getType() == J.Modifier.Type.Default) {
+                return modifier.withType(J.Modifier.Type.Public);
+            }
+            return modifier;
+        }));
 
-        mapperDeclMethod =
-                mapperDeclMethod.withLeadingAnnotations(ListUtils.filter(
-                        mapperDeclMethod.getLeadingAnnotations(),
-                        MapperProcessor::excludeMapstructAnnotations)
-                );
+        mapperDeclMethod = mapperDeclMethod.withLeadingAnnotations(ListUtils.filter(
+                mapperDeclMethod.getLeadingAnnotations(), MapperProcessor::excludeMapstructAnnotations));
 
         // Remove MapStruct annotations from method parameters
-        List<Statement> filteredParameters = ListUtils.map(mapperDeclMethod.getParameters(),
-                param -> {
-                    if (param instanceof J.VariableDeclarations varDecl) {
-                        return varDecl.withLeadingAnnotations(ListUtils.filter(
-                                varDecl.getLeadingAnnotations(),
-                                MapperProcessor::excludeMapstructAnnotations
-                        ));
-                    }
-                    return param;
-                });
+        List<Statement> filteredParameters = ListUtils.map(mapperDeclMethod.getParameters(), param -> {
+            if (param instanceof J.VariableDeclarations varDecl) {
+                return varDecl.withLeadingAnnotations(ListUtils.filter(
+                        varDecl.getLeadingAnnotations(), MapperProcessor::excludeMapstructAnnotations));
+            }
+            return param;
+        });
 
         mapperDeclMethod = mapperDeclMethod.withParameters(filteredParameters);
 
@@ -69,29 +75,44 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
 
         final var accessModifiers = Set.of(J.Modifier.Type.Public, J.Modifier.Type.Protected, J.Modifier.Type.Private);
 
-        final var modifiersSetManually =
-                Set.of(J.Modifier.Type.Public, J.Modifier.Type.Protected, J.Modifier.Type.Private,
-                        J.Modifier.Type.Static,
-                        J.Modifier.Type.Final);
+        final var modifiersSetManually = Set.of(
+                J.Modifier.Type.Public,
+                J.Modifier.Type.Protected,
+                J.Modifier.Type.Private,
+                J.Modifier.Type.Static,
+                J.Modifier.Type.Final);
 
-        final var accessModifierInPlace =
-                mapperDeclField
-                        .getModifiers()
-                        .stream()
-                        .filter(modifier -> accessModifiers.contains(modifier.getType())).findFirst();
+        final var accessModifierInPlace = mapperDeclField.getModifiers().stream()
+                .filter(modifier -> accessModifiers.contains(modifier.getType()))
+                .findFirst();
 
         if (accessModifierInPlace.isPresent()) {
             modifiers.add(accessModifierInPlace.get());
         } else {
-            modifiers.add(new J.Modifier(UUID.randomUUID(), Space.EMPTY,
-                    Markers.EMPTY, null, J.Modifier.Type.Public, Collections.emptyList()));
+            modifiers.add(new J.Modifier(
+                    UUID.randomUUID(),
+                    Space.EMPTY,
+                    Markers.EMPTY,
+                    null,
+                    J.Modifier.Type.Public,
+                    Collections.emptyList()));
         }
 
-        modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
-                Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()));
+        modifiers.add(new J.Modifier(
+                UUID.randomUUID(),
+                Space.SINGLE_SPACE,
+                Markers.EMPTY,
+                null,
+                J.Modifier.Type.Static,
+                Collections.emptyList()));
 
-        modifiers.add(new J.Modifier(UUID.randomUUID(), Space.SINGLE_SPACE,
-                Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList()));
+        modifiers.add(new J.Modifier(
+                UUID.randomUUID(),
+                Space.SINGLE_SPACE,
+                Markers.EMPTY,
+                null,
+                J.Modifier.Type.Final,
+                Collections.emptyList()));
 
         for (J.Modifier modifier : mapperDeclField.getModifiers()) {
             if (!modifiersSetManually.contains(modifier.getType())) {
@@ -109,14 +130,12 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return mapperDeclField;
     }
 
-    private static J.MethodDeclaration transformMapperImplMethod(J.MethodDeclaration implMethod, String mapperImplClassName,
-                                                                 String mapperDeclClassName) {
+    private static J.MethodDeclaration transformMapperImplMethod(
+            J.MethodDeclaration implMethod, String mapperImplClassName, String mapperDeclClassName) {
         // Rename the constructor
-        boolean isConstructor =
-                implMethod.getName().getSimpleName().equals(mapperImplClassName);
+        boolean isConstructor = implMethod.getName().getSimpleName().equals(mapperImplClassName);
         if (isConstructor) {
-            implMethod =
-                    implMethod.withName(implMethod.getName().withSimpleName(mapperDeclClassName));
+            implMethod = implMethod.withName(implMethod.getName().withSimpleName(mapperDeclClassName));
         }
 
         // Filter out annotations that look like Override or Named
@@ -133,15 +152,13 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
             }
         }
 
-        List<J.Annotation> filteredAnnotations = ListUtils.map(originalAnnotations,
-                methodAnnotation -> {
-                    if (methodAnnotation.getSimpleName().equals("Override")
-                            || TypeUtils.isOfClassType(methodAnnotation.getType(),
-                            "java.lang.Override")) {
-                        return null;
-                    }
-                    return methodAnnotation;
-                });
+        List<J.Annotation> filteredAnnotations = ListUtils.map(originalAnnotations, methodAnnotation -> {
+            if (methodAnnotation.getSimpleName().equals("Override")
+                    || TypeUtils.isOfClassType(methodAnnotation.getType(), "java.lang.Override")) {
+                return null;
+            }
+            return methodAnnotation;
+        });
 
         implMethod = implMethod.withLeadingAnnotations(filteredAnnotations);
 
@@ -154,11 +171,9 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     private static boolean excludeGeneratedAnnotations(J.Annotation a) {
-        return !(
-                a.getSimpleName().equals("Generated")
-                        || TypeUtils.isOfClassType(a.getType(), "javax.annotation.processing.Generated")
-                        || TypeUtils.isOfClassType(a.getType(), "jakarta.annotation.Generated")
-        );
+        return !(a.getSimpleName().equals("Generated")
+                || TypeUtils.isOfClassType(a.getType(), "javax.annotation.processing.Generated")
+                || TypeUtils.isOfClassType(a.getType(), "jakarta.annotation.Generated"));
     }
 
     /**
@@ -167,12 +182,31 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
      * annotations in the {@code org.mapstruct} package.
      */
     private static final Set<String> MAPSTRUCT_ANNOTATION_SIMPLE_NAMES = Set.of(
-            "AfterMapping", "BeanMapping", "BeforeMapping", "Condition", "Context", "DecoratedWith",
-            "EnumMapping", "InheritConfiguration", "InheritInverseConfiguration", "IterableMapping",
-            "MapMapping", "Mapper", "MapperConfig", "Mapping", "MappingConstants", "Mappings",
-            "MappingTarget", "Named", "ObjectFactory", "Qualifier", "SubclassMapping",
-            "SubclassMappings", "TargetType", "ValueMapping", "ValueMappings"
-    );
+            "AfterMapping",
+            "BeanMapping",
+            "BeforeMapping",
+            "Condition",
+            "Context",
+            "DecoratedWith",
+            "EnumMapping",
+            "InheritConfiguration",
+            "InheritInverseConfiguration",
+            "IterableMapping",
+            "MapMapping",
+            "Mapper",
+            "MapperConfig",
+            "Mapping",
+            "MappingConstants",
+            "Mappings",
+            "MappingTarget",
+            "Named",
+            "ObjectFactory",
+            "Qualifier",
+            "SubclassMapping",
+            "SubclassMappings",
+            "TargetType",
+            "ValueMapping",
+            "ValueMappings");
 
     private static boolean excludeMapstructAnnotations(J.Annotation a) {
         final JavaType type = a.getType();
@@ -189,16 +223,16 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
 
     /**
      * Cursor message key: {@code Set<String>} of local field names in the current compilation unit
-     * that are annotated with Mockito's {@code @Spy}. Populated at the top of
-     * {@link #visitCompilationUnit(J.CompilationUnit, ExecutionContext)} so nested visitors
-     * (notably {@link #visitMethodInvocation(J.MethodInvocation, ExecutionContext)}) can rewrite
-     * {@code when(spy.x(a)).thenReturn(v)} into {@code doReturn(v).when(spy).x(a)}.
+     * that are annotated with Mockito's {@code @Spy}. Populated at the top of {@link
+     * #visitCompilationUnit(J.CompilationUnit, ExecutionContext)} so nested visitors (notably {@link
+     * #visitMethodInvocation(J.MethodInvocation, ExecutionContext)}) can rewrite {@code
+     * when(spy.x(a)).thenReturn(v)} into {@code doReturn(v).when(spy).x(a)}.
      */
     private static final String SPY_FIELD_NAMES_KEY = "purgeMapstruct.spyFieldNames";
 
     /**
-     * Modify the mapper declaration file with a modified mix of methods and fields from itself plus the mapper
-     * implementation generated by mapstruct
+     * Modify the mapper declaration file with a modified mix of methods and fields from itself plus
+     * the mapper implementation generated by mapstruct
      */
     @Override
     public @Nullable J visitCompilationUnit(J.CompilationUnit mapperDeclFile_, ExecutionContext ctx) {
@@ -248,11 +282,8 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
             // Transform methods on Impl class
             for (Statement implStatement : mapperImplClass.getBody().getStatements()) {
                 if (implStatement instanceof J.MethodDeclaration mapperImplMethod) {
-                    copiedClassStatements.add(transformMapperImplMethod(
-                            mapperImplMethod,
-                            mapperImplClassName,
-                            mapperDeclClassName
-                    ));
+                    copiedClassStatements.add(
+                            transformMapperImplMethod(mapperImplMethod, mapperImplClassName, mapperDeclClassName));
                 } else {
                     copiedClassStatements.add(implStatement);
                 }
@@ -278,17 +309,12 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                     .withBody(mapperImplClass.getBody().withStatements(copiedClassStatements))
                     .withName(mapperImplClass.getName().withSimpleName(mapperDeclClassName))
                     .withImplements(null)
-                    .withLeadingAnnotations(
-                            Stream.concat(
-                                            mapperDeclClass
-                                                    .getLeadingAnnotations()
-                                                    .stream().filter(MapperProcessor::excludeMapstructAnnotations),
-                                            mapperImplClass
-                                                    .getLeadingAnnotations()
-                                                    .stream().filter(MapperProcessor::excludeGeneratedAnnotations)
-                                    )
-                                    .toList()
-                    )
+                    .withLeadingAnnotations(Stream.concat(
+                                    mapperDeclClass.getLeadingAnnotations().stream()
+                                            .filter(MapperProcessor::excludeMapstructAnnotations),
+                                    mapperImplClass.getLeadingAnnotations().stream()
+                                            .filter(MapperProcessor::excludeGeneratedAnnotations))
+                            .toList())
                     .withExtends(null);
 
             // The generated impl body was copied verbatim from the scan-time accumulator and never
@@ -329,17 +355,23 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                     .withSourcePath(mapperDeclFile.getSourcePath());
 
         } catch (Exception e) {
-            log.severe("Error processing @Mapper class " + mapperDeclFile.getClasses().get(0).getName() + ": " + e.getMessage());
-            throw new RuntimeException("Failed to migrate Mapstruct Mapper: " + mapperDeclClass.getName().getSimpleName(),
+            log.severe("Error processing @Mapper class "
+                    + mapperDeclFile.getClasses().get(0).getName()
+                    + ": "
+                    + e.getMessage());
+            throw new RuntimeException(
+                    "Failed to migrate Mapstruct Mapper: "
+                            + mapperDeclClass.getName().getSimpleName(),
                     e);
         }
     }
 
     /**
      * Replaces the MapStruct factory lookup {@code Mappers.getMapper(SomeMapper.class)} with a direct
-     * constructor call {@code new SomeMapper()}. After inlining, the mapper is a concrete class, so the
-     * factory call (which resolved the now-deleted generated implementation) becomes a plain
-     * instantiation. The {@code org.mapstruct.factory.Mappers} import is dropped by {@link #copyImports}.
+     * constructor call {@code new SomeMapper()}. After inlining, the mapper is a concrete class, so
+     * the factory call (which resolved the now-deleted generated implementation) becomes a plain
+     * instantiation. The {@code org.mapstruct.factory.Mappers} import is dropped by {@link
+     * #copyImports}.
      */
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
@@ -383,17 +415,21 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
 
         // Synthesize the no-arg constructor type so the new J.NewClass carries a valid type.
         JavaType.Method constructorType = new JavaType.Method(
-                null, Flag.Public.getBitMask(), mapperFqn, "<constructor>", mapperFqn,
-                Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyList(), null, null
-        );
+                null,
+                Flag.Public.getBitMask(),
+                mapperFqn,
+                "<constructor>",
+                mapperFqn,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                null,
+                null);
 
         Expression noArguments = new J.Empty(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY);
         JContainer<Expression> arguments = JContainer.build(
-                Space.EMPTY,
-                Collections.singletonList(JRightPadded.build(noArguments)),
-                Markers.EMPTY
-        );
+                Space.EMPTY, Collections.singletonList(JRightPadded.build(noArguments)), Markers.EMPTY);
 
         // Mappers.getMapper(SomeMapper.class) -> new SomeMapper()
         return new J.NewClass(
@@ -405,8 +441,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                 mapperType,
                 arguments,
                 null,
-                constructorType
-        );
+                constructorType);
     }
 
     private static boolean isMappersGetMapper(J.MethodInvocation invocation) {
@@ -432,9 +467,9 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     /**
-     * Replaces references of UserMapperImpl.class to UserMapper.class, both for the
-     * simple-name case ({@code UserMapperImpl.class}) and the fully-qualified case
-     * ({@code com.foo.UserMapperImpl.class}).
+     * Replaces references of UserMapperImpl.class to UserMapper.class, both for the simple-name case
+     * ({@code UserMapperImpl.class}) and the fully-qualified case ({@code
+     * com.foo.UserMapperImpl.class}).
      */
     @Override
     public J visitFieldAccess(J.FieldAccess fieldAccess_, ExecutionContext ctx) {
@@ -469,8 +504,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                     Collections.emptyList(),
                     superSimpleName,
                     superType,
-                    targetIdentifier.getFieldType()
-            );
+                    targetIdentifier.getFieldType());
 
             return fieldAccess.withTarget(superTarget).withType(superType);
         }
@@ -499,9 +533,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return fieldAccess;
     }
 
-    /**
-     * Replaces import references of UserMapperImpl to UserMapper
-     */
+    /** Replaces import references of UserMapperImpl to UserMapper */
     @Override
     public J visitImport(J.Import imp, ExecutionContext ctx) {
         J visited = super.visitImport(imp, ctx);
@@ -539,9 +571,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return replaceImportQualid(import_, superFqn);
     }
 
-    /**
-     * Replaces instantiations of UserMapperImpl() to UserMapper()
-     */
+    /** Replaces instantiations of UserMapperImpl() to UserMapper() */
     @Override
     public J visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
         J visited = super.visitNewClass(newClass, ctx);
@@ -563,9 +593,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return newClazz.withClazz(replacedClazz);
     }
 
-    /**
-     * Replaces variable declarations like `UserMapperImpl userMapper` to `UserMapper userMapper`
-     */
+    /** Replaces variable declarations like `UserMapperImpl userMapper` to `UserMapper userMapper` */
     @Override
     public J visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext p) {
         J visited = super.visitVariableDeclarations(multiVariable, p);
@@ -588,7 +616,8 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     /**
-     * Replaces instanceof checks like `userMapper instanceof UserMapperImpl` to `userMapper instanceof UserMapper`
+     * Replaces instanceof checks like `userMapper instanceof UserMapperImpl` to `userMapper
+     * instanceof UserMapper`
      */
     @Override
     public J visitInstanceOf(J.InstanceOf instanceOf_, ExecutionContext ctx) {
@@ -616,28 +645,27 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return instanceOf.withClazz(clazzParentheses.withTree(replacedClazz));
     }
 
-    private J.CompilationUnit copyImports(J.CompilationUnit mapperImplementationFile,
-                                          J.CompilationUnit originalCompilationUnit
-    ) {
+    private J.CompilationUnit copyImports(
+            J.CompilationUnit mapperImplementationFile, J.CompilationUnit originalCompilationUnit) {
         return mapperImplementationFile.withImports(Collections.emptyList());
     }
 
     /**
      * Builds a fully-qualified type tree (a chain of {@link J.FieldAccess} nodes) from a
-     * dot-separated FQN string — the AST equivalent of writing {@code com.example.Foo} as a
-     * type reference in source code without an import.
+     * dot-separated FQN string — the AST equivalent of writing {@code com.example.Foo} as a type
+     * reference in source code without an import.
      */
     private static TypeTree buildFqnTypeTree(String fqn, Space prefix) {
         String[] parts = fqn.split("\\.");
-        Expression current = new J.Identifier(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY,
-                Collections.emptyList(), parts[0], null, null);
+        Expression current = new J.Identifier(
+                UUID.randomUUID(), Space.EMPTY, Markers.EMPTY, Collections.emptyList(), parts[0], null, null);
         for (int i = 1; i < parts.length; i++) {
             boolean isLast = i == parts.length - 1;
             JavaType type = isLast ? JavaType.buildType(fqn) : null;
-            J.Identifier namePart = new J.Identifier(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY,
-                    Collections.emptyList(), parts[i], type, null);
-            current = new J.FieldAccess(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY,
-                    current, JLeftPadded.build(namePart), type);
+            J.Identifier namePart = new J.Identifier(
+                    UUID.randomUUID(), Space.EMPTY, Markers.EMPTY, Collections.emptyList(), parts[i], type, null);
+            current = new J.FieldAccess(
+                    UUID.randomUUID(), Space.EMPTY, Markers.EMPTY, current, JLeftPadded.build(namePart), type);
         }
         if (parts.length == 1) {
             return ((J.Identifier) current).withPrefix(prefix);
@@ -646,8 +674,8 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     /**
-     * Extracts FQN from a FieldAccess (used for imports).
-     * Prioritizes name-based extraction to avoid stale type information after replacements.
+     * Extracts FQN from a FieldAccess (used for imports). Prioritizes name-based extraction to avoid
+     * stale type information after replacements.
      */
     private @Nullable String extractFqnFromFieldAccess(J.FieldAccess fieldAccess) {
         // First try to extract from the name chain (more reliable after replacements)
@@ -684,9 +712,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return null;
     }
 
-    /**
-     * Replaces mentions of a type to it's super type (implements or extends).
-     */
+    /** Replaces mentions of a type to it's super type (implements or extends). */
     private TypeTree replaceTypeTreeIfNeeded(TypeTree typeTree) {
         if (!(typeTree.getType() instanceof JavaType.FullyQualified type)) {
             return typeTree;
@@ -708,13 +734,10 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                 Collections.emptyList(),
                 superSimpleName,
                 superType,
-                null
-        );
+                null);
     }
 
-    /**
-     * Recursively replaces the final identifier in a FieldAccess chain.
-     */
+    /** Recursively replaces the final identifier in a FieldAccess chain. */
     private J.FieldAccess replaceFinalIdentifierInChain(J.FieldAccess fieldAccess, J.Identifier newIdentifier) {
         if (fieldAccess.getTarget() instanceof J.FieldAccess nested) {
             // Continue down the chain
@@ -726,9 +749,8 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     /**
-     * Replaces the qualid in an import statement with the super type.
-     * The root FieldAccess (returned by getQualid()) has the class name as its name.
-     * We just need to replace that name.
+     * Replaces the qualid in an import statement with the super type. The root FieldAccess (returned
+     * by getQualid()) has the class name as its name. We just need to replace that name.
      */
     private J.Import replaceImportQualid(J.Import import_, String superFqn) {
         String superSimpleName = extractSimpleName(superFqn);
@@ -742,17 +764,13 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return import_.withQualid(newQualid);
     }
 
-    /**
-     * Extracts the simple name (last part) from an FQN.
-     */
+    /** Extracts the simple name (last part) from an FQN. */
     private String extractSimpleName(String fqn) {
         int lastDot = fqn.lastIndexOf('.');
         return lastDot >= 0 ? fqn.substring(lastDot + 1) : fqn;
     }
 
-    /**
-     * Gets the final identifier name from a FieldAccess chain.
-     */
+    /** Gets the final identifier name from a FieldAccess chain. */
     private String getFinalIdentifierName(J.FieldAccess fieldAccess) {
         J.FieldAccess current = fieldAccess;
         while (current.getTarget() instanceof J.FieldAccess nested) {
@@ -761,9 +779,7 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         return current.getName().getSimpleName();
     }
 
-    /**
-     * Gets the simple name from a TypeTree.
-     */
+    /** Gets the simple name from a TypeTree. */
     private String getSimpleNameFromTypeTree(TypeTree typeTree) {
         if (typeTree instanceof J.Identifier identifier) {
             return identifier.getSimpleName();
@@ -774,9 +790,9 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     /**
-     * Collects the simple names of top-level fields (declared on the file's outer classes) that
-     * carry the Mockito {@code @Spy} annotation. Used to scope the spy-stubbing rewrite so it only
-     * fires on locally-declared spies.
+     * Collects the simple names of top-level fields (declared on the file's outer classes) that carry
+     * the Mockito {@code @Spy} annotation. Used to scope the spy-stubbing rewrite so it only fires on
+     * locally-declared spies.
      */
     private static Set<String> collectSpyFieldNames(J.CompilationUnit cu) {
         Set<String> names = new HashSet<>();
@@ -785,10 +801,9 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
                 if (!(stmt instanceof J.VariableDeclarations varDecl)) {
                     continue;
                 }
-                boolean isSpy = varDecl.getLeadingAnnotations().stream().anyMatch(a ->
-                        "Spy".equals(a.getSimpleName())
-                                || TypeUtils.isOfClassType(a.getType(), "org.mockito.Spy")
-                );
+                boolean isSpy = varDecl.getLeadingAnnotations().stream()
+                        .anyMatch(a -> "Spy".equals(a.getSimpleName())
+                                || TypeUtils.isOfClassType(a.getType(), "org.mockito.Spy"));
                 if (!isSpy) {
                     continue;
                 }
@@ -801,12 +816,13 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
     }
 
     /**
-     * If {@code invocation} matches {@code when(spy.method(args)).thenReturn(value)} (or
-     * {@code thenThrow}), where {@code spy} is a locally declared {@code @Spy} field, rebuild the
-     * tree as {@code doReturn(value).when(spy).method(args)} (or {@code doThrow(...)}) and add the
-     * necessary Mockito static import. Returns {@code null} when the pattern doesn't match.
+     * If {@code invocation} matches {@code when(spy.method(args)).thenReturn(value)} (or {@code
+     * thenThrow}), where {@code spy} is a locally declared {@code @Spy} field, rebuild the tree as
+     * {@code doReturn(value).when(spy).method(args)} (or {@code doThrow(...)}) and add the necessary
+     * Mockito static import. Returns {@code null} when the pattern doesn't match.
      */
-    private J.@Nullable MethodInvocation rewriteWhenOnSpyIfApplicable(J.MethodInvocation invocation, ExecutionContext ctx) {
+    private J.@Nullable MethodInvocation rewriteWhenOnSpyIfApplicable(
+            J.MethodInvocation invocation, ExecutionContext ctx) {
         String stubName = invocation.getSimpleName();
         if (!"thenReturn".equals(stubName) && !"thenThrow".equals(stubName)) {
             return null;
@@ -819,7 +835,8 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         if (!(select instanceof J.MethodInvocation whenInvocation)) {
             return null;
         }
-        if (!"when".equals(whenInvocation.getSimpleName()) || whenInvocation.getArguments().size() != 1) {
+        if (!"when".equals(whenInvocation.getSimpleName())
+                || whenInvocation.getArguments().size() != 1) {
             return null;
         }
         if (!(whenInvocation.getArguments().get(0) instanceof J.MethodInvocation spyMethodCall)) {
@@ -830,8 +847,10 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
             return null;
         }
         Set<String> spyNames = getCursor().getNearestMessage(SPY_FIELD_NAMES_KEY);
-        log.fine("[PurgeMapstruct] Checking when-spy: candidate=" + spyIdent.getSimpleName()
-                + " known-spies=" + spyNames);
+        log.fine("[PurgeMapstruct] Checking when-spy: candidate="
+                + spyIdent.getSimpleName()
+                + " known-spies="
+                + spyNames);
         if (spyNames == null || !spyNames.contains(spyIdent.getSimpleName())) {
             return null;
         }
@@ -840,43 +859,59 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         Expression stubValue = invocation.getArguments().get(0);
 
         JavaType.FullyQualified mockitoType = (JavaType.FullyQualified) JavaType.buildType("org.mockito.Mockito");
-        JavaType.FullyQualified stubberType = (JavaType.FullyQualified) JavaType.buildType("org.mockito.stubbing.Stubber");
+        JavaType.FullyQualified stubberType =
+                (JavaType.FullyQualified) JavaType.buildType("org.mockito.stubbing.Stubber");
 
         // Synthesize a matching Mockito.doReturn(Object) / doThrow(Throwable) method type so the
         // resulting LST has valid type attribution and validators are happy.
         JavaType.Method doStubMethodType = new JavaType.Method(
-                null, Flag.Public.getBitMask() | Flag.Static.getBitMask(), mockitoType, doStubName,
-                stubberType, Collections.singletonList("value"),
-                Collections.singletonList(stubValue.getType() != null ? stubValue.getType() : JavaType.buildType("java.lang.Object")),
-                Collections.emptyList(), Collections.emptyList(), null, null
-        );
+                null,
+                Flag.Public.getBitMask() | Flag.Static.getBitMask(),
+                mockitoType,
+                doStubName,
+                stubberType,
+                Collections.singletonList("value"),
+                Collections.singletonList(
+                        stubValue.getType() != null ? stubValue.getType() : JavaType.buildType("java.lang.Object")),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                null,
+                null);
 
         J.Identifier doStubIdent = new J.Identifier(
-                UUID.randomUUID(), Space.EMPTY, Markers.EMPTY,
-                Collections.emptyList(), doStubName, doStubMethodType, null
-        );
+                UUID.randomUUID(),
+                Space.EMPTY,
+                Markers.EMPTY,
+                Collections.emptyList(),
+                doStubName,
+                doStubMethodType,
+                null);
         JContainer<Expression> doStubArgs = JContainer.build(
                 Space.EMPTY,
                 Collections.singletonList(JRightPadded.build(stubValue.withPrefix(Space.EMPTY))),
-                Markers.EMPTY
-        );
+                Markers.EMPTY);
         J.MethodInvocation doStubCall = new J.MethodInvocation(
-                UUID.randomUUID(), invocation.getPrefix(), invocation.getMarkers(),
-                null, null, doStubIdent, doStubArgs, doStubMethodType
-        );
+                UUID.randomUUID(),
+                invocation.getPrefix(),
+                invocation.getMarkers(),
+                null,
+                null,
+                doStubIdent,
+                doStubArgs,
+                doStubMethodType);
 
         J.MethodInvocation newWhenCall = new J.MethodInvocation(
-                UUID.randomUUID(), Space.EMPTY, whenInvocation.getMarkers(),
+                UUID.randomUUID(),
+                Space.EMPTY,
+                whenInvocation.getMarkers(),
                 JRightPadded.build((Expression) doStubCall),
                 null,
                 whenInvocation.getName().withPrefix(Space.EMPTY),
                 JContainer.build(
                         Space.EMPTY,
                         Collections.singletonList(JRightPadded.build(spyIdent.withPrefix(Space.EMPTY))),
-                        Markers.EMPTY
-                ),
-                whenInvocation.getMethodType()
-        );
+                        Markers.EMPTY),
+                whenInvocation.getMethodType());
 
         List<Expression> spyArgs = spyMethodCall.getArguments();
         List<JRightPadded<Expression>> paddedFinalArgs = new ArrayList<>(spyArgs.size());
@@ -886,13 +921,14 @@ public class MapperProcessor extends JavaVisitor<ExecutionContext> {
         }
 
         J.MethodInvocation finalCall = new J.MethodInvocation(
-                UUID.randomUUID(), Space.EMPTY, spyMethodCall.getMarkers(),
+                UUID.randomUUID(),
+                Space.EMPTY,
+                spyMethodCall.getMarkers(),
                 JRightPadded.build((Expression) newWhenCall),
                 null,
                 spyMethodCall.getName().withPrefix(Space.EMPTY),
                 JContainer.build(Space.EMPTY, paddedFinalArgs, Markers.EMPTY),
-                spyMethodCall.getMethodType()
-        );
+                spyMethodCall.getMethodType());
 
         // Queue up a static import for org.mockito.Mockito.doReturn / doThrow.
         doAfterVisit(new AddImport<>("org.mockito.Mockito", doStubName, false));

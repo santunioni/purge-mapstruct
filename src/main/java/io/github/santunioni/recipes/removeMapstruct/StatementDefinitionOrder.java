@@ -1,16 +1,15 @@
 package io.github.santunioni.recipes.removeMapstruct;
 
+import java.util.Comparator;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 
-import java.util.Comparator;
-
 public class StatementDefinitionOrder implements Comparator<Statement> {
     /**
-     * Order statements:
-     * First fields, then public method, then protected methods, then private methods
+     * Order statements: First fields, then public method, then protected methods, then private
+     * methods
      *
-     * @param first  the first object to be compared.
+     * @param first the first object to be compared.
      * @param second the second object to be compared.
      * @return the order
      */
@@ -41,7 +40,8 @@ public class StatementDefinitionOrder implements Comparator<Statement> {
                 }
             }
         } else if (statement instanceof J.MethodDeclaration method) {
-            // Constructor before every other method: check if the method name starts with a capital letter
+            // Constructor before every other method: check if the method name starts with a capital
+            // letter
             if (method.getSimpleName().matches("^[A-Z].*")) {
                 return 19999999;
             } else if (method.hasModifier(J.Modifier.Type.Static)) {
@@ -64,5 +64,4 @@ public class StatementDefinitionOrder implements Comparator<Statement> {
         }
         return 90000000;
     }
-
 }

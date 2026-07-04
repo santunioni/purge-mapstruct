@@ -174,7 +174,7 @@ spotless {
         target("src/main/**/*.java")
         targetExclude("**/build/**")
         expandWildcardImports()
-        googleJavaFormat()
+        palantirJavaFormat()
         removeUnusedImports()
         forbidWildcardImports()
         trimTrailingWhitespace()
