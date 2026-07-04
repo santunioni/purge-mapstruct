@@ -1,0 +1,9 @@
+*.xml
+dataSources/
+modules/
+!ktlint-plugin.xml
+!google-java-format.xml
+!palantir-java-format.xml
+!externalDependencies.xml
+!gradle.xml
+!workspace.xml
