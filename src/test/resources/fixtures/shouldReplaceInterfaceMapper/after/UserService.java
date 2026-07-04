@@ -3,7 +3,7 @@ package io.github.santunioni.fixtures;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.Extensions;
 
-@ExtendWith(io.github.santunioni.fixtures.UserMapper.class)
+@ExtendWith(UserMapper.class)
 @Extensions(classes = {
         UserMapper.class,
 })

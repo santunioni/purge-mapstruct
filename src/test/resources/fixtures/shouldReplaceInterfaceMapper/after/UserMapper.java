@@ -1,11 +1,13 @@
 package io.github.santunioni.fixtures;
 
+import lombok.Setter;
+
 public class UserMapper {
     public static final java.lang.String INTERFACE_FIELD = "VALUE";
     public static final java.lang.String FINAL_INTERFACE_FIELD = "VALUE";
     public static final java.lang.String STATIC_FINAL_INTERFACE_FIELD = "VALUE";
 
-    @lombok.Setter
+    @Setter
     private java.lang.Long childField;
 
     public UserMapper() {
@@ -15,15 +17,15 @@ public class UserMapper {
         return firstName + " " + lastName;
     }
 
-    public io.github.santunioni.fixtures.UserEntity toUserEntity(io.github.santunioni.fixtures.UserDto userDto) {
+    public UserEntity toUserEntity(UserDto userDto) {
         java.lang.String fullName = formatFullNameDefault(userDto.getFirstName(), userDto.getLastName());
-        return new io.github.santunioni.fixtures.UserEntity(fullName);
+        return new UserEntity(fullName);
     }
 
-    public io.github.santunioni.fixtures.UserDto toUserDto(io.github.santunioni.fixtures.UserEntity userEntity) {
+    public UserDto toUserDto(UserEntity userEntity) {
         java.lang.String fullName = userEntity.getFullName();
         int split = fullName.indexOf(' ');
-        io.github.santunioni.fixtures.UserDto userDto = new io.github.santunioni.fixtures.UserDto(fullName.substring(0, split), fullName.substring(split + 1));
+        UserDto userDto = new UserDto(fullName.substring(0, split), fullName.substring(split + 1));
         setLastName(userDto, userEntity);
         return userDto;
     }
@@ -32,8 +34,8 @@ public class UserMapper {
         return firstName + " " + lastName;
     }
 
-    protected void setLastName(final io.github.santunioni.fixtures.UserDto userDto,
-                               final io.github.santunioni.fixtures.UserEntity userEntity) {
+    protected void setLastName(final UserDto userDto,
+                               final UserEntity userEntity) {
         userDto.setLastName(userEntity.getFullName());
     }
 }
