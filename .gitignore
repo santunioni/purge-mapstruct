@@ -1,11 +1,6 @@
 build/
 target/
 .gradle/
-.idea/
-!.idea/checkstyle-idea.xml
-!.idea/codeStyles
 out/
-src/main/generated/
-.vscode/
 *.iml
 .DS_Store
