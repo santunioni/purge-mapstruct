@@ -1,3 +1,6 @@
+import org.jetbrains.gradle.ext.ProjectSettings
+import org.jetbrains.gradle.ext.TaskTriggersConfig
+
 plugins {
     id("org.openrewrite.build.recipe-library-base") version "latest.release"
     id("org.openrewrite.build.publish") version "latest.release"
@@ -7,6 +10,8 @@ plugins {
     id("io.gitlab.arturbosch.detekt") version "1.23.8"
     id("io.github.gradle-nexus.publish-plugin") version "latest.release"
     kotlin("jvm") version "2.4.0"
+    idea
+    id("org.jetbrains.gradle.plugin.idea-ext") version "1.1.10"
 }
 
 // Version is managed by nebula.release:
@@ -177,4 +182,48 @@ spotless {
 detekt {
     config.setFrom(rootDir.resolve("detekt.yml"))
     buildUponDefaultConfig = true
+}
+
+// ---------------------------------------------------------------------------
+// IntelliJ workspace configuration
+// workspace.xml is gitignored (transient per-user state). This task writes the
+// one setting we care about — "Optimize Imports on Save for all file types" —
+// into workspace.xml so it is applied automatically on every fresh checkout
+// without committing the file.
+// ---------------------------------------------------------------------------
+val configureWorkspace by tasks.registering {
+    group = "idea"
+    description = "Writes OptimizeOnSaveOptions into .idea/workspace.xml"
+    doLast {
+        val workspaceFile = rootDir.resolve(".idea/workspace.xml")
+        val component =
+            """
+            <component name="OptimizeOnSaveOptions">
+                <option name="myAllFileTypesSelected" value="true" />
+                <option name="mySelectedFileTypes">
+                  <set />
+                </option>
+              </component>
+            """.trimIndent()
+        if (!workspaceFile.exists()) {
+            workspaceFile.parentFile.mkdirs()
+            workspaceFile.writeText(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  $component\n</project>\n",
+            )
+        } else if ("OptimizeOnSaveOptions" !in workspaceFile.readText()) {
+            workspaceFile.writeText(workspaceFile.readText().replace("</project>", "  $component\n</project>"))
+        }
+    }
+}
+
+idea {
+    project {
+        this as ExtensionAware
+        configure<ProjectSettings> {
+            this as ExtensionAware
+            configure<TaskTriggersConfig> {
+                afterSync(configureWorkspace.get())
+            }
+        }
+    }
 }
