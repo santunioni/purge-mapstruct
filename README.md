@@ -120,7 +120,52 @@ subprojects {
 </build>
 ```
 
-### Step 3: pick a recipe and run
+### Step 3: normalise formatting first (Spotless)
+
+Run your formatter across the whole codebase **before** the recipe. This keeps the inlining diff
+clean: when you run the formatter again after the recipe, only the files the recipe touched will
+show up as changed — everything else is already formatted and stays untouched.
+
+**Gradle:**
+
+```groovy
+plugins {
+    id "com.diffplug.spotless" version "latest.release"
+}
+
+spotless {
+    java {
+        googleJavaFormat() // or palantirJavaFormat(), eclipse(), etc.
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+```
+
+Run with `./gradlew spotlessApply`. See [Spotless Gradle docs](https://github.com/diffplug/spotless/tree/main/plugin-gradle).
+
+**Maven:**
+
+```xml
+<plugin>
+    <groupId>com.diffplug.spotless</groupId>
+    <artifactId>spotless-maven-plugin</artifactId>
+    <version>LATEST</version>
+    <configuration>
+        <java>
+            <googleJavaFormat/>
+            <removeUnusedImports/>
+            <trimTrailingWhitespace/>
+            <endWithNewline/>
+        </java>
+    </configuration>
+</plugin>
+```
+
+Run with `./mvnw spotless:apply`. See [Spotless Maven docs](https://github.com/diffplug/spotless/tree/main/plugin-maven).
+
+### Step 4: pick a recipe and run
 
 | Recipe | What it does |
 |---|---|
@@ -178,66 +223,25 @@ Compile first so MapStruct generates the `*Impl` files, run the recipe, then ver
 > those stubs will break after inlining because the mapper is now a concrete class. The recipe automatically rewrites
 > them to `doReturn(...).when(myMapper).someMethod(...)`, which is the correct pattern for concrete-class spies.
 
-### Step 4: apply a formatter
+After the recipe runs, apply the formatter again — now only the inlined mapper files will be reformatted:
 
-After the recipes run, use **Spotless** to normalise formatting to your team's conventions.
-
-**Gradle:**
-
-```groovy
-plugins {
-    id "com.diffplug.spotless" version "latest.release"
-}
-
-spotless {
-    java {
-        googleJavaFormat() // or palantirJavaFormat(), eclipse(), etc.
-        removeUnusedImports()
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
-}
+```bash
+./gradlew spotlessApply   # or ./mvnw spotless:apply
 ```
-
-Run with `./gradlew spotlessApply`. See [Spotless Gradle docs](https://github.com/diffplug/spotless/tree/main/plugin-gradle).
-
-**Maven:**
-
-```xml
-<plugin>
-    <groupId>com.diffplug.spotless</groupId>
-    <artifactId>spotless-maven-plugin</artifactId>
-    <version>LATEST</version>
-    <configuration>
-        <java>
-            <googleJavaFormat/>
-            <removeUnusedImports/>
-            <trimTrailingWhitespace/>
-            <endWithNewline/>
-        </java>
-    </configuration>
-</plugin>
-```
-
-Run with `./mvnw spotless:apply`. See [Spotless Maven docs](https://github.com/diffplug/spotless/tree/main/plugin-maven).
 
 ### Full workflow
 
 ```
 1.  Configure generated sources to go to src/generated/java  (Step 2 above)
 2.  Compile  →  MapStruct generates *Impl files
-3.  Run PurgeMapstruct  →  mappers inlined, code cleaned up (changed files only)
-4.  Run Spotless apply  →  formatting normalised
-5.  Compile + test  →  verify everything still passes
-6.  Remove the src/generated/ source root from your build config
-7.  Remove MapStruct dependencies from your build file
-8.  Commit
+3.  Run Spotless  →  normalise formatting across the whole codebase
+4.  Run PurgeMapstruct  →  mappers inlined, code cleaned up (changed files only)
+5.  Run Spotless again  →  only the inlined files are reformatted
+6.  Compile + test  →  verify everything still passes
+7.  Remove the src/generated/ source root from your build config
+8.  Remove MapStruct dependencies from your build file
+9.  Commit
 ```
-
-> **Minimising the diff footprint of your PR.**
-> Run Spotless (or your formatter of choice) across the whole codebase first and ship that as a separate PR.
-> With formatting already normalised, the inlining diff from `PurgeMapstruct` will contain only meaningful changes
-> and will be much easier to review.
 
 ---
 
