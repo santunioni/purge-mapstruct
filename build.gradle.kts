@@ -171,9 +171,10 @@ sourceSets {
 
 spotless {
     java {
-        target("src/**/*.java")
+        target("src/main/**/*.java")
         targetExclude("**/build/**")
         googleJavaFormat()
+        expandWildcardImports()
         removeUnusedImports()
         forbidWildcardImports()
         trimTrailingWhitespace()
