@@ -235,9 +235,9 @@ Run with `./mvnw spotless:apply`. See [Spotless Maven docs](https://github.com/d
 ```
 
 > **Minimising the diff footprint of your PR.**
-> If you want to separate cleanup from the purge into two commits or PRs, run `PurgeMapstruct` first on a throwaway
-> branch to see the cleanup-only diff, cherry-pick that, then run `PurgeMapstructBare` for the inlining.
-> The inlining diff will be much smaller and easier to review.
+> Run Spotless (or your formatter of choice) across the whole codebase first and ship that as a separate PR.
+> With formatting already normalised, the inlining diff from `PurgeMapstruct` will contain only meaningful changes
+> and will be much easier to review.
 
 ---
 
