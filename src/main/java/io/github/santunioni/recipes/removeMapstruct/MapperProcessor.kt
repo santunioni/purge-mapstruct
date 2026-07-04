@@ -46,7 +46,7 @@ open class MapperProcessor(
 
     companion object {
         /**
-         * Built once per JVM — [Environment.scanRuntimeClasspath] is expensive and the visitor
+         * Built once per JVM — [Environment.Builder.scanRuntimeClasspath] is expensive and the visitor
          * list is stateless, so sharing it across all [MapperProcessor] instances is safe.
          */
         private val cleanupVisitors: List<TreeVisitor<*, ExecutionContext>> by lazy {
