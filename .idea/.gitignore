@@ -5,3 +5,4 @@ modules/
 !.idea/google-java-format.xml
 !.idea/palantir-java-format.xml
 !.idea/externalDependencies.xml
+!.idea/gradle.xml
