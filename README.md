@@ -126,24 +126,19 @@ Three recipes are available — use the one that fits your workflow:
 
 | Recipe | What it does |
 |---|---|
-| `io.github.santunioni.recipes.PurgeMapstruct` | Inlines mappers only. Leaves formatting as-is. |
+| `io.github.santunioni.recipes.PurgeMapstructBare` | Inlines mappers only. Leaves formatting as-is. |
 | `io.github.santunioni.recipes.RecommendedCleanUps` | General cleanup pass (unused imports, redundant parens, lambda simplification, formatting). No MapStruct involvement — safe to run on any codebase. |
-| **`io.github.santunioni.recipes.PurgeMapstructCleanerCode`** ✅ | **Recommended.** Inlines mappers *and* applies the cleanup — but only to the files it changes. Unrelated files are left untouched, keeping the diff small. |
-
-`PurgeMapstructCleanerCode` requires `rewrite-static-analysis` and `rewrite-spring` on the rewrite classpath for the cleanup pass; `PurgeMapstruct` alone does not.
+| **`io.github.santunioni.recipes.PurgeMapstruct`** ✅ | **Recommended.** Inlines mappers *and* applies the cleanup — but only to the files it changes. Unrelated files are left untouched, keeping the diff small. |
 
 **Gradle** (`build.gradle`):
 
 ```groovy
 dependencies {
     rewrite "io.github.santunioni:purge-mapstruct:latest.release"
-    // only needed for PurgeMapstructCleanerCode or RecommendedCleanUps:
-    rewrite "org.openrewrite.recipe:rewrite-static-analysis:latest.release"
-    rewrite "org.openrewrite.recipe:rewrite-spring:latest.release"
 }
 
 rewrite {
-    activeRecipe("io.github.santunioni.recipes.PurgeMapstructCleanerCode")
+    activeRecipe("io.github.santunioni.recipes.PurgeMapstruct")
 }
 ```
 
@@ -152,24 +147,13 @@ rewrite {
 ```xml
 <configuration>
     <activeRecipes>
-        <recipe>io.github.santunioni.recipes.PurgeMapstructCleanerCode</recipe>
+        <recipe>io.github.santunioni.recipes.PurgeMapstruct</recipe>
     </activeRecipes>
 </configuration>
 <dependencies>
     <dependency>
         <groupId>io.github.santunioni</groupId>
         <artifactId>purge-mapstruct</artifactId>
-        <version>LATEST</version>
-    </dependency>
-    <!-- only needed for PurgeMapstructCleanerCode or RecommendedCleanUps: -->
-    <dependency>
-        <groupId>org.openrewrite.recipe</groupId>
-        <artifactId>rewrite-static-analysis</artifactId>
-        <version>LATEST</version>
-    </dependency>
-    <dependency>
-        <groupId>org.openrewrite.recipe</groupId>
-        <artifactId>rewrite-spring</artifactId>
         <version>LATEST</version>
     </dependency>
 </dependencies>
@@ -245,7 +229,7 @@ Run with `./mvnw spotless:apply`. See [Spotless Maven docs](https://github.com/d
 ```
 1.  Configure generated sources to go to src/generated/java  (Step 2 above)
 2.  Compile  →  MapStruct generates *Impl files
-3.  Run PurgeMapstructCleanerCode  →  mappers inlined, code cleaned up (changed files only)
+3.  Run PurgeMapstruct  →  mappers inlined, code cleaned up (changed files only)
 4.  Run Spotless apply  →  formatting normalised
 5.  Compile + test  →  verify everything still passes
 6.  Remove the src/generated/ source root from your build config
@@ -255,7 +239,7 @@ Run with `./mvnw spotless:apply`. See [Spotless Maven docs](https://github.com/d
 
 > **Minimising the diff footprint of your PR.**
 > If you want to separate the cleanup from the purge into two distinct commits or PRs, run `RecommendedCleanUps`
-> first across the whole codebase, ship that as a clean-up PR, then come back and run `PurgeMapstruct` on its own.
+> first across the whole codebase, ship that as a clean-up PR, then come back and run `PurgeMapstructBare` on its own.
 > The inlining diff will be much smaller and easier to review.
 
 ---
