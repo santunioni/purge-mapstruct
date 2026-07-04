@@ -72,21 +72,21 @@ plugins {
 The OpenRewrite plugin deliberately excludes `build/` (or `target/`) from scanning. MapStruct writes its `*Impl`
 classes there by default, so you must redirect annotation processor output into `src/` first.
 
-**Gradle** (root `build.gradle`, applied to all subprojects):
+**Gradle** (`build.gradle`):
 
 ```groovy
-subprojects {
-    tasks.withType(JavaCompile).configureEach {
-        options.generatedSourceOutputDirectory = file("$projectDir/src/generated/java")
-    }
+tasks.withType(JavaCompile).configureEach {
+    options.generatedSourceOutputDirectory = file("$projectDir/src/generated/java")
+}
 
-    sourceSets {
-        main {
-            java.srcDirs += "$projectDir/src/generated/java"
-        }
+sourceSets {
+    main {
+        java.srcDirs += "$projectDir/src/generated/java"
     }
 }
 ```
+
+> In a multi-module project, wrap the above in `subprojects { }` in the root `build.gradle`.
 
 **Maven** (`pom.xml`):
 
