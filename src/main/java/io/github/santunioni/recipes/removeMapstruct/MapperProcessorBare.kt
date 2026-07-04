@@ -19,7 +19,7 @@ import org.openrewrite.marker.Markers
 import java.util.UUID
 import java.util.logging.Logger
 
-class MapperProcessorBare(
+open class MapperProcessorBare(
     private val acc: Accumulator,
 ) : JavaVisitor<ExecutionContext>() {
     /**
