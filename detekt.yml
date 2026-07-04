@@ -1,0 +1,53 @@
+# Disables rules that conflict with ktlint (formatting is ktlint's job)
+style:
+  MaxLineLength:
+    active: false
+  NewLineAtEndOfFile:
+    active: false
+  WildcardImport:
+    active: false
+  TrailingWhitespace:
+    active: false
+  NoTabs:
+    active: false
+  ModifierOrder:
+    active: false
+  MultilineRawStringIndentation:
+    active: false
+  EqualsOnSignatureLine:
+    active: false
+
+  # OpenRewrite visitor methods use many early-return guard clauses — this is idiomatic
+  ReturnCount:
+    active: false
+
+  # Ordering priority constants are intentionally magic numbers
+  MagicNumber:
+    active: false
+
+  # Loop jump statements are OK in visitor traversal helpers
+  LoopWithTooManyJumpStatements:
+    active: false
+
+  # Visitor overrides must declare `ctx` even when unused (interface contract)
+  UnusedPrivateMember:
+    active: false
+
+naming:
+  # Kotlin convention: trailing underscore to shadow a reserved keyword (e.g. `import_`)
+  FunctionParameterNaming:
+    parameterPattern: '[a-z][A-Za-z0-9]*_?'
+
+complexity:
+  # Visitor methods and dispatcher functions are legitimately long
+  LongMethod:
+    threshold: 120
+  # Processor classes implement many visitor overrides by design
+  TooManyFunctions:
+    thresholdInClasses: 20
+  # Ordering comparators and visitor dispatch are inherently complex
+  CyclomaticComplexMethod:
+    threshold: 25
+  # Visitor methods legitimately nest: file → class → method → expression
+  NestedBlockDepth:
+    active: false

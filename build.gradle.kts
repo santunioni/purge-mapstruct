@@ -4,6 +4,7 @@ plugins {
     id("org.openrewrite.build.recipe-repositories") version "latest.release"
     id("nebula.release") version "21.0.0"
     id("com.diffplug.spotless") version "8.4.0"
+    id("io.gitlab.arturbosch.detekt") version "1.23.8"
     kotlin("jvm") version "2.1.21"
 }
 
@@ -168,4 +169,9 @@ spotless {
         trimTrailingWhitespace()
         endWithNewline()
     }
+}
+
+detekt {
+    config.setFrom(rootDir.resolve("detekt.yml"))
+    buildUponDefaultConfig = true
 }
