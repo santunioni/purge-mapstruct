@@ -5,6 +5,7 @@ plugins {
     id("nebula.release") version "21.0.0"
     id("com.diffplug.spotless") version "8.4.0"
     id("io.gitlab.arturbosch.detekt") version "1.23.8"
+    id("io.github.gradle-nexus.publish-plugin") version "latest.release"
     kotlin("jvm") version "2.4.0"
 }
 
@@ -13,10 +14,6 @@ plugins {
 //   release build → ./gradlew final publish closeAndReleaseSonatypeStagingRepository
 group = "io.github.santunioni"
 description = "Purge Mapstruct"
-
-// Apply the Nexus publish plugin (already on the classpath via rewrite-build-gradle-plugin)
-// to get the `closeAndReleaseSonatypeStagingRepository` task and proper staging workflow.
-apply(plugin = "io.github.gradle-nexus.publish-plugin")
 
 recipeDependencies {
     parserClasspath("org.jspecify:jspecify:1.0.0")
