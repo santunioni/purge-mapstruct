@@ -4,11 +4,12 @@ plugins {
     id("org.openrewrite.build.recipe-repositories") version "latest.release"
     id("nebula.release") version "21.0.0"
     kotlin("jvm") version "1.9.24"
+    id("com.diffplug.spotless") version "8.4.0"
 }
 
 // Version is managed by nebula.release:
 //   snapshot build → ./gradlew snapshot publish
-//   release build  → ./gradlew final publish closeAndReleaseSonatypeStagingRepository
+//   release build → ./gradlew final publish closeAndReleaseSonatypeStagingRepository
 group = "io.github.santunioni"
 description = "Purge Mapstruct"
 
@@ -165,3 +166,37 @@ sourceSets {
         java.srcDirs("src/test/java", "src/test/kotlin")
     }
 }
+
+//spotless {
+//    java {
+//        target "src/**/*.java"
+//        targetExclude "**/build/**"
+//        googleJavaFormat()
+//        removeUnusedImports()
+//        forbidWildcardImports()
+//        trimTrailingWhitespace()
+//        endWithNewline()
+//    }
+//
+//    kotlin {
+//        target "src/**/*.kt", "src/**/*.kts"
+//        targetExclude "**/build/**"
+//        ktlint()
+//        trimTrailingWhitespace()
+//        endWithNewline()
+//    }
+//
+//    groovyGradle {
+//        target '*.gradle'
+//        targetExclude "**/build/**"
+//        trimTrailingWhitespace()
+//        endWithNewline()
+//    }
+//
+//    format "misc", {
+//    target "*.md", "*.yaml", "*.yml", "*.properties", "src/**/*.md", "src/**/*.yaml", "src/**/*.yml", "src/**/*.properties"
+//    targetExclude "**/build/**"
+//    trimTrailingWhitespace()
+//    endWithNewline()
+//}
+//}
