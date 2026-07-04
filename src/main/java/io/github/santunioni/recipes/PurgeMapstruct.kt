@@ -56,7 +56,7 @@ class PurgeMapstruct : PurgeMapstructBare() {
                     @Suppress("UNCHECKED_CAST")
                     cu = (visitor as TreeVisitor<Tree, ExecutionContext>).visit(cu, ctx) as? J.CompilationUnit ?: cu
                 }
-                log.info("Finished formatting ${cu.sourcePath}")
+                log.info("Finished migrating ${cu.sourcePath}")
                 return cu
             }
         }
