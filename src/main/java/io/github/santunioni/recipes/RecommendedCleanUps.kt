@@ -1,6 +1,7 @@
 package io.github.santunioni.recipes
 
 import org.openrewrite.Recipe
+import org.openrewrite.config.Environment
 import org.openrewrite.java.RemoveUnusedImports
 import org.openrewrite.java.format.AutoFormat
 import org.openrewrite.java.spring.NoAutowiredOnConstructor
@@ -30,8 +31,14 @@ class RecommendedCleanUps : Recipe() {
         "A curated set of cleanup and formatting recipes that improve readability after MapStruct " +
             "inlining, or as a standalone pass on any Java codebase."
 
-    override fun getRecipeList(): List<Recipe> =
-        listOf(
+    override fun getRecipeList(): List<Recipe> {
+        val codeCleanup =
+            Environment
+                .builder()
+                .scanRuntimeClasspath()
+                .build()
+                .activateRecipes("org.openrewrite.staticanalysis.CodeCleanup")
+        return listOf(
             // Remove redundant parentheses
             UnnecessaryParentheses(),
             // Remove local variables that are declared but never read
@@ -44,13 +51,14 @@ class RecommendedCleanUps : Recipe() {
             ReplaceLambdaWithMethodReference(),
             // Remove redundant @Autowired from single-constructor beans (no-op without Spring)
             NoAutowiredOnConstructor(),
-            // Inline variables that are only ever returned/thrown on the very next line
-            InlineVariable(),
-            InlineVariable(),
+            // Inline variables that are only ever returned/thrown on the very next line.
             InlineVariable(),
             InlineVariable(),
             InlineVariable(),
             // Apply standard Java formatting: blank lines, whitespace padding, indentation
             AutoFormat(null),
+            // Opinative cleanup pack
+            codeCleanup,
         )
+    }
 }
