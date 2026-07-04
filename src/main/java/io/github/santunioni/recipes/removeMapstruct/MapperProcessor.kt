@@ -136,6 +136,7 @@ class MapperProcessor(
                 }
             }.visit(clazz, ctx) as? J.ClassDeclaration ?: clazz
 
+            acc.touchedSourcePaths.add(visited.sourcePath)
             return mapperImplFile
                 .withClasses(listOf(clazz))
                 .withId(visited.id)

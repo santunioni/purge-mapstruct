@@ -27,6 +27,12 @@ dependencies {
 
     implementation("org.openrewrite:rewrite-java")
 
+    // Optional cleanup recipe libraries — referenced compileOnly so they are not pulled
+    // in transitively by consumers. Users must add them to their own rewrite classpath to
+    // activate PurgeMapstructRecommended.
+    compileOnly("org.openrewrite.recipe:rewrite-static-analysis")
+    compileOnly("org.openrewrite.recipe:rewrite-spring")
+
     // The RewriteTest class needed for testing recipes
     testImplementation("org.openrewrite:rewrite-test") {
         exclude(group = "org.slf4j", module = "slf4j-nop")
@@ -39,6 +45,11 @@ dependencies {
 
     // Need to have a slf4j binding to see any output enabled from the parser.
     runtimeOnly("ch.qos.logback:logback-classic:1.5.+")
+
+    // Cleanup recipe jars must be on the test runtime classpath so the visitors
+    // instantiated inside PurgeMapstructRecommended can be resolved during tests.
+    testRuntimeOnly("org.openrewrite.recipe:rewrite-static-analysis")
+    testRuntimeOnly("org.openrewrite.recipe:rewrite-spring")
 
     // MapStruct needed on parser classpath for test fixtures
     testRuntimeOnly("org.mapstruct:mapstruct:latest.release")
