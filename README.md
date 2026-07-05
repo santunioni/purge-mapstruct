@@ -17,24 +17,22 @@ your mapping logic.
 
 MapStruct's greatest feature is its greatest flaw: it auto-maps your value objects by matching field names. When it
 can't match, you either get a silently unmapped field (null in production) or you write the mapping logic as annotation
-attributes — strings that bypass the compiler and lose type safety. The worst part: there is often no signal that
-anything is wrong. The field is simply absent in the output, invisibly, until it matters in production.
+attributes.
 
 The result is a codebase where mappings are invisible, bugs are silent, and understanding what actually happens requires
 reading both the interface and the generated implementation — a file that lives in `build/`, is never committed, and
-disappears on a clean build. That is not encapsulation; it is obscurity. MapStruct optimises for writing less code, not
+disappears on a clean build. That is not easy to maintain; it is obscurity. MapStruct optimises for writing less code, not
 for reading or maintaining it.
 
 In any long-lived codebase, code is read far more often than it is written — and the two are inseparable: every
 change requires understanding what is already there. With MapStruct, that cost rises steeply as complexity grows.
 Simple field-matching is manageable; but once a mapping requires logic, you are writing Java expressions inside
-annotation strings, referencing methods by name in a context the compiler cannot reach. Every subsequent change means
+annotation strings, referencing methods by name in a context the LSP cannot reach, or that you need too many go-to-definition to understand, lacking coesion. Every subsequent change means
 reconstructing the generated output in your head before you can touch the source. AI has made writing even cheaper,
 but every line generated is still paid for in full, every time a human has to reason about it.
 
 This recipe removes MapStruct from your project by replacing every `@Mapper` interface with its generated
-implementation, renamed back to the original interface name. The output code will not be pretty — generated code never
-is. But it will be yours to read, understand, and improve.
+implementation, plus a series of mechanical refactorings to make the gemerated code better readable. Then the code will be yours to read and improve.
 
 > *"Software should be designed for ease of reading, not ease of writing."*
 > — John Ousterhout, [A Philosophy of Software Design](https://web.stanford.edu/~ouster/cgi-bin/book.php)
@@ -213,7 +211,6 @@ Compile first so MapStruct generates the `*Impl` files, run the recipe, then ver
 # Gradle
 ./gradlew compileJava compileTestJava \
   && ./gradlew rewriteRun \
-  && ./gradlew --stop \
   && ./gradlew compileJava compileTestJava test
 
 # Maven
@@ -221,10 +218,6 @@ Compile first so MapStruct generates the `*Impl` files, run the recipe, then ver
   && ./mvnw rewrite:run \
   && ./mvnw compile test-compile test
 ```
-
-> **Why `--stop` before the final compile (Gradle only)?** `rewriteRun` deletes the generated `*Impl.java` files.
-> The Gradle daemon caches those paths in memory; stopping it clears the cache so the next compile sees a clean file
-> system.
 
 > **Note on Mockito `@Spy`:** If your tests spy on mapper fields using `when(myMapper.someMethod(...)).thenReturn(...)`,
 > those stubs will break after inlining because the mapper is now a concrete class. The recipe automatically rewrites
