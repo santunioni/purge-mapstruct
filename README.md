@@ -33,7 +33,7 @@ reconstructing the generated output in your head before you can touch the source
 but every line generated is still paid for in full, every time a human has to reason about it.
 
 This recipe removes MapStruct from your project by replacing every `@Mapper` interface with its generated
-implementation, plus a series of mechanical refactorings to make the gemerated code better readable. From then the code
+implementation, plus a series of mechanical refactorings to make the generated code better readable. From then the code
 will be yours to read and improve.
 
 > *"Software should be designed for ease of reading, not ease of writing."*
