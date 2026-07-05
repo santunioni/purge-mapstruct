@@ -219,7 +219,7 @@ Compile first so MapStruct generates the `*Impl` files, run the recipe, then ver
 
 > **Note on Mockito `@Spy`:** If your tests spy on mapper fields using `when(myMapper.someMethod(...)).thenReturn(...)`,
 > those stubs will break after inlining because the mapper is now a concrete class. The recipe automatically rewrites
-> them to `doReturn(...).when(myMapper).someMethod(...)`, which is the correct pattern for concrete-class spies.
+> them to `doReturn(...).when(myMapper).someMethod(...)`, which is the correct pattern for concrete-class spies. Pro tip for the future: don't mock your own code in tests, use it.
 
 After the recipe runs, apply the formatter again — now only the inlined mapper files will be reformatted:
 
