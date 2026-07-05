@@ -127,7 +127,7 @@ open class MapperProcessorBare(
 
             acc.touchedSourcePaths.add(visited.sourcePath)
             return mapperImplFile
-                .withImports(visited.imports)
+//                .withImports(visited.imports)
                 .withClasses(listOf(clazz))
                 .withId(visited.id)
                 .withSourcePath(visited.sourcePath)
