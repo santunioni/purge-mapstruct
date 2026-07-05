@@ -73,7 +73,7 @@ class InlineMapstruct(
                                 }
                             }
                         }
-                ).sortedWith(StatementDefinitionOrder())
+                ).sortedWith { first, second -> first.getOrderingNumber().compareTo(second.getOrderingNumber()) }
 
             // Build the raw merged class. *Impl reference rewrites and MapStruct annotation stripping
             // are applied afterwards by MapperProcessor's post-inlining pass (RewriteImplReferences and
@@ -229,56 +229,45 @@ private fun Statement.isStatic() = hasModifier(J.Modifier.Type.Static)
 
 private fun Statement.isProtected() = hasModifier(J.Modifier.Type.Protected)
 
-private class StatementDefinitionOrder : Comparator<Statement> {
-    /**
-     * Order statements: First fields, then public methods, then protected methods, then private
-     * methods.
-     */
-    override fun compare(
-        first: Statement,
-        second: Statement,
-    ): Int = getOrder(first).compareTo(getOrder(second))
-
-    private fun getOrder(statement: Statement): Int =
-        when (statement) {
-            is J.VariableDeclarations if statement.isStatic() -> {
-                when {
-                    statement.isPublic() -> 10_000_000
-                    statement.isProtected() -> 10_100_000
-                    else -> 10_200_000
-                }
-            }
-
-            is J.VariableDeclarations -> {
-                when {
-                    statement.isPublic() -> 11_000_000
-                    statement.isProtected() -> 11_100_000
-                    else -> 11_200_000
-                }
-            }
-
-            is J.MethodDeclaration if statement.isConstructor -> {
-                19_999_999
-            }
-
-            is J.MethodDeclaration if statement.isStatic() -> {
-                when {
-                    statement.isPublic() -> 20_000_000
-                    statement.isProtected() -> 20_100_000
-                    else -> 20_200_000
-                }
-            }
-
-            is J.MethodDeclaration -> {
-                when {
-                    statement.isPublic() -> 21_000_000
-                    statement.isProtected() -> 21_100_000
-                    else -> 21_200_000
-                }
-            }
-
-            else -> {
-                90_000_000
+private fun Statement.getOrderingNumber() =
+    when (this) {
+        is J.VariableDeclarations if isStatic() -> {
+            when {
+                isPublic() -> 10_000_000
+                isProtected() -> 10_100_000
+                else -> 10_200_000
             }
         }
-}
+
+        is J.VariableDeclarations -> {
+            when {
+                isPublic() -> 11_000_000
+                isProtected() -> 11_100_000
+                else -> 11_200_000
+            }
+        }
+
+        is J.MethodDeclaration if isConstructor -> {
+            19_999_999
+        }
+
+        is J.MethodDeclaration if isStatic() -> {
+            when {
+                isPublic() -> 20_000_000
+                isProtected() -> 20_100_000
+                else -> 20_200_000
+            }
+        }
+
+        is J.MethodDeclaration -> {
+            when {
+                isPublic() -> 21_000_000
+                isProtected() -> 21_100_000
+                else -> 21_200_000
+            }
+        }
+
+        else -> {
+            90_000_000
+        }
+    }
