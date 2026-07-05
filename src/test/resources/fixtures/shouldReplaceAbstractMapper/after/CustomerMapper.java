@@ -45,4 +45,5 @@ public class CustomerMapper {
     public String getSignature(CustomerEntity customerEntity) {
         return customerEntity.getName() + " <" + customerEntity.getEmail() + ">";
     }
+
 }
