@@ -5,6 +5,7 @@ import org.openrewrite.internal.ListUtils
 import org.openrewrite.java.JavaVisitor
 import org.openrewrite.java.tree.J
 import org.openrewrite.java.tree.Space
+import org.openrewrite.java.tree.Statement
 import org.openrewrite.java.tree.TypeUtils
 import org.openrewrite.marker.Markers
 import java.util.UUID
@@ -218,4 +219,70 @@ class InlineMapstruct(
                     TypeUtils.isOfClassType(a.type, "jakarta.annotation.Generated")
             )
     }
+}
+
+private fun J.VariableDeclarations.isPublic() = hasModifier(J.Modifier.Type.Public)
+
+private fun J.VariableDeclarations.isStatic() = hasModifier(J.Modifier.Type.Static)
+
+private fun J.VariableDeclarations.isProtected() = hasModifier(J.Modifier.Type.Protected)
+
+private fun J.MethodDeclaration.isPublic() = hasModifier(J.Modifier.Type.Public)
+
+private fun J.MethodDeclaration.isStatic() = hasModifier(J.Modifier.Type.Static)
+
+private fun J.MethodDeclaration.isProtected() = hasModifier(J.Modifier.Type.Protected)
+
+private class StatementDefinitionOrder : Comparator<Statement> {
+    /**
+     * Order statements: First fields, then public methods, then protected methods, then private
+     * methods.
+     */
+    override fun compare(
+        first: Statement,
+        second: Statement,
+    ): Int = getOrder(first).compareTo(getOrder(second))
+
+    private fun getOrder(statement: Statement): Int =
+        when (statement) {
+            is J.VariableDeclarations if statement.isStatic() -> {
+                when {
+                    statement.isPublic() -> 10_000_000
+                    statement.isProtected() -> 10_100_000
+                    else -> 10_200_000
+                }
+            }
+
+            is J.VariableDeclarations -> {
+                when {
+                    statement.isPublic() -> 11_000_000
+                    statement.isProtected() -> 11_100_000
+                    else -> 11_200_000
+                }
+            }
+
+            is J.MethodDeclaration if statement.isConstructor -> {
+                19_999_999
+            }
+
+            is J.MethodDeclaration if statement.isStatic() -> {
+                when {
+                    statement.isPublic() -> 20_000_000
+                    statement.isProtected() -> 20_100_000
+                    else -> 20_200_000
+                }
+            }
+
+            is J.MethodDeclaration -> {
+                when {
+                    statement.isPublic() -> 21_000_000
+                    statement.isProtected() -> 21_100_000
+                    else -> 21_200_000
+                }
+            }
+
+            else -> {
+                90_000_000
+            }
+        }
 }
