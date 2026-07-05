@@ -15,7 +15,7 @@ your mapping logic.
 
 ## Philosophy
 
-MapStruct is terrible. It's greatest feature is its greatest flaw: it auto-maps your value objects by matching field names. When it
+MapStruct is terrible. It's greatest feature is its greatest flaw: it auto-maps your objects by matching field names. When it
 can't match, you either get a silently unmapped field (null in production) or you write the mapping logic as annotation
 attributes.
 
