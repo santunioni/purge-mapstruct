@@ -216,17 +216,18 @@ class InlineMapstruct(
     }
 }
 
-private fun J.VariableDeclarations.isPublic() = hasModifier(J.Modifier.Type.Public)
+private fun Statement.hasModifier(type: J.Modifier.Type): Boolean =
+    when (this) {
+        is J.VariableDeclarations -> hasModifier(type)
+        is J.MethodDeclaration -> hasModifier(type)
+        else -> false
+    }
 
-private fun J.VariableDeclarations.isStatic() = hasModifier(J.Modifier.Type.Static)
+private fun Statement.isPublic() = hasModifier(J.Modifier.Type.Public)
 
-private fun J.VariableDeclarations.isProtected() = hasModifier(J.Modifier.Type.Protected)
+private fun Statement.isStatic() = hasModifier(J.Modifier.Type.Static)
 
-private fun J.MethodDeclaration.isPublic() = hasModifier(J.Modifier.Type.Public)
-
-private fun J.MethodDeclaration.isStatic() = hasModifier(J.Modifier.Type.Static)
-
-private fun J.MethodDeclaration.isProtected() = hasModifier(J.Modifier.Type.Protected)
+private fun Statement.isProtected() = hasModifier(J.Modifier.Type.Protected)
 
 private class StatementDefinitionOrder : Comparator<Statement> {
     /**
