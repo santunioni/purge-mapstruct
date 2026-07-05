@@ -28,30 +28,30 @@ open class MapperProcessor(
         tree: Tree?,
         ctx: ExecutionContext,
     ): J? {
-        var current = tree as? J.CompilationUnit ?: return super.visit(tree, ctx)
+        var pre = tree as? J.CompilationUnit ?: return super.visit(tree, ctx)
 
-        if (!isMapperImplementation(current) && !isMapperDeclaration(current)) return mapperProcessorBare.visit(tree, ctx)
-
-        if (isMapperImplementation(current) || isMapperDeclaration(current)) {
-            for (visitor in preInliningRecipes) {
-                @Suppress("UNCHECKED_CAST")
-                current = (visitor as TreeVisitor<Tree, ExecutionContext>).visit(current, ctx) as? J.CompilationUnit
-                    ?: return null
-            }
+        for (visitor in preInliningRecipes) {
+            @Suppress("UNCHECKED_CAST")
+            pre = (visitor as TreeVisitor<Tree, ExecutionContext>).visit(pre, ctx) as? J.CompilationUnit ?: pre
         }
 
-        current = mapperProcessorBare.visit(current, ctx) as? J.CompilationUnit ?: return null
+        // Delegate fully to MapperProcessorBare:
+        //   - impl files → returns null (deletion)
+        //   - mapper files → returns merged CompilationUnit
+        //   - other files → return the same or rewritten CompilationUnit (Impl ref rewrites)
+        val inlined = mapperProcessorBare.visit(pre, ctx) ?: return null
 
-        if (isMapperImplementation(current) || isMapperDeclaration(current)) {
-            for (visitor in postInliningRecipes) {
-                @Suppress("UNCHECKED_CAST")
-                current = (visitor as TreeVisitor<Tree, ExecutionContext>).visit(current, ctx) as? J.CompilationUnit
-                    ?: return null
-            }
+        // Unchanged — skip cleanup entirely
+        if (inlined === pre) return tree
+
+        // MapperProcessor changed this file — apply targeted cleanup
+        var pos = inlined as? J.CompilationUnit ?: return inlined
+        for (visitor in postInliningRecipes) {
+            @Suppress("UNCHECKED_CAST")
+            pos = (visitor as TreeVisitor<Tree, ExecutionContext>).visit(pos, ctx) as? J.CompilationUnit ?: pos
         }
-
-        if (current !== tree) log.info("Finished migrating ${current.sourcePath}")
-        return current
+        log.info("Finished migrating ${pos.sourcePath}")
+        return pos
     }
 
     companion object {
