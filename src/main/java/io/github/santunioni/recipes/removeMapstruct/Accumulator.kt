@@ -11,9 +11,6 @@ class Accumulator {
         HashMap()
     private val mapImplementerToItsSup: MutableMap<String, String> = HashMap()
 
-    /** Source paths of files that MapperProcessor successfully merged during the edit pass. */
-    val touchedSourcePaths: MutableSet<Path> = ConcurrentHashMap.newKeySet()
-
     fun addLinking(
         superDecl: TypeTree,
         mapperImpl: J.CompilationUnit,
