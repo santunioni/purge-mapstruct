@@ -15,7 +15,7 @@ import java.util.UUID
  *
  * Driven entirely by the scan-pass linkings in [MapstructRefsReader] (`impl FQN → super FQN`), so it is
  * safe to run both broadly across every file (unrelated call sites still referencing the impl) and on
- * the merged class produced by [MapperProcessorBare].
+ * the merged class produced by [InlineMapstruct].
  */
 class RewriteImplReferences(
     private val mapstructRefsReader: MapstructRefsReader,

@@ -11,7 +11,7 @@ import org.openrewrite.java.tree.JavaType
  * on types, methods, and parameters. Returning `null` from [visit] for an annotation drops it from
  * its enclosing list.
  *
- * Applied by [MapperProcessorBare] to the merged class so the inlined result no longer depends on
+ * Applied by [InlineMapstruct] to the merged class so the inlined result no longer depends on
  * MapStruct. When the annotation type is resolved it is matched by its `org.mapstruct` package;
  * otherwise it falls back to a simple-name allow-list (generated fixtures sometimes lose type
  * attribution).
