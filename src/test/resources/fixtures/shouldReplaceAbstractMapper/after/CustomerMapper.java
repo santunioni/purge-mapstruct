@@ -1,28 +1,24 @@
 package io.github.santunioni.fixtures;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.java.Log;
-
 @Log
 public class CustomerMapper {
-    protected static final java.lang.String PERSONAL_DATA_TYPE = "PERSONAL_DATA";
+    protected static final String PERSONAL_DATA_TYPE = "PERSONAL_DATA";
 
     @Getter
     @Setter
-    private java.lang.Long myChildField;
+    private Long myChildField;
 
     @Getter
     @Setter
-    private java.lang.Long myParentField;
+    private Long myParentField;
 
     public CustomerDto toCustomerDto(CustomerEntity customerEntity) {
         if (customerEntity == null) {
             return null;
         }
 
-        java.lang.String name = customerEntity.getName();
-        java.lang.String email = customerEntity.getEmail();
+        String name = customerEntity.getName();
+        String email = customerEntity.getEmail();
 
         return new CustomerDto(name, email);
     }
@@ -32,8 +28,8 @@ public class CustomerMapper {
             return null;
         }
 
-        java.lang.String name = customerDto.getName();
-        java.lang.String email = customerDto.getEmail();
+        String name = customerDto.getName();
+        String email = customerDto.getEmail();
 
         CustomerEntity customerEntity = new CustomerEntity(name, email);
         if (customerEntity != null && customerEntity.getEmail() != null) {
@@ -42,7 +38,7 @@ public class CustomerMapper {
         return customerEntity;
     }
 
-    public java.lang.String getSignature(CustomerEntity customerEntity) {
+    public String getSignature(CustomerEntity customerEntity) {
         return customerEntity.getName() + " <" + customerEntity.getEmail() + ">";
     }
 

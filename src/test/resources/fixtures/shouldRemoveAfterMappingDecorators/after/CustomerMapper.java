@@ -6,8 +6,8 @@ public class CustomerMapper {
             return null;
         }
 
-        java.lang.String name = customerEntity.getName();
-        java.lang.String email = customerEntity.getEmail();
+        String name = customerEntity.getName();
+        String email = customerEntity.getEmail();
 
         CustomerDto customerDto = new CustomerDto(name, email);
 

@@ -6,7 +6,7 @@ public class UserMapper {
     }
 
     public UserDto toUserDto(UserEntity userEntity) {
-        java.lang.String fullName = userEntity.getFullName();
+        String fullName = userEntity.getFullName();
         int split = fullName.indexOf(' ');
         return new UserDto(fullName.substring(0, split), fullName.substring(split + 1));
     }
