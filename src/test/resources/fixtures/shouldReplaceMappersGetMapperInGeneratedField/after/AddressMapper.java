@@ -6,8 +6,8 @@ public class AddressMapper {
             return null;
         }
 
-        java.lang.String name = customerEntity.getName();
-        java.lang.String email = customerEntity.getEmail();
+        String name = customerEntity.getName();
+        String email = customerEntity.getEmail();
 
         return new CustomerDto(name, email);
     }
