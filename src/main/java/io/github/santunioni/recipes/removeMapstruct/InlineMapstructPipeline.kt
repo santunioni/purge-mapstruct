@@ -17,7 +17,7 @@ import org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
 import org.openrewrite.staticanalysis.UnnecessaryParentheses
 import java.util.logging.Logger
 
-open class InlineMapstructPipeline(
+class InlineMapstructPipeline(
     mapstructRefsReader: MapstructRefsReader,
 ) : JavaVisitor<ExecutionContext>() {
     private val log = Logger.getLogger(InlineMapstructPipeline::class.java.name)
