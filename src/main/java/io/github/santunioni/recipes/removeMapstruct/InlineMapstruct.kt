@@ -30,13 +30,10 @@ class InlineMapstruct(
         val mapperDeclClass = visited.classes[0]
 
         try {
-            var mapperImplFile = mapstructRefsReader.getImplementer(mapperDeclClass) ?: return visited
-
+            val mapperImplFile = mapstructRefsReader.getImplementer(mapperDeclClass) ?: return visited
             val mapperImplClass = mapperImplFile.classes[0]
             val mapperImplClassName = mapperImplClass.name.simpleName
             val mapperDeclClassName = mapperDeclClass.name.simpleName
-
-            mapperImplFile = copyImports(mapperImplFile)
 
             // STEP B: PREPARE GENERATED METHODS (Remove @Override and rename constructors)
             val copiedClassStatements =
@@ -107,9 +104,6 @@ class InlineMapstruct(
             )
         }
     }
-
-    private fun copyImports(mapperImplementationFile: J.CompilationUnit): J.CompilationUnit =
-        mapperImplementationFile.withImports(emptyList())
 
     companion object {
         private val log = Logger.getLogger(InlineMapstruct::class.java.name)
