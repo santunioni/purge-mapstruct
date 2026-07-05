@@ -15,44 +15,39 @@ class StatementDefinitionOrder : Comparator<Statement> {
 
     private fun getOrder(statement: Statement): Int =
         when (statement) {
+            is J.VariableDeclarations if (statement.hasModifier(J.Modifier.Type.Static)) -> {
+                when {
+                    statement.hasModifier(J.Modifier.Type.Public) -> 10_000_000
+                    statement.hasModifier(J.Modifier.Type.Protected) -> 10_100_000
+                    else -> 10_200_000
+                }
+            }
+
             is J.VariableDeclarations -> {
-                if (statement.hasModifier(J.Modifier.Type.Static)) {
-                    when {
-                        statement.hasModifier(J.Modifier.Type.Public) -> 10_000_000
-                        statement.hasModifier(J.Modifier.Type.Protected) -> 10_100_000
-                        else -> 10_200_000
-                    }
-                } else {
-                    when {
-                        statement.hasModifier(J.Modifier.Type.Public) -> 11_000_000
-                        statement.hasModifier(J.Modifier.Type.Protected) -> 11_100_000
-                        else -> 11_200_000
-                    }
+                when {
+                    statement.hasModifier(J.Modifier.Type.Public) -> 11_000_000
+                    statement.hasModifier(J.Modifier.Type.Protected) -> 11_100_000
+                    else -> 11_200_000
+                }
+            }
+
+            is J.MethodDeclaration if statement.simpleName.matches(Regex("^[A-Z].*")) -> {
+                19_999_999
+            }
+
+            is J.MethodDeclaration if statement.hasModifier(J.Modifier.Type.Static) -> {
+                when {
+                    statement.hasModifier(J.Modifier.Type.Public) -> 20_000_000
+                    statement.hasModifier(J.Modifier.Type.Protected) -> 20_100_000
+                    else -> 20_200_000
                 }
             }
 
             is J.MethodDeclaration -> {
                 when {
-                    // Constructor before every other method (name starts with capital letter)
-                    statement.simpleName.matches(Regex("^[A-Z].*")) -> {
-                        19_999_999
-                    }
-
-                    statement.hasModifier(J.Modifier.Type.Static) -> {
-                        when {
-                            statement.hasModifier(J.Modifier.Type.Public) -> 20_000_000
-                            statement.hasModifier(J.Modifier.Type.Protected) -> 20_100_000
-                            else -> 20_200_000
-                        }
-                    }
-
-                    else -> {
-                        when {
-                            statement.hasModifier(J.Modifier.Type.Public) -> 21_000_000
-                            statement.hasModifier(J.Modifier.Type.Protected) -> 21_100_000
-                            else -> 21_200_000
-                        }
-                    }
+                    statement.hasModifier(J.Modifier.Type.Public) -> 21_000_000
+                    statement.hasModifier(J.Modifier.Type.Protected) -> 21_100_000
+                    else -> 21_200_000
                 }
             }
 
