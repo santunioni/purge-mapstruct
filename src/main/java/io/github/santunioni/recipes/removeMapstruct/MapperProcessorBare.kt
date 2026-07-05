@@ -1,7 +1,6 @@
 package io.github.santunioni.recipes.removeMapstruct
 
 import org.openrewrite.ExecutionContext
-import org.openrewrite.Tree
 import org.openrewrite.internal.ListUtils
 import org.openrewrite.java.JavaVisitor
 import org.openrewrite.java.tree.J
@@ -16,21 +15,6 @@ open class MapperProcessorBare(
     private val mapstructRefsReader: MapstructRefsReader,
 ) : JavaVisitor<ExecutionContext>() {
     private val rewriteImplReferences = RewriteImplReferences(mapstructRefsReader)
-
-    /**
-     * Intercepts all tree-node visits to delete mapper impl files. TreeVisitor.visit is declared
-     * `@Nullable T visit(@Nullable Tree, P)` in Java so Kotlin sees the return as `J?`, making it
-     * safe to return null without any unchecked-cast gymnastics.
-     */
-    override fun visit(
-        tree: Tree?,
-        ctx: ExecutionContext,
-    ): J? {
-        if (tree is J.CompilationUnit && isMapperImplementation(tree)) {
-            return null
-        }
-        return super.visit(tree, ctx)
-    }
 
     /**
      * Modify the mapper declaration file with a modified mix of methods and fields from itself plus

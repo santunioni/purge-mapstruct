@@ -35,11 +35,17 @@ open class MapperProcessor(
 
     private val mapperProcessorBare = MapperProcessorBare(mapstructRefsReader)
 
+    private val deleteMapperImplementations = DeleteMapperImplementations()
+
     override fun visit(
         tree: Tree?,
         ctx: ExecutionContext,
     ): J? {
         val original = tree as? J.CompilationUnit ?: return super.visit(tree, ctx)
+
+        // Delete generated *Impl files up front. Their content is never kept (the merge copies from
+        // them into the mapper file), so pre/post recipes on them would be wasted work anyway.
+        if (deleteMapperImplementations.visit(original, ctx) == null) return null
 
         // Always-run pre recipes: broad rewrites whose result we keep even when this file is not
         // inlined (e.g. Mappers.getMapper at unrelated call sites, spy stubs in test files).
