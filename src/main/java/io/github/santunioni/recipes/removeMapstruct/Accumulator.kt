@@ -6,12 +6,27 @@ import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Logger
 
-class Accumulator {
+interface AccumulatorWriter {
+    fun addLinking(
+        superDecl: TypeTree,
+        mapperImpl: J.CompilationUnit,
+    )
+}
+
+interface AccumulatorReader {
+    fun getImplementer(compilationUnit: J.ClassDeclaration): J.CompilationUnit?
+
+    fun getSuperFqnFromImplFqn(implFqn: String): String?
+}
+
+class Accumulator :
+    AccumulatorWriter,
+    AccumulatorReader {
     private val mapSuperToItsImplementers: MutableMap<String, MutableList<J.CompilationUnit>> =
         HashMap()
     private val mapImplementerToItsSup: MutableMap<String, String> = HashMap()
 
-    fun addLinking(
+    override fun addLinking(
         superDecl: TypeTree,
         mapperImpl: J.CompilationUnit,
     ) {
@@ -23,7 +38,7 @@ class Accumulator {
         }
     }
 
-    fun getImplementer(compilationUnit: J.ClassDeclaration): J.CompilationUnit? {
+    override fun getImplementer(compilationUnit: J.ClassDeclaration): J.CompilationUnit? {
         val type = compilationUnit.type ?: return null
         val implementers = mapSuperToItsImplementers[type.fullyQualifiedName] ?: return null
 
@@ -38,7 +53,7 @@ class Accumulator {
         return implementers.first()
     }
 
-    fun getSuperFqnFromImplFqn(implFqn: String): String? = mapImplementerToItsSup[implFqn]
+    override fun getSuperFqnFromImplFqn(implFqn: String): String? = mapImplementerToItsSup[implFqn]
 
     companion object {
         private val log = Logger.getLogger(Accumulator::class.java.name)
