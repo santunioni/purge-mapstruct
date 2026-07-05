@@ -15,7 +15,7 @@ import java.util.UUID
 import java.util.logging.Logger
 
 open class MapperProcessorBare(
-    private val acc: MapstructRefsReader,
+    private val mapstructRefsReader: MapstructRefsReader,
 ) : JavaVisitor<ExecutionContext>() {
     /**
      * Intercepts all tree-node visits to delete mapper impl files. TreeVisitor.visit is declared
@@ -48,7 +48,7 @@ open class MapperProcessorBare(
         val mapperDeclClass = visited.classes[0]
 
         try {
-            var mapperImplFile = acc.getImplementer(mapperDeclClass) ?: return visited
+            var mapperImplFile = mapstructRefsReader.getImplementer(mapperDeclClass) ?: return visited
 
             val mapperImplClass = mapperImplFile.classes[0]
             val mapperImplClassName = mapperImplClass.name.simpleName
@@ -142,7 +142,7 @@ open class MapperProcessorBare(
             // Case A: simple-name target, e.g. `UserMapperImpl.class`
             is J.Identifier -> {
                 val targetFqn = target.type?.toString() ?: return visited
-                val superFqn = acc.getSuperFqnFromImplFqn(targetFqn) ?: return visited
+                val superFqn = mapstructRefsReader.getSuperFqnFromImplFqn(targetFqn) ?: return visited
                 val superType = JavaType.buildType(superFqn)
                 visited
                     .withTarget(
@@ -161,7 +161,7 @@ open class MapperProcessorBare(
             // Case B: fully qualified target, e.g. `com.foo.UserMapperImpl.class`
             is J.FieldAccess -> {
                 val targetFqn = extractFqnFromFieldAccess(target)
-                val superFqn = acc.getSuperFqnFromImplFqn(targetFqn) ?: return visited
+                val superFqn = mapstructRefsReader.getSuperFqnFromImplFqn(targetFqn) ?: return visited
                 val superType = JavaType.buildType(superFqn)
                 visited.withTarget(
                     target.withName(target.name.withSimpleName(extractSimpleName(superFqn))).withType(superType),
@@ -183,7 +183,7 @@ open class MapperProcessorBare(
         val visited = superResult as? J.Import ?: return superResult
 
         val importFqn = extractFqnFromFieldAccess(visited.qualid)
-        val superFqn = acc.getSuperFqnFromImplFqn(importFqn) ?: return visited
+        val superFqn = mapstructRefsReader.getSuperFqnFromImplFqn(importFqn) ?: return visited
 
         if (importFqn == superFqn) return visited
 
@@ -266,7 +266,7 @@ open class MapperProcessorBare(
     private fun replaceTypeTreeIfNeeded(typeTree: TypeTree): TypeTree {
         val type = typeTree.type as? JavaType.FullyQualified ?: return typeTree
         val typeFqn = type.fullyQualifiedName
-        val superFqn = acc.getSuperFqnFromImplFqn(typeFqn) ?: return typeTree
+        val superFqn = mapstructRefsReader.getSuperFqnFromImplFqn(typeFqn) ?: return typeTree
         val superSimpleName = extractSimpleName(superFqn)
         val superType = JavaType.buildType(superFqn)
         return J.Identifier(
