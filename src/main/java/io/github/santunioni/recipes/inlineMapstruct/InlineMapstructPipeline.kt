@@ -53,7 +53,7 @@ class InlineMapstructPipeline(
             @Suppress("UNCHECKED_CAST")
             afterConditional =
                 (visitor as TreeVisitor<Tree, ExecutionContext>).visit(afterConditional, ctx) as? J.CompilationUnit
-                    ?: afterConditional
+                    ?: return null
         }
 
         // Delegate fully to MapperProcessorBare:
@@ -73,7 +73,7 @@ class InlineMapstructPipeline(
         var pos = changed
         for (visitor in postApplyToTouchedFiles) {
             @Suppress("UNCHECKED_CAST")
-            pos = (visitor as TreeVisitor<Tree, ExecutionContext>).visit(pos, ctx) as? J.CompilationUnit ?: pos
+            pos = (visitor as TreeVisitor<Tree, ExecutionContext>).visit(pos, ctx) as? J.CompilationUnit ?: return null
         }
         log.info("Finished migrating ${pos.sourcePath}")
         return pos
