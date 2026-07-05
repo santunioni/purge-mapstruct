@@ -2,26 +2,24 @@ package io.github.santunioni.recipes.removeMapstruct
 
 import org.openrewrite.java.tree.J
 import org.openrewrite.java.tree.TypeTree
-import java.nio.file.Path
-import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Logger
 
-interface AccumulatorWriter {
+interface MapstructRefsWriter {
     fun addLinking(
         superDecl: TypeTree,
         mapperImpl: J.CompilationUnit,
     )
 }
 
-interface AccumulatorReader {
+interface MapstructRefsReader {
     fun getImplementer(compilationUnit: J.ClassDeclaration): J.CompilationUnit?
 
     fun getSuperFqnFromImplFqn(implFqn: String): String?
 }
 
-class Accumulator :
-    AccumulatorWriter,
-    AccumulatorReader {
+class MapstructRefs :
+    MapstructRefsWriter,
+    MapstructRefsReader {
     private val mapSuperToItsImplementers: MutableMap<String, MutableList<J.CompilationUnit>> =
         HashMap()
     private val mapImplementerToItsSup: MutableMap<String, String> = HashMap()
@@ -56,6 +54,6 @@ class Accumulator :
     override fun getSuperFqnFromImplFqn(implFqn: String): String? = mapImplementerToItsSup[implFqn]
 
     companion object {
-        private val log = Logger.getLogger(Accumulator::class.java.name)
+        private val log = Logger.getLogger(MapstructRefs::class.java.name)
     }
 }

@@ -5,7 +5,7 @@ import org.openrewrite.java.JavaIsoVisitor
 import org.openrewrite.java.tree.J
 
 class ImplementationScanner(
-    private val acc: Accumulator,
+    private val acc: MapstructRefs,
 ) : JavaIsoVisitor<ExecutionContext>() {
     override fun visitCompilationUnit(
         mapperImpl: J.CompilationUnit,
