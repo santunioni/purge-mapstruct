@@ -22,7 +22,7 @@ open class InlineMapstructPipeline(
 ) : JavaVisitor<ExecutionContext>() {
     private val log = Logger.getLogger(InlineMapstructPipeline::class.java.name)
 
-    private val preInliningRecipesThatAlwaysRun =
+    private val recipesToApplyEverywhere =
         listOf<TreeVisitor<*, ExecutionContext>>(
             // Rewrite Mappers.getMapper(X.class) → new X() across every file, including call
             // sites in unrelated code that the inlining pass wouldn't otherwise touch.
@@ -40,14 +40,14 @@ open class InlineMapstructPipeline(
                 RewriteImplReferences(mapstructRefsReader),
             )
 
-    private val preInliningRecipesConditional =
+    private val recipesToApplyToMapperImplementationBeforeInline =
         listOf<TreeVisitor<*, ExecutionContext>>(
             FullyQualifyTypesInImplementation(),
         )
 
     private val inlineMapstruct = InlineMapstruct(mapstructRefsReader)
 
-    private val postInliningRecipes by lazy {
+    private val recipesToApplyToInlinedClasses by lazy {
         listOf<TreeVisitor<*, ExecutionContext>>(
             // Rewrite *Impl references (new FooMapperImpl(), FooMapperImpl.class, etc.) copied in from
             // the generated impl body during the merge — same rationale as the ReplaceMappersGetMapper
@@ -104,7 +104,7 @@ open class InlineMapstructPipeline(
         // Always-run pre recipes: broad rewrites whose result we keep even when this file is not
         // inlined (e.g. Mappers.getMapper at unrelated call sites, spy stubs in test files).
         var afterAlways = original
-        for (visitor in preInliningRecipesThatAlwaysRun) {
+        for (visitor in recipesToApplyEverywhere) {
             @Suppress("UNCHECKED_CAST")
             afterAlways =
                 (visitor as TreeVisitor<Tree, ExecutionContext>).visit(afterAlways, ctx) as? J.CompilationUnit
@@ -114,7 +114,7 @@ open class InlineMapstructPipeline(
         // Conditional pre recipes: only meaningful as preparation for the merge. If the merge does
         // not touch this file, these changes are discarded so non-inlined files stay pristine.
         var afterConditional = afterAlways
-        for (visitor in preInliningRecipesConditional) {
+        for (visitor in recipesToApplyToMapperImplementationBeforeInline) {
             @Suppress("UNCHECKED_CAST")
             afterConditional =
                 (visitor as TreeVisitor<Tree, ExecutionContext>).visit(afterConditional, ctx) as? J.CompilationUnit
@@ -136,7 +136,7 @@ open class InlineMapstructPipeline(
         // Apply targeted cleanup to whatever changed (an inlined mapper, or a file touched only by
         // an always-run rewrite such as a spy test).
         var pos = changed
-        for (visitor in postInliningRecipes) {
+        for (visitor in recipesToApplyToInlinedClasses) {
             @Suppress("UNCHECKED_CAST")
             pos = (visitor as TreeVisitor<Tree, ExecutionContext>).visit(pos, ctx) as? J.CompilationUnit ?: pos
         }
