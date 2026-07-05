@@ -130,11 +130,8 @@ open class MapperProcessor(
         // Did the merge actually change this file? If so, keep the inlined result (which carries the
         // conditional prep). If not, drop the conditional prep and fall back to the always-run
         // result — this keeps broad rewrites while leaving non-inlined files otherwise untouched.
-        val bareInlined = inlined !== afterConditional
-        val changed = if (bareInlined) inlined as? J.CompilationUnit ?: return inlined else afterAlways
-
-        // Nothing changed anywhere — return the original untouched to keep the diff minimal.
-        if (changed === original) return tree
+        val changed = if (inlined !== afterConditional) inlined as? J.CompilationUnit ?: return inlined else afterAlways
+        if (changed === original) return afterAlways
 
         // Apply targeted cleanup to whatever changed (an inlined mapper, or a file touched only by
         // an always-run rewrite such as a spy test).
