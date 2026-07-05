@@ -3,13 +3,9 @@ package io.github.santunioni.recipes.removeMapstruct
 import org.openrewrite.ExecutionContext
 import org.openrewrite.Tree
 import org.openrewrite.internal.ListUtils
-import org.openrewrite.java.AddImport
 import org.openrewrite.java.JavaVisitor
 import org.openrewrite.java.tree.Expression
-import org.openrewrite.java.tree.Flag
 import org.openrewrite.java.tree.J
-import org.openrewrite.java.tree.JContainer
-import org.openrewrite.java.tree.JRightPadded
 import org.openrewrite.java.tree.JavaType
 import org.openrewrite.java.tree.Space
 import org.openrewrite.java.tree.TypeTree
@@ -45,14 +41,6 @@ open class MapperProcessorBare(
         mapperDeclFile: J.CompilationUnit,
         ctx: ExecutionContext,
     ): J {
-        // Collect @Spy-annotated field names up front so that nested visits can rewrite
-        // when(spy.x(a)).thenReturn(v) into doReturn(v).when(spy).x(a).
-        val spyFieldNames = collectSpyFieldNames(mapperDeclFile)
-        if (spyFieldNames.isNotEmpty()) {
-            log.fine("[PurgeMapstruct] Found spy fields in ${mapperDeclFile.sourcePath}: $spyFieldNames")
-        }
-        cursor.putMessage(SPY_FIELD_NAMES_KEY, spyFieldNames)
-
         val superResult = super.visitCompilationUnit(mapperDeclFile, ctx)
         val visited = superResult as? J.CompilationUnit ?: return superResult
         if (!isMapperDeclaration(visited)) return visited
@@ -137,71 +125,6 @@ open class MapperProcessorBare(
                 e,
             )
         }
-    }
-
-    /**
-     * Replaces `Mappers.getMapper(SomeMapper.class)` with a direct constructor call `new
-     * SomeMapper()`.
-     */
-    override fun visitMethodInvocation(
-        method: J.MethodInvocation,
-        ctx: ExecutionContext,
-    ): J {
-        val superResult = super.visitMethodInvocation(method, ctx)
-        val visited = superResult as? J.MethodInvocation ?: return superResult
-
-        val rewrittenSpyStub = rewriteWhenOnSpyIfApplicable(visited)
-        if (rewrittenSpyStub != null) return rewrittenSpyStub
-
-        if (!isMappersGetMapper(visited) || visited.arguments.size != 1) return visited
-
-        val arg0 = visited.arguments[0]
-        if (arg0 !is J.FieldAccess || arg0.name.simpleName != "class") return visited
-        val classLiteral: J.FieldAccess = arg0
-
-        val mapperType: TypeTree =
-            when (val target = classLiteral.target) {
-                is J.Identifier -> target.withPrefix(Space.SINGLE_SPACE)
-                is J.FieldAccess -> target.withPrefix(Space.SINGLE_SPACE)
-                else -> return visited
-            }
-
-        val mapperFqn = TypeUtils.asFullyQualified(mapperType.type) ?: return visited
-
-        val constructorType =
-            JavaType.Method(
-                null,
-                Flag.Public.bitMask,
-                mapperFqn,
-                "<constructor>",
-                mapperFqn,
-                emptyList(),
-                emptyList(),
-                emptyList(),
-                emptyList(),
-                null,
-                null,
-            )
-
-        val noArguments: Expression = J.Empty(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY)
-        val arguments: JContainer<Expression> =
-            JContainer.build(
-                Space.EMPTY,
-                listOf(JRightPadded.build(noArguments)),
-                Markers.EMPTY,
-            )
-
-        return J.NewClass(
-            UUID.randomUUID(),
-            visited.prefix,
-            visited.markers,
-            null,
-            Space.EMPTY,
-            mapperType,
-            arguments,
-            null,
-            constructorType,
-        )
     }
 
     /**
@@ -372,124 +295,9 @@ open class MapperProcessorBare(
     private fun getFinalIdentifierName(fieldAccess: J.FieldAccess): String =
         generateSequence(fieldAccess) { it.target as? J.FieldAccess }.last().name.simpleName
 
-    /**
-     * If `invocation` matches `when(spy.method(args)).thenReturn(value)` where `spy` is a locally
-     * declared `@Spy` field, rebuilds the tree as `doReturn(value).when(spy).method(args)` and adds
-     * the necessary Mockito static import. Returns `null` when the pattern doesn't match.
-     */
-    private fun rewriteWhenOnSpyIfApplicable(invocation: J.MethodInvocation): J.MethodInvocation? {
-        val stubName = invocation.simpleName
-        if (stubName != "thenReturn" && stubName != "thenThrow") return null
-        if (invocation.arguments.size != 1) return null
-
-        val whenInvocation = invocation.select as? J.MethodInvocation ?: return null
-        if (whenInvocation.simpleName != "when" || whenInvocation.arguments.size != 1) return null
-
-        val spyMethodCall = whenInvocation.arguments[0] as? J.MethodInvocation ?: return null
-        val spyIdent = spyMethodCall.select as? J.Identifier ?: return null
-
-        val spyNames: Set<String>? = cursor.getNearestMessage(SPY_FIELD_NAMES_KEY)
-        log.fine(
-            "[PurgeMapstruct] Checking when-spy: candidate=${spyIdent.simpleName} known-spies=$spyNames",
-        )
-        if (spyNames == null || spyIdent.simpleName !in spyNames) return null
-
-        val doStubName = if (stubName == "thenReturn") "doReturn" else "doThrow"
-        val stubValue = invocation.arguments[0]
-
-        val mockitoType = JavaType.buildType("org.mockito.Mockito") as JavaType.FullyQualified
-        val stubberType = JavaType.buildType("org.mockito.stubbing.Stubber") as JavaType.FullyQualified
-
-        val doStubMethodType =
-            JavaType.Method(
-                null,
-                Flag.Public.bitMask or Flag.Static.bitMask,
-                mockitoType,
-                doStubName,
-                stubberType,
-                listOf("value"),
-                listOf(stubValue.type ?: JavaType.buildType("java.lang.Object")),
-                emptyList(),
-                emptyList(),
-                null,
-                null,
-            )
-
-        val doStubIdent =
-            J.Identifier(
-                UUID.randomUUID(),
-                Space.EMPTY,
-                Markers.EMPTY,
-                emptyList(),
-                doStubName,
-                doStubMethodType,
-                null,
-            )
-        val doStubArgs: JContainer<Expression> =
-            JContainer.build(
-                Space.EMPTY,
-                listOf(JRightPadded.build(stubValue.withPrefix(Space.EMPTY))),
-                Markers.EMPTY,
-            )
-        val doStubCall =
-            J.MethodInvocation(
-                UUID.randomUUID(),
-                invocation.prefix,
-                invocation.markers,
-                null,
-                null,
-                doStubIdent,
-                doStubArgs,
-                doStubMethodType,
-            )
-
-        val newWhenCall =
-            J.MethodInvocation(
-                UUID.randomUUID(),
-                Space.EMPTY,
-                whenInvocation.markers,
-                JRightPadded.build(doStubCall as Expression),
-                null,
-                whenInvocation.name.withPrefix(Space.EMPTY),
-                JContainer.build(
-                    Space.EMPTY,
-                    listOf(
-                        JRightPadded.build(spyIdent.withPrefix(Space.EMPTY)),
-                    ),
-                    Markers.EMPTY,
-                ),
-                whenInvocation.methodType,
-            )
-
-        val spyArgs = spyMethodCall.arguments
-        val paddedFinalArgs: List<JRightPadded<Expression>> =
-            spyArgs.mapIndexed { i, arg ->
-                val prefix = if (i == 0) Space.EMPTY else Space.SINGLE_SPACE
-                JRightPadded.build(arg.withPrefix(prefix))
-            }
-
-        val finalCall =
-            J.MethodInvocation(
-                UUID.randomUUID(),
-                Space.EMPTY,
-                spyMethodCall.markers,
-                JRightPadded.build(newWhenCall as Expression),
-                null,
-                spyMethodCall.name.withPrefix(Space.EMPTY),
-                JContainer.build(Space.EMPTY, paddedFinalArgs, Markers.EMPTY),
-                spyMethodCall.methodType,
-            )
-
-        doAfterVisit(AddImport("org.mockito.Mockito", doStubName, false))
-        return finalCall
-    }
-
     companion object {
         private val log = Logger.getLogger(MapperProcessorBare::class.java.name)
         private const val MAPSTRUCT_GROUP = "org.mapstruct"
-
-        /** Cursor message key: `Set<String>` of local field names annotated with Mockito's `@Spy`. */
-        private const val SPY_FIELD_NAMES_KEY = "purgeMapstruct.spyFieldNames"
 
         private val MAPSTRUCT_ANNOTATION_SIMPLE_NAMES =
             setOf(
@@ -653,37 +461,6 @@ open class MapperProcessorBare(
             return when {
                 type != null && type !is JavaType.Unknown -> !type.toString().startsWith(MAPSTRUCT_GROUP)
                 else -> a.simpleName !in MAPSTRUCT_ANNOTATION_SIMPLE_NAMES
-            }
-        }
-
-        private fun collectSpyFieldNames(cu: J.CompilationUnit): Set<String> =
-            cu.classes
-                .asSequence()
-                .flatMap { it.body.statements }
-                .filterIsInstance<J.VariableDeclarations>()
-                .filter { stmt ->
-                    stmt.leadingAnnotations.any { a ->
-                        a.simpleName == "Spy" || TypeUtils.isOfClassType(a.type, "org.mockito.Spy")
-                    }
-                }.flatMap { it.variables }
-                .map { it.simpleName }
-                .toSet()
-
-        private fun isMappersGetMapper(invocation: J.MethodInvocation): Boolean {
-            if (invocation.simpleName != "getMapper") return false
-            val declaringType = invocation.methodType?.declaringType
-            return when {
-                declaringType != null -> {
-                    declaringType.fullyQualifiedName == "org.mapstruct.factory.Mappers"
-                }
-
-                else -> {
-                    when (val select = invocation.select) {
-                        is J.Identifier -> select.simpleName == "Mappers"
-                        is J.FieldAccess -> select.name.simpleName == "Mappers"
-                        else -> false
-                    }
-                }
             }
         }
     }
