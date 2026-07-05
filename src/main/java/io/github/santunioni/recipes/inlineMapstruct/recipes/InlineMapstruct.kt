@@ -60,12 +60,12 @@ class InlineMapstruct(
                                     transformMapperDeclMethod(mapperDeclStatement)
                                 }
 
+                                is J.VariableDeclarations if mapperDeclClass.kind == J.ClassDeclaration.Kind.Type.Interface -> {
+                                    transformMapperDeclInterfaceField(mapperDeclStatement)
+                                }
+
                                 is J.VariableDeclarations -> {
-                                    if (mapperDeclClass.kind == J.ClassDeclaration.Kind.Type.Interface) {
-                                        transformMapperDeclInterfaceField(mapperDeclStatement)
-                                    } else {
-                                        mapperDeclStatement
-                                    }
+                                    mapperDeclStatement
                                 }
 
                                 else -> {

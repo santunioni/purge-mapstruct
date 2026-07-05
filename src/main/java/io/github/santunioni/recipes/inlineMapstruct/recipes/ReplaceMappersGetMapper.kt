@@ -84,18 +84,12 @@ class ReplaceMappersGetMapper : JavaVisitor<ExecutionContext>() {
         private fun isMappersGetMapper(invocation: J.MethodInvocation): Boolean {
             if (invocation.simpleName != "getMapper") return false
             val declaringType = invocation.methodType?.declaringType
+            val select = invocation.select
             return when {
-                declaringType != null -> {
-                    declaringType.fullyQualifiedName == "org.mapstruct.factory.Mappers"
-                }
-
-                else -> {
-                    when (val select = invocation.select) {
-                        is J.Identifier -> select.simpleName == "Mappers"
-                        is J.FieldAccess -> select.name.simpleName == "Mappers"
-                        else -> false
-                    }
-                }
+                declaringType != null -> declaringType.fullyQualifiedName == "org.mapstruct.factory.Mappers"
+                select is J.Identifier -> select.simpleName == "Mappers"
+                select is J.FieldAccess -> select.name.simpleName == "Mappers"
+                else -> false
             }
         }
     }
