@@ -10,7 +10,7 @@ import org.openrewrite.marker.Markers
 import java.util.UUID
 import java.util.logging.Logger
 
-open class InlineMapstruct(
+class InlineMapstruct(
     private val mapstructRefsReader: MapstructRefsReader,
 ) : JavaVisitor<ExecutionContext>() {
     /**
