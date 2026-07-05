@@ -22,6 +22,10 @@ open class MapperProcessor(
 ) : JavaVisitor<ExecutionContext>() {
     private val log = Logger.getLogger(MapperProcessor::class.java.name)
 
+    private val preInliningRecipesThatAlwaysRun = staticPreInliningRecipesThatAlwaysRun + listOf()
+    private val preInliningRecipesConditional = staticPreInliningRecipesConditional + listOf()
+    private val postInliningRecipes = staticPostInliningRecipes + listOf()
+
     private val mapperProcessorBare = MapperProcessorBare(acc)
 
     override fun visit(
@@ -81,7 +85,7 @@ open class MapperProcessor(
          * Pre-inlining rewrites that are valuable on their own. Their result is kept even for files
          * the merge never touches, so they run broadly across the whole codebase.
          */
-        private val preInliningRecipesThatAlwaysRun: List<TreeVisitor<*, ExecutionContext>> by lazy {
+        private val staticPreInliningRecipesThatAlwaysRun: List<TreeVisitor<*, ExecutionContext>> by lazy {
             listOf<TreeVisitor<*, ExecutionContext>>(
                 // Rewrite Mappers.getMapper(X.class) → new X() across every file, including call
                 // sites in unrelated code that the inlining pass wouldn't otherwise touch.
@@ -96,7 +100,7 @@ open class MapperProcessor(
          * Pre-inlining rewrites that only make sense as preparation for the merge. If the merge does
          * not change the file, these are rolled back so non-inlined files are left pristine.
          */
-        private val preInliningRecipesConditional: List<TreeVisitor<*, ExecutionContext>> by lazy {
+        private val staticPreInliningRecipesConditional: List<TreeVisitor<*, ExecutionContext>> by lazy {
             listOf<TreeVisitor<*, ExecutionContext>>(
                 FullyQualifyTypesInImplementation(),
             )
@@ -106,7 +110,7 @@ open class MapperProcessor(
          * Built once per JVM — [Environment.Builder.scanRuntimeClasspath] is expensive and the visitor
          * list is stateless, so sharing it across all [MapperProcessor] instances is safe.
          */
-        private val postInliningRecipes: List<TreeVisitor<*, ExecutionContext>> by lazy {
+        private val staticPostInliningRecipes: List<TreeVisitor<*, ExecutionContext>> by lazy {
             listOf(
                 // Rewrite any Mappers.getMapper(X.class) that was copied in from the generated impl
                 // during the merge (the pre-pass only saw the mapper declaration, not the impl body).
