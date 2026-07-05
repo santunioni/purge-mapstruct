@@ -4,7 +4,6 @@ import org.openrewrite.ExecutionContext
 import org.openrewrite.internal.ListUtils
 import org.openrewrite.java.JavaVisitor
 import org.openrewrite.java.tree.J
-import org.openrewrite.java.tree.JavaType
 import org.openrewrite.java.tree.Space
 import org.openrewrite.java.tree.TypeUtils
 import org.openrewrite.marker.Markers
@@ -15,6 +14,7 @@ open class MapperProcessorBare(
     private val mapstructRefsReader: MapstructRefsReader,
 ) : JavaVisitor<ExecutionContext>() {
     private val rewriteImplReferences = RewriteImplReferences(mapstructRefsReader)
+    private val stripMapstructAnnotations = StripMapstructAnnotations()
 
     /**
      * Modify the mapper declaration file with a modified mix of methods and fields from itself plus
@@ -86,7 +86,7 @@ open class MapperProcessorBare(
                     .withImplements(null)
                     .withLeadingAnnotations(
                         (
-                            mapperDeclClass.leadingAnnotations.filter { excludeMapstructAnnotations(it) } +
+                            mapperDeclClass.leadingAnnotations +
                                 mapperImplClass.leadingAnnotations.filter {
                                     excludeGeneratedAnnotations(it)
                                 }
@@ -96,6 +96,10 @@ open class MapperProcessorBare(
             // Rewrite *Impl references (new FooMapperImpl(), FooMapperImpl.class, etc.) that were
             // copied in from the generated impl body so they point back at the mapper type.
             clazz = rewriteImplReferences.visit(clazz, ctx) as? J.ClassDeclaration ?: clazz
+
+            // Drop MapStruct annotations (@Mapper on the type, @Mapping/@MappingTarget on methods and
+            // parameters) copied over from the mapper declaration so the inlined class is plain Java.
+            clazz = stripMapstructAnnotations.visit(clazz, ctx) as? J.ClassDeclaration ?: clazz
 
             return mapperImplFile
                 .withImports(visited.imports.filter { !it.packageName.startsWith(MAPSTRUCT_GROUP) })
@@ -118,39 +122,11 @@ open class MapperProcessorBare(
         private val log = Logger.getLogger(MapperProcessorBare::class.java.name)
         private const val MAPSTRUCT_GROUP = "org.mapstruct"
 
-        private val MAPSTRUCT_ANNOTATION_SIMPLE_NAMES =
-            setOf(
-                "AfterMapping",
-                "BeanMapping",
-                "BeforeMapping",
-                "Condition",
-                "Context",
-                "DecoratedWith",
-                "EnumMapping",
-                "InheritConfiguration",
-                "InheritInverseConfiguration",
-                "IterableMapping",
-                "MapMapping",
-                "Mapper",
-                "MapperConfig",
-                "Mapping",
-                "MappingConstants",
-                "Mappings",
-                "MappingTarget",
-                "Named",
-                "ObjectFactory",
-                "Qualifier",
-                "SubclassMapping",
-                "SubclassMappings",
-                "TargetType",
-                "ValueMapping",
-                "ValueMappings",
-            )
-
         private fun transformMapperDeclMethod(mapperDeclMethod: J.MethodDeclaration): J.MethodDeclaration? {
             if (mapperDeclMethod.body == null) return null
 
-            // Replace `default` modifier with `public`
+            // Replace `default` modifier with `public`. MapStruct annotations on the method and its
+            // parameters are stripped later by StripMapstructAnnotations on the merged class.
             val newModifiers =
                 ListUtils.map(mapperDeclMethod.modifiers) { modifier ->
                     when (modifier.type) {
@@ -158,32 +134,7 @@ open class MapperProcessorBare(
                         else -> modifier
                     }
                 } ?: mapperDeclMethod.modifiers
-            var method = mapperDeclMethod.withModifiers(newModifiers)
-
-            // Strip MapStruct annotations from the method
-            method =
-                method.withLeadingAnnotations(
-                    ListUtils.filter(method.leadingAnnotations) { excludeMapstructAnnotations(it) }
-                        ?: emptyList(),
-                )
-
-            // Strip MapStruct annotations from method parameters
-            val filteredParameters =
-                ListUtils.map(method.parameters) { param ->
-                    when (param) {
-                        is J.VariableDeclarations -> {
-                            param.withLeadingAnnotations(
-                                ListUtils.filter(param.leadingAnnotations) { excludeMapstructAnnotations(it) }
-                                    ?: emptyList(),
-                            )
-                        }
-
-                        else -> {
-                            param
-                        }
-                    }
-                } ?: method.parameters
-            return method.withParameters(filteredParameters)
+            return mapperDeclMethod.withModifiers(newModifiers)
         }
 
         private fun transformMapperDeclInterfaceField(mapperDeclField: J.VariableDeclarations): J.VariableDeclarations {
@@ -274,13 +225,5 @@ open class MapperProcessorBare(
                     TypeUtils.isOfClassType(a.type, "javax.annotation.processing.Generated") ||
                     TypeUtils.isOfClassType(a.type, "jakarta.annotation.Generated")
             )
-
-        private fun excludeMapstructAnnotations(a: J.Annotation): Boolean {
-            val type = a.type
-            return when {
-                type != null && type !is JavaType.Unknown -> !type.toString().startsWith(MAPSTRUCT_GROUP)
-                else -> a.simpleName !in MAPSTRUCT_ANNOTATION_SIMPLE_NAMES
-            }
-        }
     }
 }
