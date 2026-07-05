@@ -250,7 +250,7 @@ your patterns. Maybe you are doing something I didn't cover.
 
 If the recipe fails, produces broken code, or leaves something
 behind — [open an issue](https://github.com/santunioni/purge-mapstruct/issues/new) on GitHub with a minimal reproducer,
-and I'll look into it. You are also invited to contributing a PR, as long as we discuss the reasoning behind the change
+and I'll look into it. You are also invited to contribute a PR, as long as we discuss the reasoning behind the change
 first in an issue.
 
 ---
