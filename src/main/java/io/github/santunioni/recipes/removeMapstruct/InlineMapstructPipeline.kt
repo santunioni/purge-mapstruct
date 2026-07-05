@@ -17,10 +17,10 @@ import org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
 import org.openrewrite.staticanalysis.UnnecessaryParentheses
 import java.util.logging.Logger
 
-open class MapperProcessor(
+open class InlineMapstructPipeline(
     mapstructRefsReader: MapstructRefsReader,
 ) : JavaVisitor<ExecutionContext>() {
-    private val log = Logger.getLogger(MapperProcessor::class.java.name)
+    private val log = Logger.getLogger(InlineMapstructPipeline::class.java.name)
 
     private val preInliningRecipesThatAlwaysRun =
         listOf<TreeVisitor<*, ExecutionContext>>(
