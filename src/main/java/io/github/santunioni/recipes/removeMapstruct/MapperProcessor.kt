@@ -32,7 +32,13 @@ open class MapperProcessor(
 
         // Always-run pre recipes: broad rewrites whose result we keep even when this file is not
         // inlined (e.g. Mappers.getMapper at unrelated call sites, spy stubs in test files).
-        val afterAlways = applyAlwaysRun(original, ctx)
+        var afterAlways = original
+        for (visitor in preInliningRecipesThatAlwaysRun) {
+            @Suppress("UNCHECKED_CAST")
+            afterAlways =
+                (visitor as TreeVisitor<Tree, ExecutionContext>).visit(afterAlways, ctx) as? J.CompilationUnit
+                    ?: afterAlways
+        }
 
         // Conditional pre recipes: only meaningful as preparation for the merge. If the merge does
         // not touch this file, these changes are discarded so non-inlined files stay pristine.
@@ -54,14 +60,7 @@ open class MapperProcessor(
         // conditional prep). If not, drop the conditional prep and fall back to the always-run
         // result — this keeps broad rewrites while leaving non-inlined files otherwise untouched.
         val bareInlined = inlined !== afterConditional
-        var changed = if (bareInlined) inlined as? J.CompilationUnit ?: return inlined else afterAlways
-
-        // Re-run the always-run rewrites on the inlined result: the merge copies code in from the
-        // generated impl (e.g. Mappers.getMapper) that the pre pass never saw, and this handles it
-        // within the same cycle rather than waiting for the next.
-        if (bareInlined) {
-            changed = applyAlwaysRun(changed, ctx)
-        }
+        val changed = if (bareInlined) inlined as? J.CompilationUnit ?: return inlined else afterAlways
 
         // Nothing changed anywhere — return the original untouched to keep the diff minimal.
         if (changed === original) return tree
