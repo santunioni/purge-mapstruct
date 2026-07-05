@@ -45,7 +45,7 @@ open class MapperProcessor(
             FullyQualifyTypesInImplementation(),
         )
 
-    private val mapperProcessorBare = MapperProcessorBare(mapstructRefsReader)
+    private val inlineMapstruct = InlineMapstruct(mapstructRefsReader)
 
     private val postInliningRecipes by lazy {
         listOf<TreeVisitor<*, ExecutionContext>>(
@@ -125,7 +125,7 @@ open class MapperProcessor(
         //   - impl files → returns null (deletion)
         //   - mapper files → returns merged CompilationUnit
         //   - other files → return the same or rewritten CompilationUnit (Impl ref rewrites)
-        val inlined = mapperProcessorBare.visit(afterConditional, ctx) ?: return null
+        val inlined = inlineMapstruct.visit(afterConditional, ctx) ?: return null
 
         // Did the merge actually change this file? If so, keep the inlined result (which carries the
         // conditional prep). If not, drop the conditional prep and fall back to the always-run

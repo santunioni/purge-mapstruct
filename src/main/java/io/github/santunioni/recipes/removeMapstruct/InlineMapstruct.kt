@@ -10,7 +10,7 @@ import org.openrewrite.marker.Markers
 import java.util.UUID
 import java.util.logging.Logger
 
-open class MapperProcessorBare(
+open class InlineMapstruct(
     private val mapstructRefsReader: MapstructRefsReader,
 ) : JavaVisitor<ExecutionContext>() {
     /**
@@ -111,7 +111,7 @@ open class MapperProcessorBare(
         mapperImplementationFile.withImports(emptyList())
 
     companion object {
-        private val log = Logger.getLogger(MapperProcessorBare::class.java.name)
+        private val log = Logger.getLogger(InlineMapstruct::class.java.name)
         private const val MAPSTRUCT_GROUP = "org.mapstruct"
 
         private fun transformMapperDeclMethod(mapperDeclMethod: J.MethodDeclaration): J.MethodDeclaration? {
