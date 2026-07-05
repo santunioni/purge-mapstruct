@@ -1,5 +1,13 @@
-package io.github.santunioni.recipes.removeMapstruct
+package io.github.santunioni.recipes.inlineMapstruct
 
+import io.github.santunioni.recipes.inlineMapstruct.recipes.DeleteMapperImplementations
+import io.github.santunioni.recipes.inlineMapstruct.recipes.FullyQualifyTypesInImplementation
+import io.github.santunioni.recipes.inlineMapstruct.recipes.InlineMapstruct
+import io.github.santunioni.recipes.inlineMapstruct.recipes.MapstructRefsReader
+import io.github.santunioni.recipes.inlineMapstruct.recipes.ReplaceMappersGetMapper
+import io.github.santunioni.recipes.inlineMapstruct.recipes.RewriteImplReferences
+import io.github.santunioni.recipes.inlineMapstruct.recipes.RewriteWhenOnSpy
+import io.github.santunioni.recipes.inlineMapstruct.recipes.StripMapstructAnnotations
 import org.openrewrite.ExecutionContext
 import org.openrewrite.Tree
 import org.openrewrite.TreeVisitor

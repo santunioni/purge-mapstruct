@@ -1,21 +1,10 @@
-package io.github.santunioni.recipes.removeMapstruct
+package io.github.santunioni.recipes.inlineMapstruct
 
+import io.github.santunioni.recipes.inlineMapstruct.recipes.MapstructRefsReader
+import io.github.santunioni.recipes.inlineMapstruct.scanners.MapstructRefsWriter
 import org.openrewrite.java.tree.J
 import org.openrewrite.java.tree.TypeTree
 import java.util.logging.Logger
-
-interface MapstructRefsWriter {
-    fun addLinking(
-        superDecl: TypeTree,
-        mapperImpl: J.CompilationUnit,
-    )
-}
-
-interface MapstructRefsReader {
-    fun getImplementer(compilationUnit: J.ClassDeclaration): J.CompilationUnit?
-
-    fun getSuperFqnFromImplFqn(implFqn: String): String?
-}
 
 class MapstructRefs :
     MapstructRefsWriter,

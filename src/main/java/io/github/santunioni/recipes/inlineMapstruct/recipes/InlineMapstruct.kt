@@ -1,5 +1,6 @@
-package io.github.santunioni.recipes.removeMapstruct
+package io.github.santunioni.recipes.inlineMapstruct.recipes
 
+import io.github.santunioni.recipes.inlineMapstruct.isMapperDeclaration
 import org.openrewrite.ExecutionContext
 import org.openrewrite.internal.ListUtils
 import org.openrewrite.java.JavaVisitor

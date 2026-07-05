@@ -1,8 +1,8 @@
 package io.github.santunioni.recipes
 
-import io.github.santunioni.recipes.removeMapstruct.ImplementationScanner
-import io.github.santunioni.recipes.removeMapstruct.InlineMapstructPipeline
-import io.github.santunioni.recipes.removeMapstruct.MapstructRefs
+import io.github.santunioni.recipes.inlineMapstruct.InlineMapstructPipeline
+import io.github.santunioni.recipes.inlineMapstruct.MapstructRefs
+import io.github.santunioni.recipes.inlineMapstruct.scanners.MappersGathererScanner
 import org.openrewrite.ExecutionContext
 import org.openrewrite.ScanningRecipe
 import org.openrewrite.TreeVisitor
@@ -22,7 +22,7 @@ class PurgeMapstruct : ScanningRecipe<MapstructRefs>() {
 
     override fun getInitialValue(ctx: ExecutionContext): MapstructRefs = MapstructRefs()
 
-    override fun getScanner(acc: MapstructRefs): TreeVisitor<*, ExecutionContext> = ImplementationScanner(acc)
+    override fun getScanner(acc: MapstructRefs): TreeVisitor<*, ExecutionContext> = MappersGathererScanner(acc)
 
     override fun getVisitor(acc: MapstructRefs): TreeVisitor<*, ExecutionContext> = InlineMapstructPipeline(acc)
 }
