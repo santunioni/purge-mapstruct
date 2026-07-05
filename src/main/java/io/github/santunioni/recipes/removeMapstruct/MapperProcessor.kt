@@ -31,7 +31,17 @@ open class MapperProcessor(
                 RewriteImplReferences(mapstructRefsReader),
             )
     private val preInliningRecipesConditional = staticPreInliningRecipesConditional + listOf()
-    private val postInliningRecipes = staticPostInliningRecipes + listOf()
+    private val postInliningRecipes =
+        listOf<TreeVisitor<*, ExecutionContext>>(
+            // Rewrite *Impl references (new FooMapperImpl(), FooMapperImpl.class, etc.) copied in from
+            // the generated impl body during the merge — same rationale as the ReplaceMappersGetMapper
+            // entry at the front of the static post list. Needs the scan-pass linkings, so it is
+            // instance- (not static-) scoped.
+            RewriteImplReferences(mapstructRefsReader),
+            // Drop MapStruct annotations (@Mapper on the type, @Mapping/@MappingTarget on methods and
+            // parameters) so the inlined class is plain Java.
+            StripMapstructAnnotations(),
+        ) + staticPostInliningRecipes
 
     private val mapperProcessorBare = MapperProcessorBare(mapstructRefsReader)
 
