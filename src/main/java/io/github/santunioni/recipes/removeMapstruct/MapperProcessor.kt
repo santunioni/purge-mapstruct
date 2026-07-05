@@ -22,7 +22,14 @@ open class MapperProcessor(
 ) : JavaVisitor<ExecutionContext>() {
     private val log = Logger.getLogger(MapperProcessor::class.java.name)
 
-    private val preInliningRecipesThatAlwaysRun = staticPreInliningRecipesThatAlwaysRun + listOf()
+    private val preInliningRecipesThatAlwaysRun =
+        staticPreInliningRecipesThatAlwaysRun +
+            listOf(
+                // Rewrite *Impl references (imports, new FooMapperImpl(), FooMapperImpl.class, etc.)
+                // back to the mapper type across every file, including unrelated call sites the merge
+                // never touches. Needs the scan-pass linkings, so it is instance- (not static-) scoped.
+                RewriteImplReferences(mapstructRefsReader),
+            )
     private val preInliningRecipesConditional = staticPreInliningRecipesConditional + listOf()
     private val postInliningRecipes = staticPostInliningRecipes + listOf()
 
