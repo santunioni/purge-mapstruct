@@ -18,7 +18,7 @@ import org.openrewrite.staticanalysis.UnnecessaryParentheses
 import java.util.logging.Logger
 
 open class MapperProcessor(
-    acc: Accumulator,
+    mapstructReferences: MapstructRefsReader,
 ) : JavaVisitor<ExecutionContext>() {
     private val log = Logger.getLogger(MapperProcessor::class.java.name)
 
@@ -26,7 +26,7 @@ open class MapperProcessor(
     private val preInliningRecipesConditional = staticPreInliningRecipesConditional + listOf()
     private val postInliningRecipes = staticPostInliningRecipes + listOf()
 
-    private val mapperProcessorBare = MapperProcessorBare(acc)
+    private val mapperProcessorBare = MapperProcessorBare(mapstructReferences)
 
     override fun visit(
         tree: Tree?,

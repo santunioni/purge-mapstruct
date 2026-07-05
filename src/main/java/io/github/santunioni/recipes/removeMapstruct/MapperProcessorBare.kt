@@ -15,7 +15,7 @@ import java.util.UUID
 import java.util.logging.Logger
 
 open class MapperProcessorBare(
-    private val acc: Accumulator,
+    private val acc: MapstructRefsReader,
 ) : JavaVisitor<ExecutionContext>() {
     /**
      * Intercepts all tree-node visits to delete mapper impl files. TreeVisitor.visit is declared
