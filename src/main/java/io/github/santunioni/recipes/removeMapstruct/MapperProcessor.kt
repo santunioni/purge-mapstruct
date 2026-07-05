@@ -4,6 +4,7 @@ import org.openrewrite.ExecutionContext
 import org.openrewrite.Tree
 import org.openrewrite.TreeVisitor
 import org.openrewrite.config.Environment
+import org.openrewrite.java.JavaVisitor
 import org.openrewrite.java.RemoveUnusedImports
 import org.openrewrite.java.ShortenFullyQualifiedTypeReferences
 import org.openrewrite.java.format.AutoFormat
@@ -18,14 +19,17 @@ import java.util.logging.Logger
 
 open class MapperProcessor(
     acc: Accumulator,
-) : MapperProcessorBare(acc) {
+) : JavaVisitor<ExecutionContext>() {
     private val log = Logger.getLogger(MapperProcessor::class.java.name)
+
+    private val mapperProcessorBare = MapperProcessorBare(acc)
 
     override fun visit(
         tree: Tree?,
         ctx: ExecutionContext,
     ): J? {
         var pre = tree as? J.CompilationUnit ?: return super.visit(tree, ctx)
+
         for (visitor in preInliningRecipes) {
             @Suppress("UNCHECKED_CAST")
             pre = (visitor as TreeVisitor<Tree, ExecutionContext>).visit(pre, ctx) as? J.CompilationUnit ?: pre
@@ -35,10 +39,10 @@ open class MapperProcessor(
         //   - impl files → returns null (deletion)
         //   - mapper files → returns merged CompilationUnit
         //   - other files → return the same or rewritten CompilationUnit (Impl ref rewrites)
-        val pos = super.visit(pre, ctx) ?: return null
+        val pos = mapperProcessorBare.visit(pre, ctx) ?: return null
 
         // Unchanged — skip cleanup entirely
-        if (pos === tree) return super.visit(tree, ctx)
+        if (pos === tree) return mapperProcessorBare.visit(tree, ctx)
 
         // MapperProcessor changed this file — apply targeted cleanup
         var cu = pos as? J.CompilationUnit ?: return pos

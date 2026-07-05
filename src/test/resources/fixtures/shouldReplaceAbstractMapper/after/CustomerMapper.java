@@ -1,5 +1,9 @@
 package io.github.santunioni.fixtures;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.java.Log;
+
 @Log
 public class CustomerMapper {
     protected static final String PERSONAL_DATA_TYPE = "PERSONAL_DATA";
@@ -41,5 +45,4 @@ public class CustomerMapper {
     public String getSignature(CustomerEntity customerEntity) {
         return customerEntity.getName() + " <" + customerEntity.getEmail() + ">";
     }
-
 }
