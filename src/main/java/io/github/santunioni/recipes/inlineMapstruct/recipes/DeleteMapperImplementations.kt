@@ -1,5 +1,6 @@
-package io.github.santunioni.recipes.removeMapstruct
+package io.github.santunioni.recipes.inlineMapstruct.recipes
 
+import io.github.santunioni.recipes.inlineMapstruct.isMapperImplementation
 import org.openrewrite.ExecutionContext
 import org.openrewrite.Tree
 import org.openrewrite.java.JavaVisitor
@@ -9,7 +10,7 @@ import org.openrewrite.java.tree.J
  * Deletes the MapStruct-generated implementation source files (`*MapperImpl.java`).
  *
  * Returning `null` from [visit] for a compilation unit is how OpenRewrite deletes a file. Detection
- * reuses [isMapperImplementation] (the `@Generated` marker carrying `org.mapstruct`), matching the
+ * reuses [io.github.santunioni.recipes.inlineMapstruct.isMapperImplementation] (the `@Generated` marker carrying `org.mapstruct`), matching the
  * files the scan pass links, so it needs nothing from the scan pass itself.
  */
 class DeleteMapperImplementations : JavaVisitor<ExecutionContext>() {

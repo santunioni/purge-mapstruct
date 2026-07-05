@@ -1,11 +1,12 @@
-package io.github.santunioni.recipes.removeMapstruct
+package io.github.santunioni.recipes.inlineMapstruct.scanners
 
+import io.github.santunioni.recipes.inlineMapstruct.isMapperImplementation
 import org.openrewrite.ExecutionContext
 import org.openrewrite.java.JavaIsoVisitor
 import org.openrewrite.java.tree.J
 
-class ImplementationScanner(
-    private val acc: MapstructRefs,
+class MappersGathererScanner(
+    private val acc: MapstructRefsWriter,
 ) : JavaIsoVisitor<ExecutionContext>() {
     override fun visitCompilationUnit(
         mapperImpl: J.CompilationUnit,

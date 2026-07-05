@@ -1,5 +1,6 @@
-package io.github.santunioni.recipes.removeMapstruct
+package io.github.santunioni.recipes.inlineMapstruct.recipes
 
+import io.github.santunioni.recipes.inlineMapstruct.isMapperImplementation
 import org.openrewrite.java.JavaVisitor
 import org.openrewrite.java.tree.J
 import org.openrewrite.java.tree.TypeUtils
