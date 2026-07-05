@@ -15,24 +15,26 @@ your mapping logic.
 
 ## Philosophy
 
-MapStruct is terrible. It's greatest feature is its greatest flaw: it auto-maps your objects by matching field names. When it
-can't match, you either get a silently unmapped field (null in production) or you write the mapping logic as annotation
-attributes.
+MapStruct is terrible. It's greatest feature is its greatest flaw: it auto-maps your objects by matching field names.
+When it can't match, you either get a silently unmapped field (null in production) or you write the mapping logic as
+annotation attributes.
 
 The result is a codebase where mappings are invisible, bugs are silent, and understanding what actually happens requires
 reading both the interface and the generated implementation — a file that lives in `build/`, is never committed, and
-disappears on a clean build. That is not easy to maintain; it is obscurity. MapStruct optimises for writing less code, not
-for reading or maintaining it.
+disappears on a clean build. That is not easy to maintain; it is obscurity. MapStruct optimises for writing less code,
+not for reading or maintaining it.
 
 In any long-lived codebase, code is read far more often than it is written — and the two are inseparable: every
 change requires understanding what is already there. With MapStruct, that cost rises steeply as complexity grows.
 Simple field-matching is manageable; but once a mapping requires logic, you are writing Java expressions inside
-annotation strings, referencing methods by name in a context the LSP cannot reach. You need too many go-to-definition into generated code to understand mapping logic because the code lacks cohesion. Every subsequent change means
+annotation strings, referencing methods by name in a context the LSP cannot reach. You need too many go-to-definition
+into generated code to understand mapping logic because the code lacks cohesion. Every subsequent change means
 reconstructing the generated output in your head before you can touch the source. AI has made writing even cheaper,
 but every line generated is still paid for in full, every time a human has to reason about it.
 
 This recipe removes MapStruct from your project by replacing every `@Mapper` interface with its generated
-implementation, plus a series of mechanical refactorings to make the gemerated code better readable. From then the code will be yours to read and improve.
+implementation, plus a series of mechanical refactorings to make the gemerated code better readable. From then the code
+will be yours to read and improve.
 
 > *"Software should be designed for ease of reading, not ease of writing."*
 > — John Ousterhout, [A Philosophy of Software Design](https://web.stanford.edu/~ouster/cgi-bin/book.php)
@@ -173,7 +175,9 @@ See [Spotless Maven docs](https://github.com/diffplug/spotless/tree/main/plugin-
 
 ### Step 4: run the recipe
 
-Use `io.github.santunioni.recipes.PurgeMapstruct`. It inlines every `@Mapper` into plain Java and applies cleanup (unused imports, redundant parens, lambda simplification, formatting) — but only to the files it changes, keeping the diff small.
+Use `io.github.santunioni.recipes.PurgeMapstruct`. It inlines every `@Mapper` into plain Java and applies cleanup (
+unused imports, redundant parens, lambda simplification, formatting) — but only to the files it changes, keeping the
+diff small.
 
 **Gradle** (`build.gradle`):
 
@@ -245,8 +249,9 @@ I iterated on this recipe until it successfully purged MapStruct from two large 
 your patterns. Maybe you are doing something I didn't cover.
 
 If the recipe fails, produces broken code, or leaves something
-behind — [open an issue](https://github.com/santunioni/purge-mapstruct/issues/new) on GitHub with a minimal reproducer
-and I'll look into it.
+behind — [open an issue](https://github.com/santunioni/purge-mapstruct/issues/new) on GitHub with a minimal reproducer,
+and I'll look into it. You are also invited to contributing a PR, as long as we discuss the reasoning behind the change
+first in an issue.
 
 ---
 
