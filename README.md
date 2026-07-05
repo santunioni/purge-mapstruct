@@ -27,7 +27,7 @@ for reading or maintaining it.
 In any long-lived codebase, code is read far more often than it is written — and the two are inseparable: every
 change requires understanding what is already there. With MapStruct, that cost rises steeply as complexity grows.
 Simple field-matching is manageable; but once a mapping requires logic, you are writing Java expressions inside
-annotation strings, referencing methods by name in a context the LSP cannot reach. You need too many go-to-definition to understand mapping logic because the code lacks cohesion. Every subsequent change means
+annotation strings, referencing methods by name in a context the LSP cannot reach. You need too many go-to-definition into generated code to understand mapping logic because the code lacks cohesion. Every subsequent change means
 reconstructing the generated output in your head before you can touch the source. AI has made writing even cheaper,
 but every line generated is still paid for in full, every time a human has to reason about it.
 
