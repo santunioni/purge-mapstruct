@@ -24,7 +24,17 @@ internal class StripMapstructAnnotations : JavaVisitor<ExecutionContext>() {
         if (tree is J.Annotation && isMapstructAnnotation(tree)) {
             return null
         }
-        return super.visit(tree, ctx)
+        val visited = super.visit(tree, ctx)
+        // `@Context` (and friends) can sit in the type-annotation position — e.g.
+        // `final @Context List<T> ctx` — where the LST models the type as a
+        // `J.AnnotatedType` wrapping the real type. Once the MapStruct annotations are
+        // stripped by the branch above, an empty `J.AnnotatedType` remains and renders a
+        // stray space. Unwrap it to the bare underlying type, carrying over the wrapper's
+        // prefix so `final` keeps its single trailing space.
+        if (visited is J.AnnotatedType && visited.annotations.isEmpty()) {
+            return visited.typeExpression.withPrefix(visited.prefix)
+        }
+        return visited
     }
 
     private companion object {

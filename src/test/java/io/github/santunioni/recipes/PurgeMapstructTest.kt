@@ -355,6 +355,41 @@ internal class PurgeMapstructTest : RewriteTest {
         )
     }
 
+    @Test
+    fun shouldStripContextTypeAnnotation() {
+        val makeAvailableCustomerDto: SourceSpecs =
+            java(readResource("fixtures/shouldStripContextTypeAnnotation/context/CustomerDto.java")) { spec ->
+                spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
+            }
+
+        val makeAvailableCustomerEntity: SourceSpecs =
+            java(readResource("fixtures/shouldStripContextTypeAnnotation/context/CustomerEntity.java")) { spec ->
+                spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
+            }
+
+        val makeAvailableGeneratedClass =
+            java(
+                readResource("fixtures/shouldStripContextTypeAnnotation/context/CustomerMapperImpl.java"),
+                null as String?,
+            ) { spec ->
+                spec.path(
+                    "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java",
+                )
+            }
+
+        rewriteRun(
+            makeAvailableCustomerDto,
+            makeAvailableCustomerEntity,
+            makeAvailableGeneratedClass,
+            java(
+                readResource("fixtures/shouldStripContextTypeAnnotation/before/CustomerMapper.java"),
+                readResource("fixtures/shouldStripContextTypeAnnotation/after/CustomerMapper.java"),
+            ) { spec ->
+                spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
+            },
+        )
+    }
+
     companion object {
         private fun readResource(resource: String): String =
             PurgeMapstructTest::class.java.classLoader.getResourceAsStream(resource)!!.use { stream ->
