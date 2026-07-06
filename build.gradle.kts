@@ -179,39 +179,27 @@ tasks.register("deploy") {
         }
 
         fun getLatestVersion(): String {
-            return try {
-                // Query git tags sorted by version (newest first)
-                val output = exec("git", "tag", "-l", "v*", "--sort=-version:refname", "--merged")
-                val latestTag = output.lines().firstOrNull() ?: return "0.0.0"
-                latestTag.removePrefix("v")
-            } catch (e: Exception) {
-                "0.0.0"
-            }
+            // Query git tags sorted by version (newest first)
+            val output = exec("git", "tag", "-l", "v*", "--sort=-version:refname", "--merged")
+            val latestTag = output.lines().firstOrNull() ?: return "0.0.0"
+            return latestTag.removePrefix("v")
         }
 
         fun getLastDeployedVersions(limit: Int = 5): List<String> {
-            return try {
-                // Query git tags sorted by version (newest first)
-                val output = exec("git", "tag", "-l", "v*", "--sort=-version:refname", "--merged")
-                output.lines()
-                    .take(limit)
-                    .map { it.removePrefix("v") }
-                    .filter { it.isNotEmpty() }
-            } catch (e: Exception) {
-                emptyList()
-            }
+            // Query git tags sorted by version (newest first)
+            val output = exec("git", "tag", "-l", "v*", "--sort=-version:refname", "--merged")
+            return output.lines()
+                .take(limit)
+                .map { it.removePrefix("v") }
+                .filter { it.isNotEmpty() }
         }
 
         fun getHighestRcNumber(baseVersion: String): Int {
-            return try {
-                val output = exec("git", "tag", "-l", "v$baseVersion-rc.*", "--sort=-version:refname")
-                val rcPattern = Regex("v$baseVersion-rc\\.(\\d+)")
-                output.lines()
-                    .mapNotNull { rcPattern.find(it)?.groupValues?.get(1)?.toIntOrNull() }
-                    .maxOrNull() ?: 0
-            } catch (e: Exception) {
-                0
-            }
+            val output = exec("git", "tag", "-l", "v$baseVersion-rc.*", "--sort=-version:refname")
+            val rcPattern = Regex("v$baseVersion-rc\\.(\\d+)")
+            return output.lines()
+                .mapNotNull { rcPattern.find(it)?.groupValues?.get(1)?.toIntOrNull() }
+                .maxOrNull() ?: 0
         }
 
         fun askVersionType(): Boolean {
