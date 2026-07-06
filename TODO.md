@@ -36,8 +36,11 @@ public abstract class FooMapperDecorator implements FooMapper {
 ```
 
 MapStruct emits **two** generated classes (not one). Together with the interface
-and the hand-written decorator, this pattern is a **four-body** structure the
-recipe must fold into a single class — and all four bodies get consumed/deleted:
+and the hand-written decorator, this pattern is a **four-body** structure that the
+recipe collapses into a **single output file** — a concrete `FooMapper` class with
+a nested static `FooMapperDelegate` class. All four original source files are
+consumed: the interface file is overwritten with the merged result, and the
+decorator + both generated impls are deleted.
 
 1. **`FooMapper`** (the `@Mapper @DecoratedWith(...)` interface) — the declared
    API. Contributes any `default`/`static` methods and interface constants, and
@@ -58,8 +61,8 @@ recipe must fold into a single class — and all four bodies get consumed/delete
 3. **`FooMapperImpl_`** (trailing underscore) — the *delegate*. Annotated
    `@Component @Qualifier("delegate")`, `implements FooMapper`. Holds the pure,
    field-matched mapping logic plus all the private/protected sub-mapping and
-   map-loop helpers. This is the real generated code. Deleted after its bodies
-   are copied in.
+   map-loop helpers. This is the real generated code. Its file is deleted; its
+   body is relocated into the merged file as the nested `FooMapperDelegate` class.
 4. **`FooMapperImpl`** — annotated `@Component @Primary`,
    `extends FooMapperDecorator`. Has its own `@Autowired @Qualifier("delegate")`
    field and, for every method the decorator does **not** override, a trivial
@@ -87,12 +90,12 @@ skips — so all four bodies survive.
 
 ### Target output (behaviour-preserving)
 
-**Two concrete classes, keeping the decorator/delegate split** (the interface is
-deleted). This is preferred over folding everything into one class: it preserves
-the exact call structure MapStruct produced, so behaviour is trivially the same —
-we only rename types, retype the injection, and strip the MapStruct/`@Primary`
-wiring. Because `FooMapperImpl extends FooMapperDecorator`, the merge is a natural
-one:
+**One output file — a concrete `FooMapper` class with a nested static
+`FooMapperDelegate` — keeping the decorator/delegate split intact.** This is
+preferred over inlining the delegate into the decorator: it preserves the exact
+call structure MapStruct produced, so behaviour is trivially the same — we only
+rename types, retype the injection, and strip the MapStruct/`@Primary` wiring.
+Because `FooMapperImpl extends FooMapperDecorator`, the merge is a natural one.
 
 1. **`FooMapper`** (concrete `@Component` class, replaces the interface) =
    **`FooMapperDecorator` merged with `FooMapperImpl`**. The decorator is already
@@ -103,20 +106,20 @@ one:
    - Pull down `FooMapperImpl`'s **non-overridden** pass-through methods
      (`return delegate.x(...)`) so the class is concrete and complete.
    - The class no longer `extends`/`implements` anything and is named `FooMapper`.
-2. **`FooMapperDelegate`** (concrete `@Component` class, renamed from
-   `FooMapperImpl_`) = the pure generated mapping body, unchanged, **but it no
-   longer implements `FooMapper`** (the interface is gone). It stands alone as a
-   plain mapper class.
+2. **`FooMapperDelegate`** = the pure generated mapping body (former
+   `FooMapperImpl_`), unchanged, **relocated as a nested `static` class of
+   `FooMapper`** and **no longer implementing `FooMapper`** (the interface is
+   gone). It keeps its `@Component` stereotype so Spring still manages it.
 3. **Wiring by concrete type:** `FooMapper` depends on `FooMapperDelegate`
    **directly by type** — the `@Autowired @Qualifier("delegate")` `FooMapper delegate`
    field becomes a `FooMapperDelegate delegate` (constructor-injected, no
    `@Qualifier` needed since there's a single bean of that type). Every
-   `delegate.x(...)` call keeps working unchanged, now resolved against the
-   concrete delegate class
-4. **`FooMapperDelegate`** should be a nested static class of **`FooMapper`**
-   (the class replacing the interface). 
-5. Both final **`FooMapperDelegate`** and **`FooMapper`** classes
-   should be post-processed by the recipes that come after transformation.  
+   `delegate.x(...)` call keeps working unchanged, now resolved against the nested
+   delegate class.
+4. **Both** the outer `FooMapper` and the nested `FooMapperDelegate` are run
+   through the post-transformation cleanup/formatting recipes (see the pipeline's
+   `postApplyToTouchedFiles`) — since they live in the one touched file, both get
+   the same treatment.
 
 Everything MapStruct-specific is stripped: `@DecoratedWith`, `@Qualifier`,
 `@Primary`, and all `org.mapstruct` imports/annotations are gone; references to
@@ -138,9 +141,10 @@ add decorated-mapper handling as extra scan-pass roles + a dedicated merge
 visitor + small composable post visitors. Work strictly TDD: write the fixture,
 read the `but was:` block, then implement.
 
-Naming rule the recipe applies: strip the `Impl` / `Impl_` suffixes and drop the
-interface, so the decorator+primary become `FooMapper` and the delegate becomes
-`FooMapperDelegate` (i.e. `FooMapperImpl_` → interface-name + `Delegate`).
+Naming rule the recipe applies: drop the interface and both `Impl` suffixes, so
+the decorator+primary become the outer `FooMapper` class and the delegate becomes
+its nested static `FooMapperDelegate` class (i.e. `FooMapperImpl_` → nested
+interface-name + `Delegate`).
 
 1. **Fixture first (`fixtures/decoratedWith/`).** Create `context/` with the DTOs,
    the hand-written `FooMapperDecorator.java`, and *both* generated impls
@@ -149,15 +153,16 @@ interface, so the decorator+primary become `FooMapper` and the delegate becomes
    carrying `@Generated(value = "org.mapstruct...")`. `before/` holds the
    `@DecoratedWith` interface `FooMapper.java` and the decorator; `after/` starts
    as `PLACEHOLDER`. Expected end state to assert:
-   - `FooMapper.java` (interface) → **deleted** (`null`); its source path is reused
-     for the merged concrete class.
-   - `FooMapperDecorator.java` → **deleted** (`null`). Its body is merged into the
-     concrete `FooMapper` class, which is written onto the **interface's** source
-     path + id (consistent with how the plain merge writes onto the mapper
-     declaration's path).
+   - `FooMapper.java` (interface) → **overwritten** at the same source path + id
+     with the merged concrete `FooMapper` class containing the nested static
+     `FooMapperDelegate` (consistent with how the plain merge writes onto the
+     mapper declaration's path).
+   - `FooMapperDecorator.java` → **deleted** (`null`); its body is merged into the
+     concrete `FooMapper` class.
    - `FooMapperImpl.java` → **deleted** (`null`).
-   - `FooMapperImpl_.java` → becomes `FooMapperDelegate.java` (renamed, no longer
-     implements the interface).
+   - `FooMapperImpl_.java` → **deleted** (`null`); its body is relocated into
+     `FooMapper.java` as the nested static `FooMapperDelegate` class (no longer
+     implementing the interface).
    Wire generated impls under `build/generated/annotationProcessor/main/java/...`,
    add the `@Test`, run it to capture ground truth.
 
@@ -186,25 +191,24 @@ interface, so the decorator+primary become `FooMapper` and the delegate becomes
      already does);
    - drop `extends FooMapperDecorator` / `implements FooMapper`, name it
      `FooMapper`, write onto the interface's source path + id;
+   - **embed the delegate as a nested static class**: relocate the
+     `FooMapperImpl_` body into `FooMapper` as `static class FooMapperDelegate`,
+     dropping its `implements FooMapper` and `@Qualifier("delegate")` marker and
+     keeping its `@Component` stereotype; its method bodies are unchanged;
    - **retype the delegate field**: `@Autowired @Qualifier("delegate") FooMapper
      delegate` → constructor-injected `FooMapperDelegate delegate` (no
      `@Qualifier`); leave every `delegate.x(...)` call site untouched — it now
-     binds to `FooMapperDelegate` by type.
+     binds to the nested `FooMapperDelegate` by type.
    Keep this out of `InlineMapstruct` (which stays the plain single-impl merge),
    per the "small, composable visitors" convention.
 
-5. **Rename the delegate (`recipes/RenameMapperDelegate.kt` or extend an existing
-   rename visitor).** Rename `FooMapperImpl_` → `FooMapperDelegate` (class name +
-   source path), keep it a `@Component`, and **remove `implements FooMapper`** and
-   the `@Qualifier("delegate")` marker. Its bodies are unchanged.
-
-6. **Deletion + reference rewrite (post visitors).**
+5. **Deletion + reference rewrite (post visitors).**
    - `DeleteMapperImplementations` — return `null` for the **primary**
-     `FooMapperImpl` (its logic was pulled into the merged class) and for the
-     **decorator** `FooMapperDecorator` (its body was merged onto the interface
-     path). Do **not** delete the delegate — it survives as `FooMapperDelegate`.
-     The interface file itself is not "deleted" so much as **overwritten** by the
-     merged concrete class (same source path + id).
+     `FooMapperImpl` (its logic was pulled into the merged class), the **delegate**
+     `FooMapperImpl_` (its body was relocated as the nested `FooMapperDelegate`),
+     and the **decorator** `FooMapperDecorator` (its body was merged into
+     `FooMapper`). The interface file itself is not "deleted" so much as
+     **overwritten** by the merged concrete class (same source path + id).
    - Decorator disposal (per acceptance criterion): the "generated code covers the
      functionality" case is the one wired here — the decorator's logic moves into
      the merged `FooMapper` and the decorator file is deleted. Only if the
@@ -216,28 +220,23 @@ interface, so the decorator+primary become `FooMapper` and the delegate becomes
      `FooMapper` / `FooMapperDelegate` as appropriate.
    - `StripMapstructAnnotations` — remove `@DecoratedWith` (on the interface/merged
      class) and `@Qualifier` alongside the other `org.mapstruct` annotations.
+   - The pipeline's `postApplyToTouchedFiles` cleanup/formatting pack runs on the
+     merged file, so **both** the outer `FooMapper` and the nested
+     `FooMapperDelegate` are cleaned and formatted in the same pass.
 
-7. **Green the fixture.** Read the `but was:` output, verify it matches the
-   Target output (two concrete classes; `FooMapper` with decorator logic + pulled
-   pass-throughs, constructor-injecting `FooMapperDelegate`; `FooMapperDelegate`
-   standalone, not implementing the interface; no mapstruct imports/annotations;
-   references rewritten), paste into `after/`, then `./gradlew test` for
-   regressions.
+6. **Green the fixture.** Read the `but was:` output, verify it matches the
+   Target output (one file: concrete `FooMapper` with decorator logic + pulled
+   pass-throughs, constructor-injecting the nested static `FooMapperDelegate`; the
+   nested delegate no longer implementing the interface; no mapstruct
+   imports/annotations; references rewritten), paste into `after/`, then
+   `./gradlew test` for regressions.
 
-8. **Validate against a real project** using the AGENTS.md loop (publish snapshot
+7. **Validate against a real project** using the AGENTS.md loop (publish snapshot
    → `rewriteRun` → `--stop` → `compileJava compileTestJava test`). The
    backoffice-bff `HouseAvailabilityMapper` (interface + `HouseAvailabilityMapperDecorator`
-   + `HouseAvailabilityMapperImpl`/`_`) is the representative real target: expect
-   `HouseAvailabilityMapper` (merged) + `HouseAvailabilityMapperDelegate` (former
-   `Impl_`) out the other side.
-
-### Open questions / risks
-
-- **Where to host the merged class — decided:** write the merged `FooMapper` onto
-  the **interface's** source path + id and **delete the decorator file**. This
-  matches the rest of the recipe (the plain merge already writes onto the mapper
-  declaration's path) and keeps the public type on its original path, which
-  callers/imports expect. Do not host it on the decorator's path.
+   + `HouseAvailabilityMapperImpl`/`_`) is the representative real target: expect a
+   single `HouseAvailabilityMapper.java` with a nested static
+   `HouseAvailabilityMapperDelegate` (former `Impl_`) out the other side.
 
 ---
 
