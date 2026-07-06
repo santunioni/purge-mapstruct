@@ -180,8 +180,10 @@ tasks.register("deploy") {
 
         fun getLatestVersion(): String {
             return try {
-                val output = exec("gh", "release", "list", "--limit", "1", "--json", "tagName", "--jq", ".[0].tagName")
-                output.removePrefix("v").takeIf { it.isNotEmpty() && it != "null" } ?: "0.0.0"
+                // Query git tags sorted by version (newest first)
+                val output = exec("git", "tag", "-l", "v*", "--sort=-version:refname", "--merged")
+                val latestTag = output.lines().firstOrNull() ?: return "0.0.0"
+                latestTag.removePrefix("v")
             } catch (e: Exception) {
                 "0.0.0"
             }
@@ -189,8 +191,12 @@ tasks.register("deploy") {
 
         fun getLastDeployedVersions(limit: Int = 5): List<String> {
             return try {
-                val output = exec("gh", "release", "list", "--limit", "$limit", "--json", "tagName", "--jq", ".[].tagName")
-                output.lines().map { it.removePrefix("v") }.filter { it.isNotEmpty() }
+                // Query git tags sorted by version (newest first)
+                val output = exec("git", "tag", "-l", "v*", "--sort=-version:refname", "--merged")
+                output.lines()
+                    .take(limit)
+                    .map { it.removePrefix("v") }
+                    .filter { it.isNotEmpty() }
             } catch (e: Exception) {
                 emptyList()
             }
@@ -198,7 +204,7 @@ tasks.register("deploy") {
 
         fun getHighestRcNumber(baseVersion: String): Int {
             return try {
-                val output = exec("gh", "release", "list", "--json", "tagName", "--jq", ".[].tagName")
+                val output = exec("git", "tag", "-l", "v$baseVersion-rc.*", "--sort=-version:refname")
                 val rcPattern = Regex("v$baseVersion-rc\\.(\\d+)")
                 output.lines()
                     .mapNotNull { rcPattern.find(it)?.groupValues?.get(1)?.toIntOrNull() }
