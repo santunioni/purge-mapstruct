@@ -58,6 +58,10 @@ dependencies {
 
     // Mockito is exercised by the spy-stubbing rewrite test fixtures.
     testRuntimeOnly("org.mockito:mockito-core:latest.release")
+
+    // Spring annotations (@Component, @Primary, @Autowired, @Qualifier) needed on the parser
+    // classpath for the @DecoratedWith decorated-mapper fixtures.
+    testRuntimeOnly("org.springframework:spring-context:latest.release")
 }
 
 signing {

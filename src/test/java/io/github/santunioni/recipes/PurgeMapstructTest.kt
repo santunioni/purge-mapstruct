@@ -356,6 +356,71 @@ internal class PurgeMapstructTest : RewriteTest {
     }
 
     @Test
+    fun shouldInlineDecoratedMapper() {
+        val makeAvailableSourceEntity: SourceSpecs =
+            java(readResource("fixtures/decoratedWith/context/SourceEntity.java")) { spec ->
+                spec.path("src/main/java/com/santunioni/fixtures/SourceEntity.java")
+            }
+
+        val makeAvailableTargetDto: SourceSpecs =
+            java(readResource("fixtures/decoratedWith/context/TargetDto.java")) { spec ->
+                spec.path("src/main/java/com/santunioni/fixtures/TargetDto.java")
+            }
+
+        val makeAvailablePrimaryImpl =
+            java(
+                readResource("fixtures/decoratedWith/context/FooMapperImpl.java"),
+                null as String?,
+            ) { spec ->
+                spec.path(
+                    "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/FooMapperImpl.java",
+                )
+            }
+
+        val makeAvailableDelegateImpl =
+            java(
+                readResource("fixtures/decoratedWith/context/FooMapperImpl_.java"),
+                null as String?,
+            ) { spec ->
+                spec.path(
+                    "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/FooMapperImpl_.java",
+                )
+            }
+
+        rewriteRun(
+            { spec: RecipeSpec ->
+                spec.parser(
+                    JavaParser
+                        .fromJavaVersion()
+                        .classpath(
+                            "mapstruct",
+                            "lombok",
+                            "junit-jupiter-api",
+                            "spring-beans",
+                            "spring-context",
+                        ),
+                )
+            },
+            makeAvailableSourceEntity,
+            makeAvailableTargetDto,
+            makeAvailablePrimaryImpl,
+            makeAvailableDelegateImpl,
+            java(
+                readResource("fixtures/decoratedWith/before/FooMapperDecorator.java"),
+                null as String?,
+            ) { spec ->
+                spec.path("src/main/java/com/santunioni/fixtures/FooMapperDecorator.java")
+            },
+            java(
+                readResource("fixtures/decoratedWith/before/FooMapper.java"),
+                readResource("fixtures/decoratedWith/after/FooMapper.java"),
+            ) { spec ->
+                spec.path("src/main/java/com/santunioni/fixtures/FooMapper.java")
+            },
+        )
+    }
+
+    @Test
     fun shouldStripContextTypeAnnotation() {
         val makeAvailableCustomerDto: SourceSpecs =
             java(readResource("fixtures/shouldStripContextTypeAnnotation/context/CustomerDto.java")) { spec ->

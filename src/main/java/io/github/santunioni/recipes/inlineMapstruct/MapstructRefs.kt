@@ -12,6 +12,8 @@ public class MapstructRefs :
     private val mapSuperToItsImplementers: MutableMap<String, MutableList<J.CompilationUnit>> =
         HashMap()
     private val mapImplementerToItsSup: MutableMap<String, String> = HashMap()
+    private val mapFqnToCompilationUnit: MutableMap<String, J.CompilationUnit> = HashMap()
+    private val decoratorFqns: MutableSet<String> = HashSet()
 
     override fun addLinking(
         superDecl: TypeTree,
@@ -41,6 +43,25 @@ public class MapstructRefs :
     }
 
     override fun getSuperFqnFromImplFqn(implFqn: String): String? = mapImplementerToItsSup[implFqn]
+
+    override fun registerCompilationUnit(cu: J.CompilationUnit) {
+        cu.classes.forEach { cd ->
+            cd.type?.fullyQualifiedName?.let { mapFqnToCompilationUnit[it] = cu }
+        }
+    }
+
+    override fun addDecoratedMapper(
+        mapperFqn: String,
+        decoratorFqn: String,
+    ) {
+        decoratorFqns.add(decoratorFqn)
+    }
+
+    override fun getImplementersOf(superFqn: String): List<J.CompilationUnit> = mapSuperToItsImplementers[superFqn].orEmpty()
+
+    override fun getCompilationUnitByFqn(fqn: String): J.CompilationUnit? = mapFqnToCompilationUnit[fqn]
+
+    override fun getDecoratorFqns(): Set<String> = decoratorFqns
 
     internal companion object {
         private val log = Logger.getLogger(MapstructRefs::class.java.name)

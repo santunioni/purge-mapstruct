@@ -25,3 +25,20 @@ internal fun isMapperDeclaration(originalCu: J): Boolean =
                 a.type != null && TypeUtils.isOfClassType(a.type, "org.mapstruct.Mapper")
             }
         }
+
+/**
+ * The fully-qualified name of the decorator class referenced by an `@DecoratedWith(Foo.class)`
+ * annotation on the mapper declaration, or `null` when the mapper is not decorated.
+ */
+internal fun getDecoratorFqn(cu: J.CompilationUnit): String? {
+    val mapperClass = cu.classes.firstOrNull() ?: return null
+    val decoratedWith =
+        mapperClass.leadingAnnotations.firstOrNull { a ->
+            TypeUtils.isOfClassType(a.type, "org.mapstruct.DecoratedWith")
+        } ?: return null
+    val classLiteral = decoratedWith.arguments?.firstOrNull() as? J.FieldAccess ?: return null
+    return TypeUtils.asFullyQualified(classLiteral.target.type)?.fullyQualifiedName
+}
+
+/** A mapper declaration (`@Mapper`) that also carries `@DecoratedWith(...)`. */
+internal fun isDecoratedMapperDeclaration(cu: J.CompilationUnit): Boolean = isMapperDeclaration(cu) && getDecoratorFqn(cu) != null

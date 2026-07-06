@@ -8,4 +8,13 @@ internal interface MapstructRefsWriter {
         superDecl: TypeTree,
         mapperImpl: J.CompilationUnit,
     )
+
+    /** Index every visited compilation unit by the FQN of its top-level class. */
+    fun registerCompilationUnit(cu: J.CompilationUnit)
+
+    /** Record that [mapperFqn] is decorated by the hand-written class [decoratorFqn]. */
+    fun addDecoratedMapper(
+        mapperFqn: String,
+        decoratorFqn: String,
+    )
 }

@@ -79,6 +79,28 @@ The merge builds only the *raw* inlined class. Reference rewriting (`new FooMapp
 stripping are **not** done in the merge — they are pipeline post visitors (`RewriteImplReferences`,
 `StripMapstructAnnotations`), mirroring how `ReplaceMappersGetMapper` also runs in the pipeline.
 
+### Decorated mappers (`@DecoratedWith`)
+
+A `@Mapper @DecoratedWith(FooMapperDecorator.class)` interface is a **four-body** structure: the
+interface, the hand-written `FooMapperDecorator`, the `@Primary` `FooMapperImpl` (`extends` the
+decorator) and the delegate `FooMapperImpl_` (`@Qualifier("delegate")`, `implements` the interface).
+`InlineMapstruct` skips these (its single-implementer merge would silently drop the decorator's
+behaviour). Instead `InlineDecoratedMapper` collapses all four into **one concrete class** written
+onto the interface's path:
+
+- the outer `FooMapper` = the decorator (overridden methods + helpers) + the primary impl's
+  non-overridden `return delegate.x(...)` pass-throughs, made concrete, `@Component`;
+- the delegate impl becomes a nested `static FooMapperDelegate` class (drops `implements` + the
+  `@Qualifier` marker, keeps `@Component`);
+- the `@Autowired @Qualifier("delegate") FooMapper delegate` field is retyped to the nested
+  `FooMapperDelegate` (no `@Qualifier`), so every `delegate.x(...)` call resolves by type — the exact
+  runtime call structure MapStruct produced is preserved.
+
+The scanner records every CU by FQN plus each decorator FQN (`MapstructRefs`), so the merge can locate
+the decorator + both impls by name. `DeleteMapperDecorators` deletes the standalone decorator file
+(the generated impls are deleted by `DeleteMapperImplementations` as usual). Imports are merged from
+all four sources (minus `org.mapstruct`) and de-duplicated; `RemoveUnusedImports` prunes the rest.
+
 ### Source files (`src/main/java/io/github/santunioni/recipes/`)
 
 The code is organised by role: the `inlineMapstruct` package holds shared state and the pipeline,
@@ -89,10 +111,12 @@ its `scanners` sub-package the scan pass, and its `recipes` sub-package the indi
 | `PurgeMapstruct.kt` | The recipe (top-level `public`): wires `MappersGathererScanner` (scanner) + `InlineMapstructPipeline` (visitor). |
 | `inlineMapstruct/MapstructRefs.kt` | Shared scan-pass state (super↔impl linkings). The concrete `public` class implements both `MapstructRefsWriter` (scan) and `MapstructRefsReader` (edit). |
 | `inlineMapstruct/InlineMapstructPipeline.kt` | Edit pass — orchestrates the pre/merge/post visitor lists per file and the object-identity change guard. |
-| `inlineMapstruct/Functions.kt` | `isMapperImplementation` / `isMapperDeclaration` detection helpers. |
+| `inlineMapstruct/Functions.kt` | `isMapperImplementation` / `isMapperDeclaration` / `isDecoratedMapperDeclaration` / `getDecoratorFqn` detection helpers. |
 | `inlineMapstruct/scanners/MappersGathererScanner.kt` | Scan pass — records linkings via `MapstructRefsWriter`. |
 | `inlineMapstruct/scanners/MapstructRefsWriter.kt` | Write-only interface exposed to the scanner (`addLinking`). |
-| `inlineMapstruct/recipes/InlineMapstruct.kt` | The core merge — builds the inlined class from impl + declaration. |
+| `inlineMapstruct/recipes/InlineMapstruct.kt` | The core merge — builds the inlined class from impl + declaration. Skips decorated (`@DecoratedWith`) mappers. |
+| `inlineMapstruct/recipes/InlineDecoratedMapper.kt` | Merge for `@DecoratedWith` mappers — collapses the interface + decorator + `@Primary` impl + delegate impl into one concrete class with a nested static `*Delegate`. |
+| `inlineMapstruct/recipes/DeleteMapperDecorators.kt` | Deletes the hand-written `@DecoratedWith` decorator files (reader-backed). |
 | `inlineMapstruct/recipes/MapstructRefsReader.kt` | Read-only interface exposed to the edit visitors (`getImplementer`, `getSuperFqnFromImplFqn`). |
 | `inlineMapstruct/recipes/RewriteImplReferences.kt` | Rewrites `*Impl` references back to the mapper type (reader-backed). |
 | `inlineMapstruct/recipes/StripMapstructAnnotations.kt` | Removes `org.mapstruct` annotations wherever they appear. |

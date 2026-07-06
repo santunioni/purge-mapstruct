@@ -1,5 +1,6 @@
 package io.github.santunioni.recipes.inlineMapstruct.recipes
 
+import io.github.santunioni.recipes.inlineMapstruct.isDecoratedMapperDeclaration
 import io.github.santunioni.recipes.inlineMapstruct.isMapperDeclaration
 import org.openrewrite.ExecutionContext
 import org.openrewrite.internal.ListUtils
@@ -27,6 +28,10 @@ internal class InlineMapstruct(
         val superResult = super.visitCompilationUnit(mapperDeclFile, ctx)
         val visited = superResult as? J.CompilationUnit ?: return superResult
         if (!isMapperDeclaration(visited)) return visited
+        // Decorated mappers (`@DecoratedWith`) are a four-body structure handled by the dedicated
+        // InlineDecoratedMapper visitor; the plain single-impl merge would silently drop the
+        // decorator's behaviour, so skip them here.
+        if (isDecoratedMapperDeclaration(visited)) return visited
 
         val mapperDeclClass = visited.classes[0]
 
