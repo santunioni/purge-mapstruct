@@ -2,6 +2,7 @@ package io.github.santunioni.recipes.inlineMapstruct.recipes
 
 import io.github.santunioni.recipes.inlineMapstruct.getDecoratorFqn
 import io.github.santunioni.recipes.inlineMapstruct.isDecoratedMapperDeclaration
+import io.github.santunioni.recipes.inlineMapstruct.withMapstructFilteredOut
 import org.openrewrite.ExecutionContext
 import org.openrewrite.internal.ListUtils
 import org.openrewrite.java.JavaVisitor
@@ -103,8 +104,7 @@ internal class InlineDecoratedMapper(
             // MapStruct imports and de-duplicating. RemoveUnusedImports drops the leftovers post-merge.
             val mergedImports =
                 (visited.imports + decoratorCU.imports + primaryCU.imports + delegateCU.imports)
-                    .filter { !it.packageName.startsWith(MAPSTRUCT_GROUP) }
-                    .distinctBy { "${it.isStatic}|${it.packageName}.${it.className}" }
+                    .withMapstructFilteredOut()
 
             return visited
                 .withImports(mergedImports)

@@ -2,6 +2,7 @@ package io.github.santunioni.recipes.inlineMapstruct.recipes
 
 import io.github.santunioni.recipes.inlineMapstruct.isDecoratedMapperDeclaration
 import io.github.santunioni.recipes.inlineMapstruct.isMapperDeclaration
+import io.github.santunioni.recipes.inlineMapstruct.withMapstructFilteredOut
 import org.openrewrite.ExecutionContext
 import org.openrewrite.internal.ListUtils
 import org.openrewrite.java.JavaVisitor
@@ -99,11 +100,7 @@ internal class InlineMapstruct(
 
             return mapperImplFile
                 .withImports(
-                    (visited.imports + mapperImplFile.imports)
-                        .asSequence()
-                        .filter { !it.packageName.startsWith(MAPSTRUCT_GROUP) }
-                        .sortedBy { it.packageName }
-                        .toList(),
+                    (visited.imports + mapperImplFile.imports).withMapstructFilteredOut(),
                 ).withClasses(listOf(clazz))
                 .withId(visited.id)
                 .withSourcePath(visited.sourcePath)
@@ -118,7 +115,6 @@ internal class InlineMapstruct(
 
     internal companion object {
         private val log = Logger.getLogger(InlineMapstruct::class.java.name)
-        private const val MAPSTRUCT_GROUP = "org.mapstruct"
 
         private fun transformMapperDeclMethod(mapperDeclMethod: J.MethodDeclaration): J.MethodDeclaration? {
             if (mapperDeclMethod.body == null) return null

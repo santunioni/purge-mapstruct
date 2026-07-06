@@ -42,3 +42,12 @@ internal fun getDecoratorFqn(cu: J.CompilationUnit): String? {
 
 /** A mapper declaration (`@Mapper`) that also carries `@DecoratedWith(...)`. */
 internal fun isDecoratedMapperDeclaration(cu: J.CompilationUnit): Boolean = isMapperDeclaration(cu) && getDecoratorFqn(cu) != null
+
+private const val MAPSTRUCT_GROUP = "org.mapstruct"
+
+internal fun List<J.Import>.withMapstructFilteredOut() =
+    asSequence()
+        .filter { !it.packageName.startsWith(MAPSTRUCT_GROUP) }
+        .distinctBy { "${it.isStatic}|${it.packageName}.${it.className}" }
+        .sortedBy { "${it.isStatic}|${it.packageName}.${it.className}" }
+        .toList()
