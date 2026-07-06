@@ -1,6 +1,6 @@
 # Open Issues
 
-## `@DecoratedWith` mapper is not skipped
+## `@DecoratedWith` mapper is not inlined properly
 
 ### Problem
 
