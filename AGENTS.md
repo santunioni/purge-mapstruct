@@ -331,9 +331,39 @@ daemon keeps an in-memory VFS that still references those paths. Without stoppin
 ## Releasing
 
 Versioning is managed by the `nebula.release` Gradle plugin. CI (`.github/workflows/pipeline.yml`)
-handles the actual publication to Sonatype; you only push a tag.
+handles the actual publication to Sonatype; you only push a tag or create a release.
 
-### Release candidate
+### Using the deploy task (recommended)
+
+The `deploy` task automates the entire release workflow with interactive prompts:
+
+```bash
+./gradlew deploy --no-daemon
+```
+
+The task will:
+1. Show the current version and last deployed versions
+2. Ask you to choose: **Release Candidate (RC)** or **Final Release**
+3. Ask for version bump type: **Major**, **Minor** (default), or **Patch**
+4. Create the tag and (for finals) the GitHub release automatically
+5. Push the tag, which triggers CI to publish
+
+**Flags:**
+- `--no-daemon` — Required for interactive input (enables stdin)
+- `-PdryRun=true` — Preview the deployment without making changes
+
+**Examples:**
+```bash
+# Interactive final release with prompts
+./gradlew deploy --no-daemon
+
+# Preview RC deployment without making changes
+./gradlew deploy --no-daemon -PdryRun=true -Prc=true
+```
+
+### Release candidate (manual)
+
+If you prefer manual control:
 
 ```bash
 git tag v<major>.<minor>.<patch>-rc.<N>
@@ -348,16 +378,23 @@ CI detects the `-rc.` tag and runs:
 ```
 The artifact lands on Maven Central as a signed, versioned RC.
 
-### Final release
+### Final release (manual)
+
+If you prefer manual control:
 
 ```bash
 git tag v<major>.<minor>.<patch>
 git push origin v<major>.<minor>.<patch>
+gh release create v<major>.<minor>.<patch> --generate-notes
 ```
 
-Example: `git tag v0.2.0 && git push origin v0.2.0`
+Example:
+```bash
+git tag v0.2.0 && git push origin v0.2.0
+gh release create v0.2.0 --generate-notes
+```
 
-CI detects a plain version tag (no `-rc.`) and runs:
+CI detects a published release and runs:
 ```
 ./gradlew final publish closeAndReleaseSonatypeStagingRepository
 ```
@@ -365,6 +402,8 @@ CI detects a plain version tag (no `-rc.`) and runs:
 ### Snapshot (every push to `main`)
 
 CI automatically publishes a snapshot on every push to `main` — no tag required.
+The snapshot version is the *next* logical version from the latest tag (e.g., if the latest tag is `v0.2.2`, snapshots are published as `0.3.0-SNAPSHOT`).
+
 To publish a snapshot locally (e.g. to test in a target project):
 
 ```bash

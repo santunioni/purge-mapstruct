@@ -123,6 +123,7 @@ tasks.register("licenseFormat") {
 tasks.register("deploy") {
     description = "Interactive deployment task: creates version tags and GitHub releases"
     group = "publishing"
+    doNotTrackState("Interactive task requires user input")
 
     doLast {
         val dryRun = project.findProperty("dryRun") == "true" || project.findProperty("dry-run") == "true"
@@ -154,8 +155,9 @@ tasks.register("deploy") {
         }
 
         fun prompt(msg: String): String? {
-            print("\u001B[33m$msg\u001B[0m", "yellow")
-            return readLine()
+            System.out.print("${colors["yellow"]}$msg${colors["reset"]}")
+            System.out.flush()
+            return System.`in`.bufferedReader().readLine()
         }
 
         fun parseVersion(version: String): Triple<Int, Int, Int> {
