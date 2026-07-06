@@ -238,16 +238,6 @@ interface, so the decorator+primary become `FooMapper` and the delegate becomes
   matches the rest of the recipe (the plain merge already writes onto the mapper
   declaration's path) and keeps the public type on its original path, which
   callers/imports expect. Do not host it on the decorator's path.
-- **Single-bean uniqueness.** After removing `@Qualifier("delegate")`, wiring
-  `FooMapperDelegate` by type must be unambiguous — it is, since the interface is
-  gone and only one bean of that concrete type exists. Confirm no other bean
-  implements/extends it.
-- **Decorator referenced directly by user code** (second acceptance branch). Scope
-  the first PR to the "generated code covers it" case; handle "reduce to minimal
-  class" only when a real fixture demands it.
-- **Redundant re-sets** the decorator performs that the delegate already did
-  (e.g. `setHouseId`) are harmless no-ops — keep them byte-for-byte; do not
-  "optimise" them away.
 
 ---
 
