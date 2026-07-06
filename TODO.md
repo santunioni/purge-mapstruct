@@ -260,6 +260,52 @@ not as a leading annotation on the variable declaration. The current stripping
 logic does not unwrap `J.AnnotatedType`, so `@Context` survives the merge and
 causes a compile error once MapStruct is removed from the classpath.
 
+### Why this is a strip-only problem (no behavior to reproduce)
+
+`@Context` is **not** a mapping instruction — it is a *threading hint*. MapStruct forwards a
+`@Context` parameter to any nested mapping/lifecycle method that also declares a `@Context`
+parameter of the same type, **without** field-mapping it. Crucially, MapStruct has **already
+lowered this to plain positional argument passing in the generated `*Impl`** — the annotation
+does not appear there at all. So once the impl is inlined there is *nothing behavioral to
+reproduce*: the only work is stripping the leftover `@Context` annotations. Removing them (while
+keeping the parameters) is therefore behavior-preserving by construction.
+
+### Confirmed real-world example: `ContractTaskManualMapper` (backoffice-bff)
+
+`applications/backoffice-bff/.../contract/contractinfo/mappers/ContractTaskManualMapper.java`
+exercises both annotation positions:
+
+```java
+// abstract mapping method — @Context in LEADING position
+@Mapping(target = "tasks", source = "workgroup", qualifiedByName = "mapTasksForWorkgroup")
+WorkgroupDTO toContractWorkgroupDTO(WorkgroupModelDTO workgroup, @Context List<TaskTitlesDTO> taskTitles);
+
+// retained default method — @Context in TYPE-ANNOTATION position (after `final`)
+@Named("mapTasksForWorkgroup")
+default List<TaskWorkgroupDTO> mapTasksForWorkgroup(final WorkgroupModelDTO workgroup,
+                                                    final @Context List<TaskTitlesDTO> taskTitles) { ... }
+```
+
+What the generated `ContractTaskManualMapperImpl` shows:
+
+- `toContractWorkgroupDTO(WorkgroupModelDTO workgroup, List<TaskTitlesDTO> taskTitles)` — `@Context`
+  already erased; the abstract method is **dropped on inlining** (replaced by this concrete impl),
+  so its leading `@Context` never reaches the merged file.
+- The impl threads the context positionally: `workgroupDTO.tasks( mapTasksForWorkgroup( workgroup, taskTitles ) )`.
+
+So the **only** `@Context` that survives the merge is on the **retained `default` method
+`mapTasksForWorkgroup`**, in the **type-annotation position** (`final @Context List<...>`) — the
+`J.AnnotatedType` case the recipe does not yet unwrap. This mapper needs no new capability; it is a
+direct fixture candidate for the fix below.
+
+### Fix sketch
+
+Extend the annotation-stripping logic beyond `J.VariableDeclarations.leadingAnnotations` to also
+unwrap `J.AnnotatedType`: when a parameter's type is a `J.AnnotatedType`, drop any `org.mapstruct`
+annotations (`@Context`, etc.) from it and replace the node with the bare underlying type,
+preserving `final` and the parameter name. Applies to retained `default`/`static` methods copied
+from the interface (abstract methods are dropped, so their leading `@Context` is moot).
+
 ### Acceptance criterion
 
 The final code doesn't possess any `@Context` annotations, and the behavior is the behavior of using
