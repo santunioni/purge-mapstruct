@@ -16,7 +16,7 @@ import org.openrewrite.java.tree.JavaType
  * otherwise it falls back to a simple-name allow-list (generated fixtures sometimes lose type
  * attribution).
  */
-class StripMapstructAnnotations : JavaVisitor<ExecutionContext>() {
+internal class StripMapstructAnnotations : JavaVisitor<ExecutionContext>() {
     override fun visit(
         tree: Tree?,
         ctx: ExecutionContext,

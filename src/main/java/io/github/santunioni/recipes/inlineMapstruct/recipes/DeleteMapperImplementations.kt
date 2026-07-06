@@ -13,7 +13,7 @@ import org.openrewrite.java.tree.J
  * reuses [io.github.santunioni.recipes.inlineMapstruct.isMapperImplementation] (the `@Generated` marker carrying `org.mapstruct`), matching the
  * files the scan pass links, so it needs nothing from the scan pass itself.
  */
-class DeleteMapperImplementations : JavaVisitor<ExecutionContext>() {
+internal class DeleteMapperImplementations : JavaVisitor<ExecutionContext>() {
     /**
      * TreeVisitor.visit is declared `@Nullable T visit(@Nullable Tree, P)` in Java so Kotlin sees the
      * return as `J?`, making it safe to return null without any unchecked-cast gymnastics.

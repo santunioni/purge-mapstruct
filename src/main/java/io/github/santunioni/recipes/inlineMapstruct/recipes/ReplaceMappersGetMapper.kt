@@ -21,7 +21,7 @@ import java.util.UUID
  * (to rewrite references in the mapper declaration and in unrelated call sites) and after inlining
  * (to rewrite references that were copied in from the generated implementation).
  */
-class ReplaceMappersGetMapper : JavaVisitor<ExecutionContext>() {
+internal class ReplaceMappersGetMapper : JavaVisitor<ExecutionContext>() {
     override fun visitMethodInvocation(
         method: J.MethodInvocation,
         ctx: ExecutionContext,

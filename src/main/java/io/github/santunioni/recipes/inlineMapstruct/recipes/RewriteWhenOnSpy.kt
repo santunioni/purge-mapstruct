@@ -24,7 +24,7 @@ import java.util.logging.Logger
  * MapStruct inlining and needs nothing from the scan pass — it only inspects locally declared
  * `@Spy` fields, which it collects itself per compilation unit.
  */
-class RewriteWhenOnSpy : JavaVisitor<ExecutionContext>() {
+internal class RewriteWhenOnSpy : JavaVisitor<ExecutionContext>() {
     override fun visitCompilationUnit(
         cu: J.CompilationUnit,
         ctx: ExecutionContext,

@@ -12,7 +12,7 @@ import org.openrewrite.marker.Markers
 import java.util.UUID
 import java.util.logging.Logger
 
-class InlineMapstruct(
+internal class InlineMapstruct(
     private val mapstructRefsReader: MapstructRefsReader,
 ) : JavaVisitor<ExecutionContext>() {
     /**
@@ -106,7 +106,7 @@ class InlineMapstruct(
         }
     }
 
-    companion object {
+    internal companion object {
         private val log = Logger.getLogger(InlineMapstruct::class.java.name)
         private const val MAPSTRUCT_GROUP = "org.mapstruct"
 
