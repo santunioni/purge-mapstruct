@@ -157,7 +157,6 @@ internal class InlineDecoratedMapper(
 
     private companion object {
         private val log = Logger.getLogger(InlineDecoratedMapper::class.java.name)
-        private const val MAPSTRUCT_GROUP = "org.mapstruct"
 
         private fun keepDelegateAnnotation(a: J.Annotation): Boolean =
             !(
