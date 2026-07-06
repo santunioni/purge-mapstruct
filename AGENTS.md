@@ -25,38 +25,42 @@ consumers only need to declare `purge-mapstruct` itself on the rewrite classpath
 
 `PurgeMapstruct` is a `ScanningRecipe<MapstructRefs>` with two passes:
 
-1. **Scan pass** (`ImplementationScanner`, a `JavaIsoVisitor`): visits every compilation unit, finds
-   MapStruct-generated implementations (detected via `@Generated` carrying `org.mapstruct`), and
-   records the linkings `super FQN → impl CompilationUnit` and the reverse `impl FQN → super FQN`
-   into `MapstructRefs` via `addLinking`.
+1. **Scan pass** (`MappersGathererScanner`, a `JavaIsoVisitor`): visits every compilation unit, finds
+   MapStruct-generated implementations (detected by `isMapperImplementation` — a class that
+   `implements`/`extends` something and carries a `javax.annotation.processing.Generated` annotation
+   whose `value` starts with `org.mapstruct`), and records the linkings `super FQN → impl
+   CompilationUnit` and the reverse `impl FQN → super FQN` into `MapstructRefs` via `addLinking`. The
+   scanner only ever writes through the `MapstructRefsWriter` interface.
 
-2. **Edit pass** (`InlineMapstructPipeline`, a `JavaVisitor`): for each compilation unit it runs an
-   ordered set of small visitors around the core merge (`InlineMapstruct`):
+2. **Edit pass** (`InlineMapstructPipeline`, a `JavaVisitor`): it overrides `visit(tree, ctx)` and, for
+   each compilation unit, runs an ordered set of small visitors around the core merge (`InlineMapstruct`).
+   It reads scan-pass state only through the `MapstructRefsReader` interface:
 
-   - **`recipesToApplyEverywhere`** — broad rewrites whose result is kept even when the file is never
-     inlined (unrelated call sites, spy stubs in test files):
+   - **`preApplyToAll`** — broad rewrites whose result is kept even when the file is never inlined
+     (unrelated call sites, spy stubs in test files):
      - `ReplaceMappersGetMapper` — `Mappers.getMapper(X.class)` → `new X()`.
      - `RewriteWhenOnSpy` — `when(spy.x(a)).thenReturn(v)` → `doReturn(v).when(spy).x(a)`.
      - `DeleteMapperImplementations` — returns `null` for generated `*Impl` files, **deleting** them
-       (when a visitor here returns `null`, the pipeline returns `null` for that file).
-     - `RewriteImplReferences` — rewrites `*Impl` references back to the mapper type everywhere.
-   - **`recipesToApplyToMapperImplementationBeforeInline`** — only meaningful as merge preparation;
-     rolled back if the merge doesn't change the file, so non-inlined files stay pristine:
+       (when any visitor in this list returns `null`, the pipeline returns `null` for that file).
+     - `RewriteImplReferences` — rewrites `*Impl` references back to the mapper type everywhere
+       (instance-scoped: constructor-injected with `MapstructRefsReader`).
+   - **`preApplyToTouchedFiles`** — only meaningful as merge preparation; rolled back if the merge
+     doesn't change the file, so non-inlined files stay pristine:
      - `FullyQualifyTypesInImplementation` — fully-qualifies types inside impl files before copy.
    - **The merge** (`InlineMapstruct`) — builds the inlined class for each `@Mapper` file (below).
-   - **`recipesToApplyToInlinedClasses`** — applied only to files that actually changed:
+   - **`postApplyToTouchedFiles`** — applied only to files that actually changed:
      - `RewriteImplReferences` — rewrites `*Impl` references copied in from the impl body.
      - `StripMapstructAnnotations` — removes `org.mapstruct` annotations from the merged class.
      - `ReplaceMappersGetMapper` — catches `Mappers.getMapper` copied in from the impl body.
      - Cleanup/formatting pack: `UnnecessaryParentheses`, `RemoveUnusedLocalVariables`,
        `RemoveUnusedImports`, `LambdaBlockToExpression`, `ReplaceLambdaWithMethodReference`,
-       `NoAutowiredOnConstructor`, `InlineVariable` (×3), `AutoFormat(null)`, `CodeCleanup`,
-       `ShortenFullyQualifiedTypeReferences`.
+       `NoAutowiredOnConstructor`, `InlineVariable` (×3), `AutoFormat(null)`, `CodeCleanup`
+       (loaded lazily from the runtime classpath via `Environment`), `ShortenFullyQualifiedTypeReferences`.
 
    The "only touch changed files" behavior is an object-identity guard: the pipeline keeps the merged
-   result when `inlined !== afterConditional`, otherwise falls back to the broad pre result; and it
-   returns early without cleanup when `changed === original`. Do not break this guard — it is what
-   keeps unrelated files untouched.
+   result when `inlined !== afterConditional`, otherwise falls back to the broad `afterAlways` result;
+   and it returns early without cleanup when `changed === original`. Do not break this guard — it is
+   what keeps unrelated files untouched.
 
 ### The merge (`InlineMapstruct.visitCompilationUnit`)
 
@@ -77,34 +81,49 @@ stripping are **not** done in the merge — they are pipeline post visitors (`Re
 
 ### Source files (`src/main/java/io/github/santunioni/recipes/`)
 
+The code is organised by role: the `inlineMapstruct` package holds shared state and the pipeline,
+its `scanners` sub-package the scan pass, and its `recipes` sub-package the individual edit visitors.
+
 | File | Responsibility |
 | --- | --- |
-| `PurgeMapstruct.kt` | The recipe: wires `ImplementationScanner` (scanner) + `InlineMapstructPipeline` (visitor). |
-| `removeMapstruct/MapstructRefs.kt` | Shared scan-pass state (super↔impl linkings) behind `MapstructRefsReader` / `MapstructRefsWriter` interfaces. |
-| `removeMapstruct/ImplementationScanner.kt` | Scan pass — records linkings. |
-| `removeMapstruct/InlineMapstructPipeline.kt` | Edit pass — orchestrates the pre/merge/post visitor lists per file and the object-identity change guard. |
-| `removeMapstruct/InlineMapstruct.kt` | The core merge — builds the inlined class from impl + declaration. |
-| `removeMapstruct/RewriteImplReferences.kt` | Rewrites `*Impl` references back to the mapper type (reader-backed). |
-| `removeMapstruct/StripMapstructAnnotations.kt` | Removes `org.mapstruct` annotations wherever they appear. |
-| `removeMapstruct/DeleteMapperImplementations.kt` | Deletes generated `*Impl` files (returns `null`). |
-| `removeMapstruct/ReplaceMappersGetMapper.kt` | `Mappers.getMapper(X.class)` → `new X()`. |
-| `removeMapstruct/RewriteWhenOnSpy.kt` | `when(spy.x()).thenReturn(v)` → `doReturn(v).when(spy).x()`. |
-| `removeMapstruct/FullyQualifyTypesInImplementation.kt` | Fully-qualifies types in impl files before the merge copies them. |
-| `removeMapstruct/Functions.kt` | `isMapperImplementation` / `isMapperDeclaration` detection helpers. |
-| `removeMapstruct/StatementDefinitionOrder.kt` | Comparator that orders the merged class members sensibly. |
+| `PurgeMapstruct.kt` | The recipe (top-level `public`): wires `MappersGathererScanner` (scanner) + `InlineMapstructPipeline` (visitor). |
+| `inlineMapstruct/MapstructRefs.kt` | Shared scan-pass state (super↔impl linkings). The concrete `public` class implements both `MapstructRefsWriter` (scan) and `MapstructRefsReader` (edit). |
+| `inlineMapstruct/InlineMapstructPipeline.kt` | Edit pass — orchestrates the pre/merge/post visitor lists per file and the object-identity change guard. |
+| `inlineMapstruct/Functions.kt` | `isMapperImplementation` / `isMapperDeclaration` detection helpers. |
+| `inlineMapstruct/scanners/MappersGathererScanner.kt` | Scan pass — records linkings via `MapstructRefsWriter`. |
+| `inlineMapstruct/scanners/MapstructRefsWriter.kt` | Write-only interface exposed to the scanner (`addLinking`). |
+| `inlineMapstruct/recipes/InlineMapstruct.kt` | The core merge — builds the inlined class from impl + declaration. |
+| `inlineMapstruct/recipes/MapstructRefsReader.kt` | Read-only interface exposed to the edit visitors (`getImplementer`, `getSuperFqnFromImplFqn`). |
+| `inlineMapstruct/recipes/RewriteImplReferences.kt` | Rewrites `*Impl` references back to the mapper type (reader-backed). |
+| `inlineMapstruct/recipes/StripMapstructAnnotations.kt` | Removes `org.mapstruct` annotations wherever they appear. |
+| `inlineMapstruct/recipes/DeleteMapperImplementations.kt` | Deletes generated `*Impl` files (returns `null`). |
+| `inlineMapstruct/recipes/ReplaceMappersGetMapper.kt` | `Mappers.getMapper(X.class)` → `new X()`. |
+| `inlineMapstruct/recipes/RewriteWhenOnSpy.kt` | `when(spy.x()).thenReturn(v)` → `doReturn(v).when(spy).x()`. |
+| `inlineMapstruct/recipes/FullyQualifyTypesInImplementation.kt` | Fully-qualifies types in impl files before the merge copies them. |
 
 There is no `rewrite.yml`. Formatting is handled entirely within `InlineMapstructPipeline` via
-`AutoFormat(null)` (OpenRewrite default style).
+`AutoFormat(null)` (OpenRewrite default style). Runtime logging goes through `java.util.logging`;
+`src/main/resources/logback.xml` configures the logback binding that the OpenRewrite parser uses.
 
 ## Philosophy / conventions
 
 - **Source language**: recipe source is **Kotlin** (`.kt`). Java fixtures in `src/test/resources/`
   are still `.java` — that is intentional; they are test inputs, not recipe source.
-- **Null-safety**: use `org.jspecify.annotations.@Nullable` for nullables. Returning `null` from a
-  visitor's `visit` / `visitCompilationUnit` is how you delete a file (or a tree node) in OpenRewrite.
-- **Small, composable visitors**: new behavior belongs in a single-purpose `JavaVisitor` wired into
-  the pipeline's pre/post lists (constructor-inject `MapstructRefsReader` if it needs the scan-pass
+- **Null-safety**: rely on Kotlin's nullable types (`T?`, `as?`, `?:`) rather than annotations. Note
+  that OpenRewrite's `TreeVisitor.visit` is `@Nullable` on the Java side, so Kotlin sees it as
+  returning `J?` — returning `null` from a visitor's `visit` / `visitCompilationUnit` is how you delete
+  a file (or a tree node).
+- **Small, composable visitors**: new behavior belongs in a single-purpose `JavaVisitor` under
+  `inlineMapstruct/recipes/`, wired into the pipeline's `preApplyToAll` / `preApplyToTouchedFiles` /
+  `postApplyToTouchedFiles` lists (constructor-inject `MapstructRefsReader` if it needs the scan-pass
   linkings), rather than piled into the merge. `InlineMapstruct` should stay focused on the merge.
+- **Explicit API / minimal surface**: `explicitApi()` is enabled in `build.gradle.kts`, so every
+  declaration needs an explicit visibility. Keep the published surface as small as possible — only
+  `PurgeMapstruct` and `MapstructRefs` are `public`; everything else is `internal`. New visitors,
+  scanners, and helpers should be `internal`.
+- **Segregated scan-pass state**: `MapstructRefs` is the single concrete holder, but the scanner sees
+  it only as a `MapstructRefsWriter` (write) and the edit visitors only as a `MapstructRefsReader`
+  (read). Keep that split — don't hand the concrete class to a visitor.
 - **Fail loud, recover gracefully**: `InlineMapstruct` logs `severe` and rethrows on unexpected merge
   errors; it *skips* (leaves code untouched) when it can't find exactly one implementer.
 - **Work on the LST, not strings**: manipulate OpenRewrite `J.*` tree nodes with `withX(...)` and
