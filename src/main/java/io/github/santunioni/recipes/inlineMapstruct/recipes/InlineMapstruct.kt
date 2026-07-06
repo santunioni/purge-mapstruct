@@ -100,7 +100,10 @@ internal class InlineMapstruct(
             return mapperImplFile
                 .withImports(
                     (visited.imports + mapperImplFile.imports)
-                        .filter { !it.packageName.startsWith(MAPSTRUCT_GROUP) },
+                        .asSequence()
+                        .filter { !it.packageName.startsWith(MAPSTRUCT_GROUP) }
+                        .sortedBy { it.packageName }
+                        .toList(),
                 ).withClasses(listOf(clazz))
                 .withId(visited.id)
                 .withSourcePath(visited.sourcePath)

@@ -2,6 +2,7 @@ package io.github.santunioni.fixtures;
 
 import lombok.Getter;
 import lombok.Setter;
+
 import lombok.extern.java.Log;
 
 @Log
