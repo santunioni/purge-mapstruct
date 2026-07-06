@@ -120,6 +120,193 @@ tasks.register("licenseFormat") {
     println("License format task not implemented for rewrite-recipe-starter")
 }
 
+tasks.register("deploy") {
+    description = "Interactive deployment task: creates version tags and GitHub releases"
+    group = "publishing"
+
+    doLast {
+        val dryRun = project.findProperty("dryRun") == "true" || project.findProperty("dry-run") == "true"
+        val isRC = project.findProperty("rc") == "true"
+
+        val colors = mapOf(
+            "blue" to "\u001B[34m",
+            "green" to "\u001B[32m",
+            "yellow" to "\u001B[33m",
+            "red" to "\u001B[31m",
+            "dim" to "\u001B[2m",
+            "reset" to "\u001B[0m"
+        )
+
+        fun print(msg: String, color: String = "reset") = println("${colors[color]}$msg${colors["reset"]}")
+        fun printHeader(msg: String) {
+            println()
+            print("╔════════════════════════════════════════╗", "blue")
+            print("║  $msg", "blue")
+            print("╚════════════════════════════════════════╝", "blue")
+            println()
+        }
+
+        fun exec(vararg cmd: String): String {
+            val process = ProcessBuilder(*cmd)
+                .redirectErrorStream(true)
+                .start()
+            return process.inputStream.bufferedReader().use { it.readText() }.trim()
+        }
+
+        fun prompt(msg: String): String? {
+            print("\u001B[33m$msg\u001B[0m", "yellow")
+            return readLine()
+        }
+
+        fun parseVersion(version: String): Triple<Int, Int, Int> {
+            val parts = version.split(Regex("[.-]"))
+            val major = parts.getOrNull(0)?.toIntOrNull() ?: 0
+            val minor = parts.getOrNull(1)?.toIntOrNull() ?: 0
+            val patch = parts.getOrNull(2)?.toIntOrNull() ?: 0
+            return Triple(major, minor, patch)
+        }
+
+        fun bumpVersion(version: String, bumpType: String): String {
+            val (major, minor, patch) = parseVersion(version)
+            return when (bumpType) {
+                "major" -> "${major + 1}.0.0"
+                "minor" -> "$major.${minor + 1}.0"
+                "patch" -> "$major.$minor.${patch + 1}"
+                else -> "$major.$minor.${patch + 1}"
+            }
+        }
+
+        fun getLatestVersion(): String {
+            return try {
+                val output = exec("gh", "release", "list", "--limit", "1", "--json", "tagName", "--jq", ".[0].tagName")
+                output.removePrefix("v").takeIf { it.isNotEmpty() && it != "null" } ?: "0.0.0"
+            } catch (e: Exception) {
+                "0.0.0"
+            }
+        }
+
+        fun getLastDeployedVersions(limit: Int = 5): List<String> {
+            return try {
+                val output = exec("gh", "release", "list", "--limit", "$limit", "--json", "tagName", "--jq", ".[].tagName")
+                output.lines().map { it.removePrefix("v") }.filter { it.isNotEmpty() }
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
+
+        fun getHighestRcNumber(baseVersion: String): Int {
+            return try {
+                val output = exec("gh", "release", "list", "--json", "tagName", "--jq", ".[].tagName")
+                val rcPattern = Regex("v$baseVersion-rc\\.(\\d+)")
+                output.lines()
+                    .mapNotNull { rcPattern.find(it)?.groupValues?.get(1)?.toIntOrNull() }
+                    .maxOrNull() ?: 0
+            } catch (e: Exception) {
+                0
+            }
+        }
+
+        fun askVersionType(): Boolean {
+            println()
+            print("What type of release?", "yellow")
+            println("  1) Release Candidate (RC)")
+            println("  2) Final Release ${colors["dim"]}[default]${colors["reset"]}")
+            println()
+            val choice = prompt("Choose (1-2, default 2): ") ?: "2"
+            return choice.trim() == "1"
+        }
+
+        fun askVersionBump(): String {
+            println()
+            print("What type of version bump?", "yellow")
+            println("  1) Major (breaking changes)")
+            println("  2) Minor (new features) ${colors["dim"]}[default]${colors["reset"]}")
+            println("  3) Patch (bug fixes)")
+            println()
+            val choice = prompt("Choose (1-3, default 2): ") ?: "2"
+            return when (choice.trim()) {
+                "1" -> "major"
+                "3" -> "patch"
+                else -> "minor"
+            }
+        }
+
+        printHeader("Purge-MapStruct Deploy${if (dryRun) " ${colors["dim"]}[DRY RUN]${colors["reset"]}" else ""}")
+
+        try {
+            // Fetch and display current versions
+            print("ℹ Fetching deployment information...", "blue")
+            val currentVersion = getLatestVersion()
+            print("✓ Current version: v$currentVersion", "green")
+
+            val shouldBeRc = if (isRC) true else askVersionType()
+
+            if (shouldBeRc) {
+                // Release Candidate flow
+                println()
+                print("Last deployed versions:", "yellow")
+                val lastVersions = getLastDeployedVersions()
+                if (lastVersions.isNotEmpty()) {
+                    lastVersions.forEach { print("  → v$it", "dim") }
+                } else {
+                    print("  → None yet", "dim")
+                }
+
+                println()
+                val bumpType = askVersionBump()
+                print("✓ Selected: $bumpType bump", "green")
+
+                val newBaseVersion = bumpVersion(currentVersion, bumpType)
+                print("✓ New base version: v$newBaseVersion", "green")
+
+                val highestRc = getHighestRcNumber(newBaseVersion)
+                val newRcNumber = highestRc + 1
+                val newVersion = "$newBaseVersion-rc.$newRcNumber"
+
+                println()
+                print("ℹ Creating RC tag: v$newVersion", "blue")
+
+                if (!dryRun) {
+                    exec("git", "tag", "v$newVersion")
+                    exec("git", "push", "origin", "v$newVersion")
+                    print("✓ RC tag v$newVersion created and pushed", "green")
+                } else {
+                    print("${colors["dim"]}[DRY RUN] Would create and push RC tag v$newVersion${colors["reset"]}")
+                }
+
+            } else {
+                // Final Release flow
+                println()
+                val bumpType = askVersionBump()
+                print("✓ Selected: $bumpType bump", "green")
+
+                val newVersion = bumpVersion(currentVersion, bumpType)
+                print("✓ New version: v$newVersion", "green")
+
+                println()
+                print("ℹ Creating final release tag and GitHub release: v$newVersion", "blue")
+
+                if (!dryRun) {
+                    exec("git", "tag", "v$newVersion")
+                    exec("git", "push", "origin", "v$newVersion")
+                    exec("gh", "release", "create", "v$newVersion", "--generate-notes")
+                    print("✓ Release v$newVersion created and pushed", "green")
+                } else {
+                    print("${colors["dim"]}[DRY RUN] Would create final release v$newVersion${colors["reset"]}")
+                }
+            }
+
+            println()
+            print("GitHub will trigger the pipeline automatically", "green")
+            println()
+
+        } catch (e: Exception) {
+            print("✗ Error: ${e.message}", "red")
+            throw e
+        }
+    }
+}
+
 kotlin {
     jvmToolchain(17)
     sourceSets {
