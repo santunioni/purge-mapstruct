@@ -98,8 +98,10 @@ internal class InlineMapstruct(
                     ).withExtends(null)
 
             return mapperImplFile
-                .withImports(visited.imports.filter { !it.packageName.startsWith(MAPSTRUCT_GROUP) })
-                .withClasses(listOf(clazz))
+                .withImports(
+                    (visited.imports + mapperImplFile.imports)
+                        .filter { !it.packageName.startsWith(MAPSTRUCT_GROUP) },
+                ).withClasses(listOf(clazz))
                 .withId(visited.id)
                 .withSourcePath(visited.sourcePath)
         } catch (e: Exception) {

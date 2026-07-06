@@ -1,5 +1,7 @@
 package io.github.santunioni.fixtures;
 
+import lombok.Setter;
+
 public class UserMapper {
     public static final String INTERFACE_FIELD = "VALUE";
     public static final String FINAL_INTERFACE_FIELD = "VALUE";
