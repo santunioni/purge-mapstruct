@@ -13,7 +13,7 @@ import org.openrewrite.TreeVisitor
  * Files that [InlineMapstructPipeline] does not touch (unrelated services, DTOs, etc.) are
  * returned unchanged — keeping the diff of a purge PR as small as possible.
  */
-class PurgeMapstruct : ScanningRecipe<MapstructRefs>() {
+public class PurgeMapstruct : ScanningRecipe<MapstructRefs>() {
     override fun getDisplayName(): String = "Purge MapStruct — cleaner code"
 
     override fun getDescription(): String =

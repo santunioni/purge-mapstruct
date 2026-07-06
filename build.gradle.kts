@@ -20,6 +20,10 @@ plugins {
 group = "io.github.santunioni"
 description = "Purge Mapstruct"
 
+kotlin {
+    explicitApi() // Can also use explicitApiWarning() to only show warnings
+}
+
 recipeDependencies {
     parserClasspath("org.jspecify:jspecify:1.0.0")
 }

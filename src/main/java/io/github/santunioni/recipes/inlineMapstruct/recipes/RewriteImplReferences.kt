@@ -17,7 +17,7 @@ import java.util.UUID
  * safe to run both broadly across every file (unrelated call sites still referencing the impl) and on
  * the merged class produced by [InlineMapstruct].
  */
-class RewriteImplReferences(
+internal class RewriteImplReferences(
     private val mapstructRefsReader: MapstructRefsReader,
 ) : JavaVisitor<ExecutionContext>() {
     /**

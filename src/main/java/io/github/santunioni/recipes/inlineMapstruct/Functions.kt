@@ -3,7 +3,7 @@ package io.github.santunioni.recipes.inlineMapstruct
 import org.openrewrite.java.tree.J
 import org.openrewrite.java.tree.TypeUtils
 
-fun isMapperImplementation(compilationUnit: J.CompilationUnit): Boolean {
+internal fun isMapperImplementation(compilationUnit: J.CompilationUnit): Boolean {
     val generatedAnnotation =
         compilationUnit.classes
             .asSequence()
@@ -18,7 +18,7 @@ fun isMapperImplementation(compilationUnit: J.CompilationUnit): Boolean {
     }
 }
 
-fun isMapperDeclaration(originalCu: J): Boolean =
+internal fun isMapperDeclaration(originalCu: J): Boolean =
     originalCu is J.CompilationUnit &&
         originalCu.classes.any { cd ->
             cd.leadingAnnotations.any { a ->

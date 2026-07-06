@@ -13,7 +13,7 @@ import org.openrewrite.java.tree.TypeUtils
  * so that all type references are self-contained and no longer depend on the impl's imports.
  * After the merge, [org.openrewrite.java.ShortenFullyQualifiedTypeReferences] reintroduces imports.
  */
-class FullyQualifyTypesInImplementation<P : Any> : JavaVisitor<P>() {
+internal class FullyQualifyTypesInImplementation<P : Any> : JavaVisitor<P>() {
     override fun visitCompilationUnit(
         cu: J.CompilationUnit,
         p: P,

@@ -5,7 +5,7 @@ import org.openrewrite.ExecutionContext
 import org.openrewrite.java.JavaIsoVisitor
 import org.openrewrite.java.tree.J
 
-class MappersGathererScanner(
+internal class MappersGathererScanner internal constructor(
     private val acc: MapstructRefsWriter,
 ) : JavaIsoVisitor<ExecutionContext>() {
     override fun visitCompilationUnit(

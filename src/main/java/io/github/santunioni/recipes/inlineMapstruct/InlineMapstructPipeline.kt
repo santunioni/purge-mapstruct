@@ -25,7 +25,7 @@ import org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
 import org.openrewrite.staticanalysis.UnnecessaryParentheses
 import java.util.logging.Logger
 
-class InlineMapstructPipeline(
+internal class InlineMapstructPipeline(
     mapstructRefsReader: MapstructRefsReader,
 ) : JavaVisitor<ExecutionContext>() {
     private val log = Logger.getLogger(InlineMapstructPipeline::class.java.name)
@@ -152,7 +152,7 @@ class InlineMapstructPipeline(
         )
     }
 
-    companion object {
+    internal companion object {
         /**
          * kept here because this is heavy to load
          */

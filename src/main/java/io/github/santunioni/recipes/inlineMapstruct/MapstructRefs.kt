@@ -6,7 +6,7 @@ import org.openrewrite.java.tree.J
 import org.openrewrite.java.tree.TypeTree
 import java.util.logging.Logger
 
-class MapstructRefs :
+public class MapstructRefs :
     MapstructRefsWriter,
     MapstructRefsReader {
     private val mapSuperToItsImplementers: MutableMap<String, MutableList<J.CompilationUnit>> =
@@ -42,7 +42,7 @@ class MapstructRefs :
 
     override fun getSuperFqnFromImplFqn(implFqn: String): String? = mapImplementerToItsSup[implFqn]
 
-    companion object {
+    internal companion object {
         private val log = Logger.getLogger(MapstructRefs::class.java.name)
     }
 }
