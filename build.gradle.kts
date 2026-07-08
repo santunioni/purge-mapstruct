@@ -129,16 +129,21 @@ tasks.register("deploy") {
         val dryRun = project.findProperty("dryRun") == "true" || project.findProperty("dry-run") == "true"
         val isRC = project.findProperty("rc") == "true"
 
-        val colors = mapOf(
-            "blue" to "\u001B[34m",
-            "green" to "\u001B[32m",
-            "yellow" to "\u001B[33m",
-            "red" to "\u001B[31m",
-            "dim" to "\u001B[2m",
-            "reset" to "\u001B[0m"
-        )
+        val colors =
+            mapOf(
+                "blue" to "\u001B[34m",
+                "green" to "\u001B[32m",
+                "yellow" to "\u001B[33m",
+                "red" to "\u001B[31m",
+                "dim" to "\u001B[2m",
+                "reset" to "\u001B[0m",
+            )
 
-        fun print(msg: String, color: String = "reset") = println("${colors[color]}$msg${colors["reset"]}")
+        fun print(
+            msg: String,
+            color: String = "reset",
+        ) = println("${colors[color]}$msg${colors["reset"]}")
+
         fun printHeader(msg: String) {
             println()
             print("╔════════════════════════════════════════╗", "blue")
@@ -148,10 +153,14 @@ tasks.register("deploy") {
         }
 
         fun exec(vararg cmd: String): String {
-            val process = ProcessBuilder(*cmd)
-                .redirectErrorStream(true)
-                .start()
-            return process.inputStream.bufferedReader().use { it.readText() }.trim()
+            val process =
+                ProcessBuilder(*cmd)
+                    .redirectErrorStream(true)
+                    .start()
+            return process.inputStream
+                .bufferedReader()
+                .use { it.readText() }
+                .trim()
         }
 
         fun prompt(msg: String): String? {
@@ -168,7 +177,10 @@ tasks.register("deploy") {
             return Triple(major, minor, patch)
         }
 
-        fun bumpVersion(version: String, bumpType: String): String {
+        fun bumpVersion(
+            version: String,
+            bumpType: String,
+        ): String {
             val (major, minor, patch) = parseVersion(version)
             return when (bumpType) {
                 "major" -> "${major + 1}.0.0"
@@ -188,7 +200,8 @@ tasks.register("deploy") {
         fun getLastDeployedVersions(limit: Int = 5): List<String> {
             // Query git tags sorted by version (newest first)
             val output = exec("git", "tag", "-l", "v*", "--sort=-version:refname", "--merged")
-            return output.lines()
+            return output
+                .lines()
                 .take(limit)
                 .map { it.removePrefix("v") }
                 .filter { it.isNotEmpty() }
@@ -197,9 +210,15 @@ tasks.register("deploy") {
         fun getHighestRcNumber(baseVersion: String): Int {
             val output = exec("git", "tag", "-l", "v$baseVersion-rc.*", "--sort=-version:refname")
             val rcPattern = Regex("v$baseVersion-rc\\.(\\d+)")
-            return output.lines()
-                .mapNotNull { rcPattern.find(it)?.groupValues?.get(1)?.toIntOrNull() }
-                .maxOrNull() ?: 0
+            return output
+                .lines()
+                .mapNotNull {
+                    rcPattern
+                        .find(it)
+                        ?.groupValues
+                        ?.get(1)
+                        ?.toIntOrNull()
+                }.maxOrNull() ?: 0
         }
 
         fun askVersionType(): Boolean {
@@ -269,7 +288,6 @@ tasks.register("deploy") {
                 } else {
                     print("${colors["dim"]}[DRY RUN] Would create and push RC tag v$newVersion${colors["reset"]}")
                 }
-
             } else {
                 // Final Release flow
                 println()
@@ -295,7 +313,6 @@ tasks.register("deploy") {
             println()
             print("GitHub will trigger the pipeline automatically", "green")
             println()
-
         } catch (e: Exception) {
             print("✗ Error: ${e.message}", "red")
             throw e
@@ -414,4 +431,8 @@ idea {
             }
         }
     }
+}
+
+dependencyLocking {
+    lockAllConfigurations()
 }
