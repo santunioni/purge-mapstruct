@@ -1,4 +1,4 @@
-# PurgeMapstruct
+# ![Purge Mapstruct](./favicon.png) Purge Mapstruct
 
 An OpenRewrite recipe that inlines MapStruct mapper implementations into plain Java code, giving you full ownership of
 your mapping logic.
