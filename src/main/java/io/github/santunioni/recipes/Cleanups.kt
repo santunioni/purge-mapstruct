@@ -68,7 +68,7 @@ public class Cleanups : Recipe() {
         }
     }
 
-    public class Visitor : JavaVisitor<ExecutionContext>() {
+    internal class Visitor : JavaVisitor<ExecutionContext>() {
         override fun visit(
             tree: Tree?,
             ctx: ExecutionContext,
