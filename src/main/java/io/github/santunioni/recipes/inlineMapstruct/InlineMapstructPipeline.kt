@@ -132,6 +132,7 @@ internal class InlineMapstructPipeline(
             // but the Singleton precondition on CodeCleanup prevents sub-recipes from firing
             // in our per-file targeted loop — so we must list it explicitly here.
             ShortenFullyQualifiedTypeReferences().visitor,
-        ) + Cleanups.CLEAN_UPS
+            Cleanups.Visitor(),
+        )
     }
 }

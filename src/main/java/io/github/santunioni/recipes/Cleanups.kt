@@ -32,7 +32,7 @@ public class Cleanups : Recipe() {
     override fun getVisitor(): TreeVisitor<*, ExecutionContext> = Visitor()
 
     public companion object {
-        public val CLEAN_UPS: List<TreeVisitor<*, ExecutionContext>> by lazy {
+        private val CLEAN_UPS: List<TreeVisitor<*, ExecutionContext>> by lazy {
             listOf(
                 staticAnalysis("ExplicitInitialization"),
                 // Remove redundant parentheses (also inside CodeCleanup, but running it first
@@ -80,10 +80,10 @@ public class Cleanups : Recipe() {
         override fun visit(
             tree: Tree?,
             ctx: ExecutionContext,
-        ): J {
-            var cleaned = tree as? J.CompilationUnit ?: throw RuntimeException("Unexpected tree type")
+        ): J? {
+            var cleaned = tree as? J.CompilationUnit ?: return super.visit(tree, ctx)
             for (cleanup in CLEAN_UPS) {
-                cleaned = cleanup.visit(tree, ctx) as? J.CompilationUnit ?: throw RuntimeException("Unexpected tree type")
+                cleaned = cleanup.visit(cleaned, ctx) as? J.CompilationUnit ?: return super.visit(cleaned, ctx)
             }
             return cleaned
         }
