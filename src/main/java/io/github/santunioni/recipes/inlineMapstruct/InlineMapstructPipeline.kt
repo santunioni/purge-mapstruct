@@ -130,6 +130,10 @@ internal class InlineMapstructPipeline(
                 ReplaceMappersGetMapper(),
             ) +
                 listOf(
+                    // CodeCleanup includes ShortenFullyQualifiedTypeReferences in its recipe list,
+                    // but the Singleton precondition on CodeCleanup prevents sub-recipes from firing
+                    // in our per-file targeted loop — so we must list it explicitly here.
+                    ShortenFullyQualifiedTypeReferences(),
                     // Remove redundant parentheses (also inside CodeCleanup, but running it first
                     // gives AutoFormat cleaner input)
                     UnnecessaryParentheses(),
@@ -153,10 +157,6 @@ internal class InlineMapstructPipeline(
                     // Opinionated cleanup pack — includes UnnecessaryParentheses, so no need
                     // to list that again after this point
                     codeCleanup,
-                    // CodeCleanup includes ShortenFullyQualifiedTypeReferences in its recipe list,
-                    // but the Singleton precondition on CodeCleanup prevents sub-recipes from firing
-                    // in our per-file targeted loop — so we must list it explicitly here.
-                    ShortenFullyQualifiedTypeReferences(),
                 ).map { it.visitor }
         )
     }
@@ -169,7 +169,10 @@ internal class InlineMapstructPipeline(
             builder()
                 .scanRuntimeClasspath()
                 .build()
-                .activateRecipes("org.openrewrite.staticanalysis.CodeCleanup")
+                .activateRecipes(
+                    "org.openrewrite.staticanalysis.CodeCleanup",
+                    "org.openrewrite.staticanalysis.CommonStaticAnalysis",
+                )
         }
     }
 }
