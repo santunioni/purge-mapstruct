@@ -16,7 +16,6 @@ import org.openrewrite.staticanalysis.LambdaBlockToExpression
 import org.openrewrite.staticanalysis.RemoveUnusedLocalVariables
 import org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
 import org.openrewrite.staticanalysis.UnnecessaryParentheses
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Applies cleanup visitors only to files that [InlineMapstructPipeline] actually changes.
@@ -32,9 +31,8 @@ public class Cleanups : Recipe() {
     override fun getVisitor(): TreeVisitor<*, ExecutionContext> = Visitor()
 
     public companion object {
-        private val CLEAN_UPS: List<TreeVisitor<*, ExecutionContext>> by lazy {
+        private val CLEAN_UPS by lazy {
             listOf(
-                staticAnalysis("ExplicitInitialization"),
                 // Remove redundant parentheses (also inside CodeCleanup, but running it first
                 // gives AutoFormat cleaner input)
                 UnnecessaryParentheses(),
@@ -57,23 +55,17 @@ public class Cleanups : Recipe() {
                 AutoFormat(null),
                 // Opinionated cleanup pack — includes UnnecessaryParentheses, so no need
                 // to list that again after this point
-                staticAnalysis("CodeCleanup"),
-                staticAnalysis("CommonStaticAnalysis"),
-            ).map { it.visitor } * 3
-        }
-
-        private val cache = ConcurrentHashMap<String, Recipe>()
-
-        private fun staticAnalysis(name: String): Recipe =
-            cache.computeIfAbsent(name) {
                 Environment
                     .builder()
                     .scanRuntimeClasspath()
                     .build()
                     .activateRecipes(
-                        "org.openrewrite.staticanalysis.$name",
-                    )
-            }
+                        "org.openrewrite.staticanalysis.ExplicitInitialization",
+                        "org.openrewrite.staticanalysis.CodeCleanup",
+                        "org.openrewrite.staticanalysis.CommonStaticAnalysis",
+                    ),
+            ).map { it.visitor }
+        }
     }
 
     public class Visitor : JavaVisitor<ExecutionContext>() {
@@ -89,5 +81,3 @@ public class Cleanups : Recipe() {
         }
     }
 }
-
-private operator fun <T> List<T>.times(other: Int): List<T> = (1..other).flatMap { this@times }
