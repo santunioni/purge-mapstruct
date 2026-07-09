@@ -1,3 +1,4 @@
+import org.gradle.plugins.signing.Sign
 import org.jetbrains.gradle.ext.ProjectSettings
 import org.jetbrains.gradle.ext.TaskTriggersConfig
 
@@ -435,4 +436,12 @@ idea {
 
 dependencyLocking {
     lockAllConfigurations()
+}
+
+gradle.taskGraph.whenReady {
+    if (this.allTasks.any<Task> { it.name.contains("ToMavenLocal") }) {
+        tasks.withType<Sign>().configureEach {
+            enabled = false
+        }
+    }
 }
