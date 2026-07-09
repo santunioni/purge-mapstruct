@@ -114,52 +114,54 @@ internal class InlineMapstructPipeline(
     private val inlineDecoratedMapper = InlineDecoratedMapper(mapstructRefsReader)
 
     private val postApplyToTouchedFiles by lazy {
-        val singleIteration =
-            listOf<TreeVisitor<*, ExecutionContext>>(
-                // Rewrite *Impl references (new FooMapperImpl(), FooMapperImpl.class, etc.) copied in from
-                // the generated impl body during the merge — same rationale as the ReplaceMappersGetMapper
-                // entry at the front of the static post list. Needs the scan-pass linkings, so it is
-                // instance- (not static-) scoped.
-                RewriteImplReferences(mapstructRefsReader),
-                // Drop MapStruct annotations (@Mapper on the type, @Mapping/@MappingTarget on methods and
-                // parameters) so the inlined class is plain Java.
-                StripMapstructAnnotations(),
-            ) + (
+        listOf<TreeVisitor<*, ExecutionContext>>(
+            // Rewrite *Impl references (new FooMapperImpl(), FooMapperImpl.class, etc.) copied in from
+            // the generated impl body during the merge — same rationale as the ReplaceMappersGetMapper
+            // entry at the front of the static post list. Needs the scan-pass linkings, so it is
+            // instance- (not static-) scoped.
+            RewriteImplReferences(mapstructRefsReader),
+            // Drop MapStruct annotations (@Mapper on the type, @Mapping/@MappingTarget on methods and
+            // parameters) so the inlined class is plain Java.
+            StripMapstructAnnotations(),
+        ) + (
+            listOf(
+                // Rewrite any Mappers.getMapper(X.class) that was copied in from the generated impl
+                // during the merge (the pre-pass only saw the mapper declaration, not the impl body).
+                ReplaceMappersGetMapper(),
+            ) +
                 listOf(
-                    // Rewrite any Mappers.getMapper(X.class) that was copied in from the generated impl
-                    // during the merge (the pre-pass only saw the mapper declaration, not the impl body).
-                    ReplaceMappersGetMapper(),
-                ) +
-                    listOf(
-                        // CodeCleanup includes ShortenFullyQualifiedTypeReferences in its recipe list,
-                        // but the Singleton precondition on CodeCleanup prevents sub-recipes from firing
-                        // in our per-file targeted loop — so we must list it explicitly here.
-                        ShortenFullyQualifiedTypeReferences(),
-                        // Remove redundant parentheses (also inside CodeCleanup, but running it first
-                        // gives AutoFormat cleaner input)
-                        UnnecessaryParentheses(),
-                        // Remove local variables that are declared but never read
-                        RemoveUnusedLocalVariables(null, null, false),
-                        // Drop imports no longer referenced after merging
-                        RemoveUnusedImports(),
-                        // Collapse single-statement lambda blocks to expressions
-                        LambdaBlockToExpression(),
-                        // Replace "x -> foo(x)" with method references where applicable
-                        ReplaceLambdaWithMethodReference(),
-                        // Remove redundant @Autowired from single-constructor beans (no-op without Spring)
-                        NoAutowiredOnConstructor(),
-                        // Inline variables that are only ever returned/thrown on the very next line.
-                        // Two passes handle cascaded chains (e.g. a→b→return).
-                        InlineVariable(),
-                        // Apply standard Java formatting: blank lines, whitespace padding, indentation
-                        AutoFormat(null),
-                        // Opinionated cleanup pack — includes UnnecessaryParentheses, so no need
-                        // to list that again after this point
-                        codeCleanup,
-                    ).map { it.visitor }
-            )
-
-        return@lazy (1..3).flatMap { singleIteration }
+                    // CodeCleanup includes ShortenFullyQualifiedTypeReferences in its recipe list,
+                    // but the Singleton precondition on CodeCleanup prevents sub-recipes from firing
+                    // in our per-file targeted loop — so we must list it explicitly here.
+                    ShortenFullyQualifiedTypeReferences(),
+                    // Opinionated cleanup pack — includes UnnecessaryParentheses, so no need
+                    // to list that again after this point
+                    codeCleanup,
+                    // Remove redundant parentheses (also inside CodeCleanup, but running it first
+                    // gives AutoFormat cleaner input)
+                    UnnecessaryParentheses(),
+                    // Remove local variables that are declared but never read
+                    RemoveUnusedLocalVariables(null, null, false),
+                    // Drop imports no longer referenced after merging
+                    RemoveUnusedImports(),
+                    // Collapse single-statement lambda blocks to expressions
+                    LambdaBlockToExpression(),
+                    // Replace "x -> foo(x)" with method references where applicable
+                    ReplaceLambdaWithMethodReference(),
+                    // Remove redundant @Autowired from single-constructor beans (no-op without Spring)
+                    NoAutowiredOnConstructor(),
+                    // Inline variables that are only ever returned/thrown on the very next line.
+                    // Two passes handle cascaded chains (e.g. a→b→return).
+                    InlineVariable(),
+                    InlineVariable(),
+                    InlineVariable(),
+                    // Apply standard Java formatting: blank lines, whitespace padding, indentation
+                    AutoFormat(null),
+                    // Opinionated cleanup pack — includes UnnecessaryParentheses, so no need
+                    // to list that again after this point
+                    codeCleanup,
+                ).map { it.visitor }
+        )
     }
 
     internal companion object {
