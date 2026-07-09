@@ -439,9 +439,13 @@ dependencyLocking {
 }
 
 gradle.taskGraph.whenReady {
-    if (this.allTasks.any<Task> { it.name.contains("ToMavenLocal") }) {
+    if (this.allTasks.last().name == "publishToMavenLocal") {
         tasks.withType<Sign>().configureEach {
             enabled = false
         }
     }
+}
+
+tasks.named("publishToMavenLocal") {
+    version = "local"
 }
