@@ -25,6 +25,7 @@ import org.openrewrite.staticanalysis.LambdaBlockToExpression
 import org.openrewrite.staticanalysis.RemoveUnusedLocalVariables
 import org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
 import org.openrewrite.staticanalysis.UnnecessaryParentheses
+import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Logger
 
 internal class InlineMapstructPipeline(
@@ -134,9 +135,7 @@ internal class InlineMapstructPipeline(
                     // but the Singleton precondition on CodeCleanup prevents sub-recipes from firing
                     // in our per-file targeted loop — so we must list it explicitly here.
                     ShortenFullyQualifiedTypeReferences(),
-                    // Opinionated cleanup pack — includes UnnecessaryParentheses, so no need
-                    // to list that again after this point
-                    codeCleanup,
+                    staticAnalysis("ExplicitInitialization"),
                     // Remove redundant parentheses (also inside CodeCleanup, but running it first
                     // gives AutoFormat cleaner input)
                     UnnecessaryParentheses(),
@@ -159,23 +158,25 @@ internal class InlineMapstructPipeline(
                     AutoFormat(null),
                     // Opinionated cleanup pack — includes UnnecessaryParentheses, so no need
                     // to list that again after this point
-                    codeCleanup,
+                    staticAnalysis("CodeCleanup"),
+                    staticAnalysis("CommonStaticAnalysis"),
                 ).map { it.visitor }
-        )
+        ) * 3
     }
 
     internal companion object {
-        /**
-         * kept here because this is heavy to load
-         */
-        private val codeCleanup by lazy {
-            builder()
-                .scanRuntimeClasspath()
-                .build()
-                .activateRecipes(
-                    "org.openrewrite.staticanalysis.CodeCleanup",
-                    "org.openrewrite.staticanalysis.CommonStaticAnalysis",
-                )
-        }
+        private val cache = ConcurrentHashMap<String, org.openrewrite.Recipe>()
+
+        fun staticAnalysis(name: String): org.openrewrite.Recipe =
+            cache.computeIfAbsent(name) {
+                builder()
+                    .scanRuntimeClasspath()
+                    .build()
+                    .activateRecipes(
+                        "org.openrewrite.staticanalysis.$name",
+                    )
+            }
     }
 }
+
+private operator fun <T> List<T>.times(other: Int): List<T> = (1..other).flatMap { this@times }

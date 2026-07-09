@@ -448,4 +448,5 @@ gradle.taskGraph.whenReady {
 
 tasks.named("publishToMavenLocal") {
     version = "local"
+    dependsOn += tasks.named("build")
 }
