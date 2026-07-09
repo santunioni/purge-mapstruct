@@ -134,6 +134,9 @@ internal class InlineMapstructPipeline(
                     // but the Singleton precondition on CodeCleanup prevents sub-recipes from firing
                     // in our per-file targeted loop — so we must list it explicitly here.
                     ShortenFullyQualifiedTypeReferences(),
+                    // Opinionated cleanup pack — includes UnnecessaryParentheses, so no need
+                    // to list that again after this point
+                    codeCleanup,
                     // Remove redundant parentheses (also inside CodeCleanup, but running it first
                     // gives AutoFormat cleaner input)
                     UnnecessaryParentheses(),
