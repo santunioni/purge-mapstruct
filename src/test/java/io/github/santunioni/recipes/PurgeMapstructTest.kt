@@ -15,7 +15,6 @@
  */
 package io.github.santunioni.recipes
 
-import io.github.santunioni.recipes.PurgeMapstructTest.Context
 import org.junit.jupiter.api.Test
 import org.openrewrite.DocumentExample
 import org.openrewrite.java.Assertions.java
@@ -30,7 +29,15 @@ internal class PurgeMapstructTest : RewriteTest {
         spec
             .recipes(
                 PurgeMapstruct(),
-            ).parser(JavaParser.fromJavaVersion().classpath("mapstruct", "lombok", "junit-jupiter-api"))
+            ).parser(
+                JavaParser.fromJavaVersion().classpath(
+                    "mapstruct",
+                    "lombok",
+                    "junit-jupiter-api",
+                    "spring-beans",
+                    "spring-context",
+                ),
+            )
     }
 
     @DocumentExample
@@ -357,81 +364,36 @@ internal class PurgeMapstructTest : RewriteTest {
     }
 
     @Test
-    fun shouldInlineDecoratedMapper() {
-        val makeAvailableSourceEntity: SourceSpecs =
-            java(readResource("fixtures/decoratedWith/context/SourceEntity.java")) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/SourceEntity.java")
-            }
+    fun shouldInlineDecoratedMapper() =
+        ctx {
+            // Arrange
+            include("fixtures/decoratedWith/context/SourceEntity.java")
+            include("fixtures/decoratedWith/context/TargetDto.java")
 
-        val makeAvailableTargetDto: SourceSpecs =
-            java(readResource("fixtures/decoratedWith/context/TargetDto.java")) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/TargetDto.java")
-            }
-
-        val makeAvailablePrimaryImpl =
-            java(
-                readResource("fixtures/decoratedWith/context/FooMapperImpl.java"),
-                null as String?,
-            ) { spec ->
-                spec.path(
-                    "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/FooMapperImpl.java",
-                )
-            }
-
-        val makeAvailableDelegateImpl =
-            java(
-                readResource("fixtures/decoratedWith/context/FooMapperImpl_.java"),
-                null as String?,
-            ) { spec ->
-                spec.path(
-                    "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/FooMapperImpl_.java",
-                )
-            }
-
-        rewriteRun(
-            { spec: RecipeSpec ->
-                spec.parser(
-                    JavaParser
-                        .fromJavaVersion()
-                        .classpath(
-                            "mapstruct",
-                            "lombok",
-                            "junit-jupiter-api",
-                            "spring-beans",
-                            "spring-context",
-                        ),
-                )
-            },
-            makeAvailableSourceEntity,
-            makeAvailableTargetDto,
-            makeAvailablePrimaryImpl,
-            makeAvailableDelegateImpl,
-            java(
-                readResource("fixtures/decoratedWith/before/FooMapperDecorator.java"),
-                null as String?,
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/FooMapperDecorator.java")
-            },
-            java(
-                readResource("fixtures/decoratedWith/before/FooMapper.java"),
-                readResource("fixtures/decoratedWith/after/FooMapper.java"),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/FooMapper.java")
-            },
-        )
-    }
+            // Act - Assert
+            delete("fixtures/decoratedWith/context/FooMapperImpl.java")
+            delete("fixtures/decoratedWith/context/FooMapperImpl_.java")
+            delete("fixtures/decoratedWith/before/FooMapperDecorator.java")
+            transform(
+                "fixtures/decoratedWith/before/FooMapper.java",
+                "fixtures/decoratedWith/after/FooMapper.java",
+            )
+            assert()
+        }
 
     @Test
     fun shouldStripContextTypeAnnotation() =
         ctx {
+            // Arrange
             include("fixtures/shouldStripContextTypeAnnotation/context/CustomerDto.java")
             include("fixtures/shouldStripContextTypeAnnotation/context/CustomerEntity.java")
+
+            // Act - Assert
             delete("fixtures/shouldStripContextTypeAnnotation/context/CustomerMapperImpl.java")
             transform(
                 "fixtures/shouldStripContextTypeAnnotation/before/CustomerMapper.java",
                 "fixtures/shouldStripContextTypeAnnotation/after/CustomerMapper.java",
             )
-
             assert()
         }
 
