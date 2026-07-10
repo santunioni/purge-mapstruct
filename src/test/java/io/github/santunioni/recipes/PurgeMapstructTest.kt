@@ -2,18 +2,30 @@ package io.github.santunioni.recipes
 
 import org.junit.jupiter.api.Test
 import org.openrewrite.DocumentExample
-import org.openrewrite.java.Assertions.java
 import org.openrewrite.java.JavaParser
 import org.openrewrite.test.RecipeSpec
 import org.openrewrite.test.RewriteTest
-import org.openrewrite.test.SourceSpecs
-import java.nio.charset.StandardCharsets
 
 internal class PurgeMapstructTest : RewriteTest {
+    override fun defaults(spec: RecipeSpec) {
+        spec
+            .recipes(
+                PurgeMapstruct(),
+            ).parser(
+                JavaParser.fromJavaVersion().classpath(
+                    "mapstruct",
+                    "lombok",
+                    "junit-jupiter-api",
+                    "spring-beans",
+                    "spring-context",
+                ),
+            )
+    }
+
     @DocumentExample
     @Test
     fun shouldReplaceInterfaceMapper() =
-        rewrite {
+        this {
             // Arrange
             include("fixtures/shouldReplaceInterfaceMapper/context/UserDto.java")
             include("fixtures/shouldReplaceInterfaceMapper/context/UserEntity.java")
@@ -32,7 +44,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldReplaceMappersGetMapper() =
-        rewrite {
+        this {
             // Arrange
             include("fixtures/shouldReplaceMappersGetMapper/context/CustomerDto.java")
             include("fixtures/shouldReplaceMappersGetMapper/context/CustomerEntity.java")
@@ -48,7 +60,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldReplaceMappersGetMapperInAnyFile() =
-        rewrite {
+        this {
             // Arrange
             include("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerDto.java")
             include("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerEntity.java")
@@ -67,7 +79,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldReplaceMappersGetMapperInGeneratedField() =
-        rewrite {
+        this {
             // Arrange
             include("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerDto.java")
             include("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerEntity.java")
@@ -87,7 +99,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldRemoveAfterMappingDecorators() =
-        rewrite {
+        this {
             // Arrange
             include("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerDto.java")
             include("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerEntity.java")
@@ -102,7 +114,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldRewriteWhenOnSpyToDoReturn() =
-        rewrite {
+        this {
             // Arrange
             include("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserDto.java")
             include("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserEntity.java")
@@ -118,7 +130,7 @@ internal class PurgeMapstructTest : RewriteTest {
     @DocumentExample
     @Test
     fun shouldReplaceAbstractMapper() =
-        rewrite {
+        this {
             // Arrange
             include("fixtures/shouldReplaceAbstractMapper/context/CustomerDto.java")
             include("fixtures/shouldReplaceAbstractMapper/context/CustomerEntity.java")
@@ -133,7 +145,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldInlineDecoratedMapper() =
-        rewrite {
+        this {
             // Arrange
             include("fixtures/decoratedWith/context/SourceEntity.java")
             include("fixtures/decoratedWith/context/TargetDto.java")
@@ -150,7 +162,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldStripContextTypeAnnotation() =
-        rewrite {
+        this {
             // Arrange
             include("fixtures/shouldStripContextTypeAnnotation/context/CustomerDto.java")
             include("fixtures/shouldStripContextTypeAnnotation/context/CustomerEntity.java")
@@ -162,71 +174,4 @@ internal class PurgeMapstructTest : RewriteTest {
                 "fixtures/shouldStripContextTypeAnnotation/after/CustomerMapper.java",
             )
         }
-
-    companion object {
-        private fun readResource(resource: String): String =
-            PurgeMapstructTest::class.java.classLoader.getResourceAsStream(resource)!!.use { stream ->
-                String(stream.readAllBytes(), StandardCharsets.UTF_8)
-            }
-    }
-
-    fun rewrite(action: RecipeTestSpecification.() -> Unit) {
-        val ctx = RecipeTestSpecification()
-        action(ctx)
-        rewriteRun(*ctx.sourceSpecs.toTypedArray())
-    }
-
-    override fun defaults(spec: RecipeSpec) {
-        spec
-            .recipes(
-                PurgeMapstruct(),
-            ).parser(
-                JavaParser.fromJavaVersion().classpath(
-                    "mapstruct",
-                    "lombok",
-                    "junit-jupiter-api",
-                    "spring-beans",
-                    "spring-context",
-                ),
-            )
-    }
-
-    class RecipeTestSpecification {
-        val sourceSpecs = mutableListOf<SourceSpecs>()
-
-        fun include(file: String) {
-            sourceSpecs.add(
-                java(
-                    readResource(file),
-                ) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/${file.split("/").last()}")
-                },
-            )
-        }
-
-        fun transform(
-            from: String,
-            to: String,
-        ) {
-            sourceSpecs.add(
-                java(
-                    readResource(from),
-                    readResource(to),
-                ) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/${from.split("/").last()}")
-                },
-            )
-        }
-
-        fun delete(file: String) {
-            sourceSpecs.add(
-                java(
-                    readResource(file),
-                    null,
-                ) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/${file.split("/").last()}")
-                },
-            )
-        }
-    }
 }
