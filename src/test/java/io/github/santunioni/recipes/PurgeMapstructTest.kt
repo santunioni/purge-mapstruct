@@ -42,196 +42,200 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @DocumentExample
     @Test
-    fun shouldReplaceInterfaceMapper() {
-        val makeAvailableUserDto: SourceSpecs =
-            java(readResource("fixtures/shouldReplaceInterfaceMapper/context/UserDto.java")) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/UserDto.java")
-            }
+    fun shouldReplaceInterfaceMapper() =
+        rewrite {
+            val makeAvailableUserDto: SourceSpecs =
+                java(readResource("fixtures/shouldReplaceInterfaceMapper/context/UserDto.java")) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/UserDto.java")
+                }
 
-        val makeAvailableUserEntity: SourceSpecs =
-            java(readResource("fixtures/shouldReplaceInterfaceMapper/context/UserEntity.java")) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/UserEntity.java")
-            }
+            val makeAvailableUserEntity: SourceSpecs =
+                java(readResource("fixtures/shouldReplaceInterfaceMapper/context/UserEntity.java")) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/UserEntity.java")
+                }
 
-        val makeAvailableGeneratedClass =
-            java(
-                readResource("fixtures/shouldReplaceInterfaceMapper/context/UserMapperImpl.java"),
-                null as String?,
-            ) { spec ->
-                spec.path(
-                    "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/UserMapperImpl.java",
-                )
-            }
+            val makeAvailableGeneratedClass =
+                java(
+                    readResource("fixtures/shouldReplaceInterfaceMapper/context/UserMapperImpl.java"),
+                    null as String?,
+                ) { spec ->
+                    spec.path(
+                        "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/UserMapperImpl.java",
+                    )
+                }
 
-        rewriteRun(
-            makeAvailableUserDto,
-            makeAvailableUserEntity,
-            makeAvailableGeneratedClass,
-            java(
-                readResource("fixtures/shouldReplaceInterfaceMapper/before/UserService.java"),
-                readResource("fixtures/shouldReplaceInterfaceMapper/after/UserService.java"),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/UserService.java")
-            },
-            java(
-                readResource("fixtures/shouldReplaceInterfaceMapper/before/UserMapper.java"),
-                readResource("fixtures/shouldReplaceInterfaceMapper/after/UserMapper.java"),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/UserMapper.java")
-            },
-        )
-    }
-
-    @Test
-    fun shouldReplaceMappersGetMapper() {
-        val makeAvailableCustomerDto: SourceSpecs =
-            java(readResource("fixtures/shouldReplaceMappersGetMapper/context/CustomerDto.java")) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
-            }
-
-        val makeAvailableCustomerEntity: SourceSpecs =
-            java(readResource("fixtures/shouldReplaceMappersGetMapper/context/CustomerEntity.java")) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
-            }
-
-        val makeAvailableGeneratedClass =
-            java(
-                readResource("fixtures/shouldReplaceMappersGetMapper/context/CustomerMapperImpl.java"),
-                null as String?,
-            ) { spec ->
-                spec.path(
-                    "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java",
-                )
-            }
-
-        rewriteRun(
-            makeAvailableCustomerDto,
-            makeAvailableCustomerEntity,
-            makeAvailableGeneratedClass,
-            java(
-                readResource("fixtures/shouldReplaceMappersGetMapper/before/CustomerMapper.java"),
-                readResource("fixtures/shouldReplaceMappersGetMapper/after/CustomerMapper.java"),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
-            },
-        )
-    }
+            rewriteRun(
+                makeAvailableUserDto,
+                makeAvailableUserEntity,
+                makeAvailableGeneratedClass,
+                java(
+                    readResource("fixtures/shouldReplaceInterfaceMapper/before/UserService.java"),
+                    readResource("fixtures/shouldReplaceInterfaceMapper/after/UserService.java"),
+                ) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/UserService.java")
+                },
+                java(
+                    readResource("fixtures/shouldReplaceInterfaceMapper/before/UserMapper.java"),
+                    readResource("fixtures/shouldReplaceInterfaceMapper/after/UserMapper.java"),
+                ) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/UserMapper.java")
+                },
+            )
+        }
 
     @Test
-    fun shouldReplaceMappersGetMapperInAnyFile() {
-        val makeAvailableCustomerDto: SourceSpecs =
-            java(readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerDto.java")) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
-            }
+    fun shouldReplaceMappersGetMapper() =
+        rewrite {
+            val makeAvailableCustomerDto: SourceSpecs =
+                java(readResource("fixtures/shouldReplaceMappersGetMapper/context/CustomerDto.java")) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
+                }
 
-        val makeAvailableCustomerEntity: SourceSpecs =
-            java(readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerEntity.java")) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
-            }
+            val makeAvailableCustomerEntity: SourceSpecs =
+                java(readResource("fixtures/shouldReplaceMappersGetMapper/context/CustomerEntity.java")) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
+                }
 
-        val makeAvailableGeneratedClass =
-            java(
-                readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerMapperImpl.java"),
-                null as String?,
-            ) { spec ->
-                spec.path(
-                    "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java",
-                )
-            }
+            val makeAvailableGeneratedClass =
+                java(
+                    readResource("fixtures/shouldReplaceMappersGetMapper/context/CustomerMapperImpl.java"),
+                    null as String?,
+                ) { spec ->
+                    spec.path(
+                        "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java",
+                    )
+                }
 
-        rewriteRun(
-            makeAvailableCustomerDto,
-            makeAvailableCustomerEntity,
-            makeAvailableGeneratedClass,
-            java(
-                readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/before/CustomerMapper.java"),
-                readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/after/CustomerMapper.java"),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
-            },
-            java(
-                readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/before/CustomerService.java"),
-                readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/after/CustomerService.java"),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerService.java")
-            },
-        )
-    }
+            rewriteRun(
+                makeAvailableCustomerDto,
+                makeAvailableCustomerEntity,
+                makeAvailableGeneratedClass,
+                java(
+                    readResource("fixtures/shouldReplaceMappersGetMapper/before/CustomerMapper.java"),
+                    readResource("fixtures/shouldReplaceMappersGetMapper/after/CustomerMapper.java"),
+                ) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
+                },
+            )
+        }
 
     @Test
-    fun shouldReplaceMappersGetMapperInGeneratedField() {
-        val makeAvailableCustomerDto: SourceSpecs =
-            java(
-                readResource(
-                    "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerDto.java",
-                ),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
-            }
+    fun shouldReplaceMappersGetMapperInAnyFile() =
+        rewrite {
+            val makeAvailableCustomerDto: SourceSpecs =
+                java(readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerDto.java")) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
+                }
 
-        val makeAvailableCustomerEntity: SourceSpecs =
-            java(
-                readResource(
-                    "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerEntity.java",
-                ),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
-            }
+            val makeAvailableCustomerEntity: SourceSpecs =
+                java(readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerEntity.java")) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
+                }
 
-        val makeAvailableAddressMapper =
-            java(
-                readResource(
-                    "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/AddressMapper.java",
-                ),
-                readResource(
-                    "fixtures/shouldReplaceMappersGetMapperInGeneratedField/after/AddressMapper.java",
-                ),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/AddressMapper.java")
-            }
+            val makeAvailableGeneratedClass =
+                java(
+                    readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerMapperImpl.java"),
+                    null as String?,
+                ) { spec ->
+                    spec.path(
+                        "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java",
+                    )
+                }
 
-        val makeAvailableAddressMapperImpl =
-            java(
-                readResource(
-                    "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/AddressMapperImpl.java",
-                ),
-                null as String?,
-            ) { spec ->
-                spec.path(
-                    "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/AddressMapperImpl.java",
-                )
-            }
+            rewriteRun(
+                makeAvailableCustomerDto,
+                makeAvailableCustomerEntity,
+                makeAvailableGeneratedClass,
+                java(
+                    readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/before/CustomerMapper.java"),
+                    readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/after/CustomerMapper.java"),
+                ) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
+                },
+                java(
+                    readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/before/CustomerService.java"),
+                    readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/after/CustomerService.java"),
+                ) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/CustomerService.java")
+                },
+            )
+        }
 
-        val makeAvailableGeneratedClass =
-            java(
-                readResource(
-                    "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerMapperImpl.java",
-                ),
-                null as String?,
-            ) { spec ->
-                spec.path(
-                    "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java",
-                )
-            }
+    @Test
+    fun shouldReplaceMappersGetMapperInGeneratedField() =
+        rewrite {
+            val makeAvailableCustomerDto: SourceSpecs =
+                java(
+                    readResource(
+                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerDto.java",
+                    ),
+                ) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
+                }
 
-        rewriteRun(
-            makeAvailableCustomerDto,
-            makeAvailableCustomerEntity,
-            makeAvailableAddressMapper,
-            makeAvailableAddressMapperImpl,
-            makeAvailableGeneratedClass,
-            java(
-                readResource(
-                    "fixtures/shouldReplaceMappersGetMapperInGeneratedField/before/CustomerMapper.java",
-                ),
-                readResource(
-                    "fixtures/shouldReplaceMappersGetMapperInGeneratedField/after/CustomerMapper.java",
-                ),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
-            },
-        )
-    }
+            val makeAvailableCustomerEntity: SourceSpecs =
+                java(
+                    readResource(
+                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerEntity.java",
+                    ),
+                ) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
+                }
+
+            val makeAvailableAddressMapper =
+                java(
+                    readResource(
+                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/AddressMapper.java",
+                    ),
+                    readResource(
+                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/after/AddressMapper.java",
+                    ),
+                ) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/AddressMapper.java")
+                }
+
+            val makeAvailableAddressMapperImpl =
+                java(
+                    readResource(
+                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/AddressMapperImpl.java",
+                    ),
+                    null as String?,
+                ) { spec ->
+                    spec.path(
+                        "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/AddressMapperImpl.java",
+                    )
+                }
+
+            val makeAvailableGeneratedClass =
+                java(
+                    readResource(
+                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerMapperImpl.java",
+                    ),
+                    null as String?,
+                ) { spec ->
+                    spec.path(
+                        "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java",
+                    )
+                }
+
+            rewriteRun(
+                makeAvailableCustomerDto,
+                makeAvailableCustomerEntity,
+                makeAvailableAddressMapper,
+                makeAvailableAddressMapperImpl,
+                makeAvailableGeneratedClass,
+                java(
+                    readResource(
+                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/before/CustomerMapper.java",
+                    ),
+                    readResource(
+                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/after/CustomerMapper.java",
+                    ),
+                ) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
+                },
+            )
+        }
 
     @Test
     fun shouldRemoveAfterMappingDecorators() =
