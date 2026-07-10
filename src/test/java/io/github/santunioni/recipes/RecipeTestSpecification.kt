@@ -8,9 +8,9 @@ import java.nio.charset.StandardCharsets
 class RecipeTestSpecification {
     companion object {
         private fun readResource(resource: String): String =
-            PurgeMapstructTest::class.java.classLoader.getResourceAsStream(resource)!!.use { stream ->
+            PurgeMapstructTest::class.java.classLoader.getResourceAsStream(resource)?.use { stream ->
                 String(stream.readAllBytes(), StandardCharsets.UTF_8)
-            }
+            } ?: throw IllegalArgumentException("Resource not found: $resource")
     }
 
     val sourceSpecs = mutableListOf<SourceSpecs>()
