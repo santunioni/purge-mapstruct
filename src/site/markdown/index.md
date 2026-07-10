@@ -22,7 +22,8 @@ annotation attributes.
 The result is a codebase where mappings are invisible, bugs are silent, and understanding what actually happens requires
 reading both the interface and the generated implementation — a file that lives in `build/`, is never committed, and
 disappears on a clean build. That is not easy to maintain; it is obscurity. MapStruct optimises for writing less code,
-not for reading or maintaining it. Simple field-matching is manageable; but once a mapping requires logic, you are writing Java expressions inside
+not for reading or maintaining it. Simple field-matching is manageable; but once a mapping requires logic, you are
+writing Java expressions inside
 annotation strings, referencing methods by name in a context the LSP cannot reach. You need too many go-to-definition
 into generated code to understand mapping logic because the code lacks cohesion.
 
@@ -219,13 +220,26 @@ Compile first so MapStruct generates the `*Impl` files, run the recipe, then ver
 
 > **Note on Mockito `@Spy`:** If your tests spy on mapper fields using `when(myMapper.someMethod(...)).thenReturn(...)`,
 > those stubs will break after inlining because the mapper is now a concrete class. The recipe automatically rewrites
-> them to `doReturn(...).when(myMapper).someMethod(...)`, which is the correct pattern for concrete-class spies. Pro tip for the future: don't mock your own code in tests, use it.
+> them to `doReturn(...).when(myMapper).someMethod(...)`, which is the correct pattern for concrete-class spies. Pro tip
+> for the future: don't mock your own code in tests, use it.
 
 After the recipe runs, apply the formatter again — now only the inlined mapper files will be reformatted:
 
 ```bash
 ./gradlew spotlessApply   # or ./mvnw spotless:apply
 ```
+
+### Step 5: run your build and tests
+
+Build your code with `./gradlew compileJava compileTestJava` to check everything is ok. It is a good idea to run
+your tests too.
+
+The long term goal of this recipe is to purge mapstruct without requiring any manual work. Nevertheless, I found some
+perks in some big codebases I tested that required manual work, usually of about 10 minutes The recipe is pessimistic by
+design: it won't change your code if it is not sure if it is a noop change. Do the required manual work if it is small.
+
+If you need any manual work, please share the feedback with me. Open an issue with a reproducible case, so that I can iterate on the
+recipe.
 
 ---
 
