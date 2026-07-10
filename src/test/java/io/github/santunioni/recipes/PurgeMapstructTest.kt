@@ -235,7 +235,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldRemoveAfterMappingDecorators() =
-        this {
+        rewrite {
             // Arrange
             include("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerDto.java")
             include("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerEntity.java")
@@ -250,7 +250,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldRewriteWhenOnSpyToDoReturn() =
-        this {
+        rewrite {
             // Arrange
             include("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserDto.java")
             include("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserEntity.java")
@@ -261,13 +261,12 @@ internal class PurgeMapstructTest : RewriteTest {
                 "fixtures/shouldRewriteWhenOnSpyToDoReturn/before/UserMapper.java",
                 "fixtures/shouldRewriteWhenOnSpyToDoReturn/after/UserMapper.java",
             )
-            assert()
         }
 
     @DocumentExample
     @Test
     fun shouldReplaceAbstractMapper() =
-        this {
+        rewrite {
             // Arrange
             include("fixtures/shouldReplaceAbstractMapper/context/CustomerDto.java")
             include("fixtures/shouldReplaceAbstractMapper/context/CustomerEntity.java")
@@ -278,12 +277,11 @@ internal class PurgeMapstructTest : RewriteTest {
                 "fixtures/shouldReplaceAbstractMapper/before/CustomerMapper.java",
                 "fixtures/shouldReplaceAbstractMapper/after/CustomerMapper.java",
             )
-            assert()
         }
 
     @Test
     fun shouldInlineDecoratedMapper() =
-        this {
+        rewrite {
             // Arrange
             include("fixtures/decoratedWith/context/SourceEntity.java")
             include("fixtures/decoratedWith/context/TargetDto.java")
@@ -296,12 +294,11 @@ internal class PurgeMapstructTest : RewriteTest {
                 "fixtures/decoratedWith/before/FooMapper.java",
                 "fixtures/decoratedWith/after/FooMapper.java",
             )
-            assert()
         }
 
     @Test
     fun shouldStripContextTypeAnnotation() =
-        this {
+        rewrite {
             // Arrange
             include("fixtures/shouldStripContextTypeAnnotation/context/CustomerDto.java")
             include("fixtures/shouldStripContextTypeAnnotation/context/CustomerEntity.java")
@@ -312,7 +309,6 @@ internal class PurgeMapstructTest : RewriteTest {
                 "fixtures/shouldStripContextTypeAnnotation/before/CustomerMapper.java",
                 "fixtures/shouldStripContextTypeAnnotation/after/CustomerMapper.java",
             )
-            assert()
         }
 
     companion object {
@@ -322,15 +318,17 @@ internal class PurgeMapstructTest : RewriteTest {
             }
     }
 
-    operator fun invoke(action: Context.() -> Unit) {
-        action(Context())
+    fun rewrite(action: RecipeTestSpecification.() -> Unit) {
+        val ctx = RecipeTestSpecification()
+        action(ctx)
+        rewriteRun(*ctx.sourceSpecs.toTypedArray())
     }
 
-    inner class Context {
-        private val specs = mutableListOf<SourceSpecs>()
+    inner class RecipeTestSpecification {
+        val sourceSpecs = mutableListOf<SourceSpecs>()
 
         fun include(file: String) {
-            specs.add(
+            sourceSpecs.add(
                 java(
                     readResource(file),
                 ) { spec ->
@@ -343,7 +341,7 @@ internal class PurgeMapstructTest : RewriteTest {
             from: String,
             to: String,
         ) {
-            specs.add(
+            sourceSpecs.add(
                 java(
                     readResource(from),
                     readResource(to),
@@ -354,7 +352,7 @@ internal class PurgeMapstructTest : RewriteTest {
         }
 
         fun delete(file: String) {
-            specs.add(
+            sourceSpecs.add(
                 java(
                     readResource(file),
                     null,
@@ -362,10 +360,6 @@ internal class PurgeMapstructTest : RewriteTest {
                     spec.path("src/main/java/com/santunioni/fixtures/${file.split("/").last()}")
                 },
             )
-        }
-
-        fun assert() {
-            rewriteRun(*specs.toTypedArray())
         }
     }
 }
