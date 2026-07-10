@@ -63,7 +63,7 @@ dependencies {
     // Spring annotations (@Component, @Primary, @Autowired, @Qualifier) needed on the parser
     // classpath for the @DecoratedWith decorated-mapper fixtures.
     testRuntimeOnly("org.springframework:spring-context:latest.release")
-    testRuntimeOnly("org.springframework:spring-test:latest.release")
+    testRuntimeOnly("org.springframework.boot:spring-boot-starter-test:latest.release")
 }
 
 signing {
