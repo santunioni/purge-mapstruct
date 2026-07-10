@@ -15,7 +15,7 @@ class RecipeTestSpecification {
 
     val sourceSpecs = mutableListOf<SourceSpecs>()
 
-    fun include(file: String) {
+    fun makeAvailable(file: String) {
         sourceSpecs.add(
             java(
                 readResource(file),
@@ -25,7 +25,7 @@ class RecipeTestSpecification {
         )
     }
 
-    fun transform(
+    fun expectTransformed(
         from: String,
         to: String,
     ) {
@@ -39,7 +39,7 @@ class RecipeTestSpecification {
         )
     }
 
-    fun delete(file: String) {
+    fun expectDeleted(file: String) {
         sourceSpecs.add(
             java(
                 readResource(file),

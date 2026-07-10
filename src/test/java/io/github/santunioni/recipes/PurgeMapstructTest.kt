@@ -29,16 +29,16 @@ internal class PurgeMapstructTest : RewriteTest {
     fun shouldReplaceInterfaceMapper() =
         simulate {
             // Arrange
-            include("fixtures/shouldReplaceInterfaceMapper/context/UserDto.java")
-            include("fixtures/shouldReplaceInterfaceMapper/context/UserEntity.java")
+            makeAvailable("fixtures/shouldReplaceInterfaceMapper/context/UserDto.java")
+            makeAvailable("fixtures/shouldReplaceInterfaceMapper/context/UserEntity.java")
 
-            // Act - Assert
-            delete("fixtures/shouldReplaceInterfaceMapper/context/UserMapperImpl.java")
-            transform(
+            // Assert
+            expectDeleted("fixtures/shouldReplaceInterfaceMapper/context/UserMapperImpl.java")
+            expectTransformed(
                 "fixtures/shouldReplaceInterfaceMapper/before/UserMapper.java",
                 "fixtures/shouldReplaceInterfaceMapper/after/UserMapper.java",
             )
-            transform(
+            expectTransformed(
                 "fixtures/shouldReplaceInterfaceMapper/before/UserService.java",
                 "fixtures/shouldReplaceInterfaceMapper/after/UserService.java",
             )
@@ -48,13 +48,13 @@ internal class PurgeMapstructTest : RewriteTest {
     fun shouldReplaceMappersGetMapper() =
         simulate {
             // Arrange
-            include("fixtures/shouldReplaceMappersGetMapper/context/CustomerDto.java")
-            include("fixtures/shouldReplaceMappersGetMapper/context/CustomerEntity.java")
+            makeAvailable("fixtures/shouldReplaceMappersGetMapper/context/CustomerDto.java")
+            makeAvailable("fixtures/shouldReplaceMappersGetMapper/context/CustomerEntity.java")
 
-            // Act - Assert
-            delete("fixtures/shouldReplaceMappersGetMapper/context/CustomerMapperImpl.java")
+            // Assert
+            expectDeleted("fixtures/shouldReplaceMappersGetMapper/context/CustomerMapperImpl.java")
 
-            transform(
+            expectTransformed(
                 "fixtures/shouldReplaceMappersGetMapper/before/CustomerMapper.java",
                 "fixtures/shouldReplaceMappersGetMapper/after/CustomerMapper.java",
             )
@@ -64,16 +64,16 @@ internal class PurgeMapstructTest : RewriteTest {
     fun shouldReplaceMappersGetMapperInAnyFile() =
         simulate {
             // Arrange
-            include("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerDto.java")
-            include("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerEntity.java")
+            makeAvailable("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerDto.java")
+            makeAvailable("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerEntity.java")
 
-            // Act - Assert
-            delete("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerMapperImpl.java")
-            transform(
+            // Assert
+            expectDeleted("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerMapperImpl.java")
+            expectTransformed(
                 "fixtures/shouldReplaceMappersGetMapperInAnyFile/before/CustomerMapper.java",
                 "fixtures/shouldReplaceMappersGetMapperInAnyFile/after/CustomerMapper.java",
             )
-            transform(
+            expectTransformed(
                 "fixtures/shouldReplaceMappersGetMapperInAnyFile/before/CustomerService.java",
                 "fixtures/shouldReplaceMappersGetMapperInAnyFile/after/CustomerService.java",
             )
@@ -83,17 +83,17 @@ internal class PurgeMapstructTest : RewriteTest {
     fun shouldReplaceMappersGetMapperInGeneratedField() =
         simulate {
             // Arrange
-            include("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerDto.java")
-            include("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerEntity.java")
+            makeAvailable("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerDto.java")
+            makeAvailable("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerEntity.java")
 
-            // Act - Assert
-            transform(
+            // Assert
+            expectTransformed(
                 "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/AddressMapper.java",
                 "fixtures/shouldReplaceMappersGetMapperInGeneratedField/after/AddressMapper.java",
             )
-            delete("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/AddressMapperImpl.java")
-            delete("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerMapperImpl.java")
-            transform(
+            expectDeleted("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/AddressMapperImpl.java")
+            expectDeleted("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerMapperImpl.java")
+            expectTransformed(
                 "fixtures/shouldReplaceMappersGetMapperInGeneratedField/before/CustomerMapper.java",
                 "fixtures/shouldReplaceMappersGetMapperInGeneratedField/after/CustomerMapper.java",
             )
@@ -103,12 +103,12 @@ internal class PurgeMapstructTest : RewriteTest {
     fun shouldRemoveAfterMappingDecorators() =
         simulate {
             // Arrange
-            include("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerDto.java")
-            include("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerEntity.java")
+            makeAvailable("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerDto.java")
+            makeAvailable("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerEntity.java")
 
-            // Act - Assert
-            delete("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerMapperImpl.java")
-            transform(
+            // Assert
+            expectDeleted("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerMapperImpl.java")
+            expectTransformed(
                 "fixtures/shouldRemoveAfterMappingDecorators/before/CustomerMapper.java",
                 "fixtures/shouldRemoveAfterMappingDecorators/after/CustomerMapper.java",
             )
@@ -118,12 +118,12 @@ internal class PurgeMapstructTest : RewriteTest {
     fun shouldRewriteWhenOnSpyToDoReturn() =
         simulate {
             // Arrange
-            include("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserDto.java")
-            include("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserEntity.java")
+            makeAvailable("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserDto.java")
+            makeAvailable("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserEntity.java")
 
-            // Act - Assert
-            delete("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserMapperImpl.java")
-            transform(
+            // Assert
+            expectDeleted("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserMapperImpl.java")
+            expectTransformed(
                 "fixtures/shouldRewriteWhenOnSpyToDoReturn/before/UserMapper.java",
                 "fixtures/shouldRewriteWhenOnSpyToDoReturn/after/UserMapper.java",
             )
@@ -134,12 +134,12 @@ internal class PurgeMapstructTest : RewriteTest {
     fun shouldReplaceAbstractMapper() =
         simulate {
             // Arrange
-            include("fixtures/shouldReplaceAbstractMapper/context/CustomerDto.java")
-            include("fixtures/shouldReplaceAbstractMapper/context/CustomerEntity.java")
+            makeAvailable("fixtures/shouldReplaceAbstractMapper/context/CustomerDto.java")
+            makeAvailable("fixtures/shouldReplaceAbstractMapper/context/CustomerEntity.java")
 
-            // Act - Assert
-            delete("fixtures/shouldReplaceAbstractMapper/context/CustomerMapperImpl.java")
-            transform(
+            // Assert
+            expectDeleted("fixtures/shouldReplaceAbstractMapper/context/CustomerMapperImpl.java")
+            expectTransformed(
                 "fixtures/shouldReplaceAbstractMapper/before/CustomerMapper.java",
                 "fixtures/shouldReplaceAbstractMapper/after/CustomerMapper.java",
             )
@@ -149,14 +149,14 @@ internal class PurgeMapstructTest : RewriteTest {
     fun shouldInlineDecoratedMapper() =
         simulate {
             // Arrange
-            include("fixtures/shouldInlineDecoratedMapper/context/SourceEntity.java")
-            include("fixtures/shouldInlineDecoratedMapper/context/TargetDto.java")
+            makeAvailable("fixtures/shouldInlineDecoratedMapper/context/SourceEntity.java")
+            makeAvailable("fixtures/shouldInlineDecoratedMapper/context/TargetDto.java")
 
-            // Act - Assert
-            delete("fixtures/shouldInlineDecoratedMapper/context/FooMapperImpl.java")
-            delete("fixtures/shouldInlineDecoratedMapper/context/FooMapperImpl_.java")
-            delete("fixtures/shouldInlineDecoratedMapper/before/FooMapperDecorator.java")
-            transform(
+            // Assert
+            expectDeleted("fixtures/shouldInlineDecoratedMapper/context/FooMapperImpl.java")
+            expectDeleted("fixtures/shouldInlineDecoratedMapper/context/FooMapperImpl_.java")
+            expectDeleted("fixtures/shouldInlineDecoratedMapper/before/FooMapperDecorator.java")
+            expectTransformed(
                 "fixtures/shouldInlineDecoratedMapper/before/FooMapper.java",
                 "fixtures/shouldInlineDecoratedMapper/after/FooMapper.java",
             )
@@ -166,12 +166,12 @@ internal class PurgeMapstructTest : RewriteTest {
     fun shouldStripContextTypeAnnotation() =
         simulate {
             // Arrange
-            include("fixtures/shouldStripContextTypeAnnotation/context/CustomerDto.java")
-            include("fixtures/shouldStripContextTypeAnnotation/context/CustomerEntity.java")
+            makeAvailable("fixtures/shouldStripContextTypeAnnotation/context/CustomerDto.java")
+            makeAvailable("fixtures/shouldStripContextTypeAnnotation/context/CustomerEntity.java")
 
-            // Act - Assert
-            delete("fixtures/shouldStripContextTypeAnnotation/context/CustomerMapperImpl.java")
-            transform(
+            // Assert
+            expectDeleted("fixtures/shouldStripContextTypeAnnotation/context/CustomerMapperImpl.java")
+            expectTransformed(
                 "fixtures/shouldStripContextTypeAnnotation/before/CustomerMapper.java",
                 "fixtures/shouldStripContextTypeAnnotation/after/CustomerMapper.java",
             )
@@ -181,16 +181,16 @@ internal class PurgeMapstructTest : RewriteTest {
     fun shouldRewriteImportMapperImpl() =
         simulate {
             // Arrange
-            include("fixtures/shouldRewriteImportMapperImpl/context/CustomerDto.java")
-            include("fixtures/shouldRewriteImportMapperImpl/context/CustomerEntity.java")
+            makeAvailable("fixtures/shouldRewriteImportMapperImpl/context/CustomerDto.java")
+            makeAvailable("fixtures/shouldRewriteImportMapperImpl/context/CustomerEntity.java")
 
-            // Act - Assert
-            delete("fixtures/shouldRewriteImportMapperImpl/context/CustomerMapperImpl.java")
-            transform(
+            // Assert
+            expectDeleted("fixtures/shouldRewriteImportMapperImpl/context/CustomerMapperImpl.java")
+            expectTransformed(
                 "fixtures/shouldRewriteImportMapperImpl/before/CustomerMapper.java",
                 "fixtures/shouldRewriteImportMapperImpl/after/CustomerMapper.java",
             )
-            transform(
+            expectTransformed(
                 "fixtures/shouldRewriteImportMapperImpl/before/CustomerServiceTest.java",
                 "fixtures/shouldRewriteImportMapperImpl/after/CustomerServiceTest.java",
             )
