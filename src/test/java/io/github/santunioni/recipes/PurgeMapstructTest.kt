@@ -25,7 +25,7 @@ internal class PurgeMapstructTest : RewriteTest {
     @DocumentExample
     @Test
     fun shouldReplaceInterfaceMapper() =
-        this {
+        simulate {
             // Arrange
             include("fixtures/shouldReplaceInterfaceMapper/context/UserDto.java")
             include("fixtures/shouldReplaceInterfaceMapper/context/UserEntity.java")
@@ -44,7 +44,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldReplaceMappersGetMapper() =
-        this {
+        simulate {
             // Arrange
             include("fixtures/shouldReplaceMappersGetMapper/context/CustomerDto.java")
             include("fixtures/shouldReplaceMappersGetMapper/context/CustomerEntity.java")
@@ -60,7 +60,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldReplaceMappersGetMapperInAnyFile() =
-        this {
+        simulate {
             // Arrange
             include("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerDto.java")
             include("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerEntity.java")
@@ -79,7 +79,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldReplaceMappersGetMapperInGeneratedField() =
-        this {
+        simulate {
             // Arrange
             include("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerDto.java")
             include("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerEntity.java")
@@ -99,7 +99,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldRemoveAfterMappingDecorators() =
-        this {
+        simulate {
             // Arrange
             include("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerDto.java")
             include("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerEntity.java")
@@ -114,7 +114,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldRewriteWhenOnSpyToDoReturn() =
-        this {
+        simulate {
             // Arrange
             include("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserDto.java")
             include("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserEntity.java")
@@ -130,7 +130,7 @@ internal class PurgeMapstructTest : RewriteTest {
     @DocumentExample
     @Test
     fun shouldReplaceAbstractMapper() =
-        this {
+        simulate {
             // Arrange
             include("fixtures/shouldReplaceAbstractMapper/context/CustomerDto.java")
             include("fixtures/shouldReplaceAbstractMapper/context/CustomerEntity.java")
@@ -145,7 +145,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldInlineDecoratedMapper() =
-        this {
+        simulate {
             // Arrange
             include("fixtures/decoratedWith/context/SourceEntity.java")
             include("fixtures/decoratedWith/context/TargetDto.java")
@@ -162,7 +162,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldStripContextTypeAnnotation() =
-        this {
+        simulate {
             // Arrange
             include("fixtures/shouldStripContextTypeAnnotation/context/CustomerDto.java")
             include("fixtures/shouldStripContextTypeAnnotation/context/CustomerEntity.java")

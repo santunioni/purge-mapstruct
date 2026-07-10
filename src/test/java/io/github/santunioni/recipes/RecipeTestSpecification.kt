@@ -51,7 +51,7 @@ class RecipeTestSpecification {
     }
 }
 
-operator fun RewriteTest.invoke(action: RecipeTestSpecification.() -> Unit) {
+fun RewriteTest.simulate(action: RecipeTestSpecification.() -> Unit) {
     val ctx = RecipeTestSpecification()
     action(ctx)
     rewriteRun(*ctx.sourceSpecs.toTypedArray())
