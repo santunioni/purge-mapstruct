@@ -10,21 +10,6 @@ import org.openrewrite.test.SourceSpecs
 import java.nio.charset.StandardCharsets
 
 internal class PurgeMapstructTest : RewriteTest {
-    override fun defaults(spec: RecipeSpec) {
-        spec
-            .recipes(
-                PurgeMapstruct(),
-            ).parser(
-                JavaParser.fromJavaVersion().classpath(
-                    "mapstruct",
-                    "lombok",
-                    "junit-jupiter-api",
-                    "spring-beans",
-                    "spring-context",
-                ),
-            )
-    }
-
     @DocumentExample
     @Test
     fun shouldReplaceInterfaceMapper() =
@@ -209,6 +194,21 @@ internal class PurgeMapstructTest : RewriteTest {
         val ctx = RecipeTestSpecification()
         action(ctx)
         rewriteRun(*ctx.sourceSpecs.toTypedArray())
+    }
+
+    override fun defaults(spec: RecipeSpec) {
+        spec
+            .recipes(
+                PurgeMapstruct(),
+            ).parser(
+                JavaParser.fromJavaVersion().classpath(
+                    "mapstruct",
+                    "lombok",
+                    "junit-jupiter-api",
+                    "spring-beans",
+                    "spring-context",
+                ),
+            )
     }
 
     class RecipeTestSpecification {
