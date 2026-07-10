@@ -275,57 +275,20 @@ internal class PurgeMapstructTest : RewriteTest {
     }
 
     @Test
-    fun shouldRewriteWhenOnSpyToDoReturn() {
-        val makeAvailableUserDto: SourceSpecs =
-            java(readResource("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserDto.java")) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/UserDto.java")
-            }
+    fun shouldRewriteWhenOnSpyToDoReturn() =
+        ctx {
+            // Arrange
+            include("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserDto.java")
+            include("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserEntity.java")
 
-        val makeAvailableUserEntity: SourceSpecs =
-            java(readResource("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserEntity.java")) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/UserEntity.java")
-            }
-
-        val makeAvailableGeneratedClass =
-            java(
-                readResource("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserMapperImpl.java"),
-                null as String?,
-            ) { spec ->
-                spec.path(
-                    "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/UserMapperImpl.java",
-                )
-            }
-
-        rewriteRun(
-            { spec: RecipeSpec ->
-                spec.parser(
-                    JavaParser
-                        .fromJavaVersion()
-                        .classpath(
-                            "mapstruct",
-                            "lombok",
-                            "junit-jupiter-api",
-                            "mockito-core",
-                        ),
-                )
-            },
-            makeAvailableUserDto,
-            makeAvailableUserEntity,
-            makeAvailableGeneratedClass,
-            java(
-                readResource("fixtures/shouldRewriteWhenOnSpyToDoReturn/before/UserMapper.java"),
-                readResource("fixtures/shouldRewriteWhenOnSpyToDoReturn/after/UserMapper.java"),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/UserMapper.java")
-            },
-            java(
-                readResource("fixtures/shouldRewriteWhenOnSpyToDoReturn/before/UserMapperSpyTest.java"),
-                readResource("fixtures/shouldRewriteWhenOnSpyToDoReturn/after/UserMapperSpyTest.java"),
-            ) { spec ->
-                spec.path("src/test/java/com/santunioni/fixtures/UserMapperSpyTest.java")
-            },
-        )
-    }
+            // Act - Assert
+            delete("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserMapperImpl.java")
+            transform(
+                "fixtures/shouldRewriteWhenOnSpyToDoReturn/before/UserMapper.java",
+                "fixtures/shouldRewriteWhenOnSpyToDoReturn/after/UserMapper.java",
+            )
+            assert()
+        }
 
     @DocumentExample
     @Test
