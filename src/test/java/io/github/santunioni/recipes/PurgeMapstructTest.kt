@@ -164,76 +164,20 @@ internal class PurgeMapstructTest : RewriteTest {
     @Test
     fun shouldReplaceMappersGetMapperInGeneratedField() =
         rewrite {
-            val makeAvailableCustomerDto: SourceSpecs =
-                java(
-                    readResource(
-                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerDto.java",
-                    ),
-                ) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
-                }
+            // Arrange
+            include("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerDto.java")
+            include("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerEntity.java")
 
-            val makeAvailableCustomerEntity: SourceSpecs =
-                java(
-                    readResource(
-                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerEntity.java",
-                    ),
-                ) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
-                }
-
-            val makeAvailableAddressMapper =
-                java(
-                    readResource(
-                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/AddressMapper.java",
-                    ),
-                    readResource(
-                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/after/AddressMapper.java",
-                    ),
-                ) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/AddressMapper.java")
-                }
-
-            val makeAvailableAddressMapperImpl =
-                java(
-                    readResource(
-                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/AddressMapperImpl.java",
-                    ),
-                    null as String?,
-                ) { spec ->
-                    spec.path(
-                        "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/AddressMapperImpl.java",
-                    )
-                }
-
-            val makeAvailableGeneratedClass =
-                java(
-                    readResource(
-                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerMapperImpl.java",
-                    ),
-                    null as String?,
-                ) { spec ->
-                    spec.path(
-                        "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java",
-                    )
-                }
-
-            rewriteRun(
-                makeAvailableCustomerDto,
-                makeAvailableCustomerEntity,
-                makeAvailableAddressMapper,
-                makeAvailableAddressMapperImpl,
-                makeAvailableGeneratedClass,
-                java(
-                    readResource(
-                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/before/CustomerMapper.java",
-                    ),
-                    readResource(
-                        "fixtures/shouldReplaceMappersGetMapperInGeneratedField/after/CustomerMapper.java",
-                    ),
-                ) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
-                },
+            // Act - Assert
+            transform(
+                "fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/AddressMapper.java",
+                "fixtures/shouldReplaceMappersGetMapperInGeneratedField/after/AddressMapper.java",
+            )
+            delete("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/AddressMapperImpl.java")
+            delete("fixtures/shouldReplaceMappersGetMapperInGeneratedField/context/CustomerMapperImpl.java")
+            transform(
+                "fixtures/shouldReplaceMappersGetMapperInGeneratedField/before/CustomerMapper.java",
+                "fixtures/shouldReplaceMappersGetMapperInGeneratedField/after/CustomerMapper.java",
             )
         }
 
