@@ -147,16 +147,16 @@ internal class PurgeMapstructTest : RewriteTest {
     fun shouldInlineDecoratedMapper() =
         simulate {
             // Arrange
-            include("fixtures/decoratedWith/context/SourceEntity.java")
-            include("fixtures/decoratedWith/context/TargetDto.java")
+            include("fixtures/shouldInlineDecoratedMapper/context/SourceEntity.java")
+            include("fixtures/shouldInlineDecoratedMapper/context/TargetDto.java")
 
             // Act - Assert
-            delete("fixtures/decoratedWith/context/FooMapperImpl.java")
-            delete("fixtures/decoratedWith/context/FooMapperImpl_.java")
-            delete("fixtures/decoratedWith/before/FooMapperDecorator.java")
+            delete("fixtures/shouldInlineDecoratedMapper/context/FooMapperImpl.java")
+            delete("fixtures/shouldInlineDecoratedMapper/context/FooMapperImpl_.java")
+            delete("fixtures/shouldInlineDecoratedMapper/before/FooMapperDecorator.java")
             transform(
-                "fixtures/decoratedWith/before/FooMapper.java",
-                "fixtures/decoratedWith/after/FooMapper.java",
+                "fixtures/shouldInlineDecoratedMapper/before/FooMapper.java",
+                "fixtures/shouldInlineDecoratedMapper/after/FooMapper.java",
             )
         }
 
