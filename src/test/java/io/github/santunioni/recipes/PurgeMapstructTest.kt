@@ -33,36 +33,16 @@ internal class PurgeMapstructTest : RewriteTest {
     @Test
     fun shouldReplaceMappersGetMapper() =
         rewrite {
-            val makeAvailableCustomerDto: SourceSpecs =
-                java(readResource("fixtures/shouldReplaceMappersGetMapper/context/CustomerDto.java")) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
-                }
+            // Arrange
+            include("fixtures/shouldReplaceMappersGetMapper/context/CustomerDto.java")
+            include("fixtures/shouldReplaceMappersGetMapper/context/CustomerEntity.java")
 
-            val makeAvailableCustomerEntity: SourceSpecs =
-                java(readResource("fixtures/shouldReplaceMappersGetMapper/context/CustomerEntity.java")) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
-                }
+            // Act - Assert
+            delete("fixtures/shouldReplaceMappersGetMapper/context/CustomerMapperImpl.java")
 
-            val makeAvailableGeneratedClass =
-                java(
-                    readResource("fixtures/shouldReplaceMappersGetMapper/context/CustomerMapperImpl.java"),
-                    null as String?,
-                ) { spec ->
-                    spec.path(
-                        "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java",
-                    )
-                }
-
-            rewriteRun(
-                makeAvailableCustomerDto,
-                makeAvailableCustomerEntity,
-                makeAvailableGeneratedClass,
-                java(
-                    readResource("fixtures/shouldReplaceMappersGetMapper/before/CustomerMapper.java"),
-                    readResource("fixtures/shouldReplaceMappersGetMapper/after/CustomerMapper.java"),
-                ) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
-                },
+            transform(
+                "fixtures/shouldReplaceMappersGetMapper/before/CustomerMapper.java",
+                "fixtures/shouldReplaceMappersGetMapper/after/CustomerMapper.java",
             )
         }
 
