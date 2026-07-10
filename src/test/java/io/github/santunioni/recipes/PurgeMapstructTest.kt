@@ -1,6 +1,5 @@
 package io.github.santunioni.recipes
 
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.openrewrite.DocumentExample
 import org.openrewrite.java.JavaParser
@@ -19,6 +18,8 @@ internal class PurgeMapstructTest : RewriteTest {
                     "junit-jupiter-api",
                     "spring-beans",
                     "spring-context",
+                    "spring-test",
+                    "spring-boot-starter-test",
                 ),
             )
     }
@@ -176,7 +177,6 @@ internal class PurgeMapstructTest : RewriteTest {
             )
         }
 
-    @Disabled("Not yet implemented")
     @Test
     fun shouldRewriteImportMapperImpl() =
         simulate {
