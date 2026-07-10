@@ -1,5 +1,6 @@
 package io.github.santunioni.recipes
 
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.openrewrite.DocumentExample
 import org.openrewrite.java.JavaParser
@@ -172,6 +173,26 @@ internal class PurgeMapstructTest : RewriteTest {
             transform(
                 "fixtures/shouldStripContextTypeAnnotation/before/CustomerMapper.java",
                 "fixtures/shouldStripContextTypeAnnotation/after/CustomerMapper.java",
+            )
+        }
+
+    @Disabled("Not yet implemented")
+    @Test
+    fun shouldRewriteImportMapperImpl() =
+        simulate {
+            // Arrange
+            include("fixtures/shouldRewriteImportMapperImpl/context/CustomerDto.java")
+            include("fixtures/shouldRewriteImportMapperImpl/context/CustomerEntity.java")
+
+            // Act - Assert
+            delete("fixtures/shouldRewriteImportMapperImpl/context/CustomerMapperImpl.java")
+            transform(
+                "fixtures/shouldRewriteImportMapperImpl/before/CustomerMapper.java",
+                "fixtures/shouldRewriteImportMapperImpl/after/CustomerMapper.java",
+            )
+            transform(
+                "fixtures/shouldRewriteImportMapperImpl/before/CustomerServiceTest.java",
+                "fixtures/shouldRewriteImportMapperImpl/after/CustomerServiceTest.java",
             )
         }
 }
