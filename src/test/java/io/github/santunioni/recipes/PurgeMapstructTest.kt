@@ -234,49 +234,23 @@ internal class PurgeMapstructTest : RewriteTest {
     }
 
     @Test
-    fun shouldRemoveAfterMappingDecorators() {
-        val makeAvailableCustomerDto: SourceSpecs =
-            java(
-                readResource("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerDto.java"),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
-            }
+    fun shouldRemoveAfterMappingDecorators() =
+        this {
+            // Arrange
+            include("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerDto.java")
+            include("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerEntity.java")
 
-        val makeAvailableCustomerEntity: SourceSpecs =
-            java(
-                readResource("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerEntity.java"),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
-            }
-
-        val makeAvailableGeneratedClass =
-            java(
-                readResource(
-                    "fixtures/shouldRemoveAfterMappingDecorators/context/CustomerMapperImpl.java",
-                ),
-                null as String?,
-            ) { spec ->
-                spec.path(
-                    "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java",
-                )
-            }
-
-        rewriteRun(
-            makeAvailableCustomerDto,
-            makeAvailableCustomerEntity,
-            makeAvailableGeneratedClass,
-            java(
-                readResource("fixtures/shouldRemoveAfterMappingDecorators/before/CustomerMapper.java"),
-                readResource("fixtures/shouldRemoveAfterMappingDecorators/after/CustomerMapper.java"),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
-            },
-        )
-    }
+            // Act - Assert
+            delete("fixtures/shouldRemoveAfterMappingDecorators/context/CustomerMapperImpl.java")
+            transform(
+                "fixtures/shouldRemoveAfterMappingDecorators/before/CustomerMapper.java",
+                "fixtures/shouldRemoveAfterMappingDecorators/after/CustomerMapper.java",
+            )
+        }
 
     @Test
     fun shouldRewriteWhenOnSpyToDoReturn() =
-        ctx {
+        this {
             // Arrange
             include("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserDto.java")
             include("fixtures/shouldRewriteWhenOnSpyToDoReturn/context/UserEntity.java")
@@ -293,7 +267,7 @@ internal class PurgeMapstructTest : RewriteTest {
     @DocumentExample
     @Test
     fun shouldReplaceAbstractMapper() =
-        ctx {
+        this {
             // Arrange
             include("fixtures/shouldReplaceAbstractMapper/context/CustomerDto.java")
             include("fixtures/shouldReplaceAbstractMapper/context/CustomerEntity.java")
@@ -309,7 +283,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldInlineDecoratedMapper() =
-        ctx {
+        this {
             // Arrange
             include("fixtures/decoratedWith/context/SourceEntity.java")
             include("fixtures/decoratedWith/context/TargetDto.java")
@@ -327,7 +301,7 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @Test
     fun shouldStripContextTypeAnnotation() =
-        ctx {
+        this {
             // Arrange
             include("fixtures/shouldStripContextTypeAnnotation/context/CustomerDto.java")
             include("fixtures/shouldStripContextTypeAnnotation/context/CustomerEntity.java")
@@ -348,7 +322,7 @@ internal class PurgeMapstructTest : RewriteTest {
             }
     }
 
-    private fun ctx(action: Context.() -> Unit) {
+    operator fun invoke(action: Context.() -> Unit) {
         action(Context())
     }
 
