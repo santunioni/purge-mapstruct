@@ -15,6 +15,7 @@
  */
 package io.github.santunioni.recipes
 
+import io.github.santunioni.recipes.PurgeMapstructTest.Context
 import org.junit.jupiter.api.Test
 import org.openrewrite.DocumentExample
 import org.openrewrite.java.Assertions.java
@@ -421,44 +422,70 @@ internal class PurgeMapstructTest : RewriteTest {
     }
 
     @Test
-    fun shouldStripContextTypeAnnotation() {
-        val makeAvailableCustomerDto: SourceSpecs =
-            java(readResource("fixtures/shouldStripContextTypeAnnotation/context/CustomerDto.java")) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
-            }
+    fun shouldStripContextTypeAnnotation() =
+        ctx {
+            include("fixtures/shouldStripContextTypeAnnotation/context/CustomerDto.java")
+            include("fixtures/shouldStripContextTypeAnnotation/context/CustomerEntity.java")
+            delete("fixtures/shouldStripContextTypeAnnotation/context/CustomerMapperImpl.java")
+            transform(
+                "fixtures/shouldStripContextTypeAnnotation/before/CustomerMapper.java",
+                "fixtures/shouldStripContextTypeAnnotation/after/CustomerMapper.java",
+            )
 
-        val makeAvailableCustomerEntity: SourceSpecs =
-            java(readResource("fixtures/shouldStripContextTypeAnnotation/context/CustomerEntity.java")) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
-            }
-
-        val makeAvailableGeneratedClass =
-            java(
-                readResource("fixtures/shouldStripContextTypeAnnotation/context/CustomerMapperImpl.java"),
-                null as String?,
-            ) { spec ->
-                spec.path(
-                    "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java",
-                )
-            }
-
-        rewriteRun(
-            makeAvailableCustomerDto,
-            makeAvailableCustomerEntity,
-            makeAvailableGeneratedClass,
-            java(
-                readResource("fixtures/shouldStripContextTypeAnnotation/before/CustomerMapper.java"),
-                readResource("fixtures/shouldStripContextTypeAnnotation/after/CustomerMapper.java"),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
-            },
-        )
-    }
+            assert()
+        }
 
     companion object {
         private fun readResource(resource: String): String =
             PurgeMapstructTest::class.java.classLoader.getResourceAsStream(resource)!!.use { stream ->
                 String(stream.readAllBytes(), StandardCharsets.UTF_8)
             }
+    }
+
+    private fun ctx(action: Context.() -> Unit) {
+        action(Context())
+    }
+
+    inner class Context {
+        private val specs = mutableListOf<SourceSpecs>()
+
+        fun include(file: String) {
+            specs.add(
+                java(
+                    readResource(file),
+                ) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/${file.split("/").last()}")
+                },
+            )
+        }
+
+        fun transform(
+            from: String,
+            to: String,
+        ) {
+            specs.add(
+                java(
+                    readResource(from),
+                    readResource(to),
+                ) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/${from.split("/").last()}")
+                },
+            )
+        }
+
+        fun delete(file: String) {
+            specs.add(
+                java(
+                    readResource(file),
+                    null,
+                ) { spec ->
+                    spec.path("src/main/java/com/santunioni/fixtures/${file.split("/").last()}")
+                },
+            )
+        }
+
+        fun assert() {
+            rewriteRun(*specs.toTypedArray())
+        }
     }
 }
