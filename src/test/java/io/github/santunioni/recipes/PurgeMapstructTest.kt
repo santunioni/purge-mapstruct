@@ -122,42 +122,19 @@ internal class PurgeMapstructTest : RewriteTest {
     @Test
     fun shouldReplaceMappersGetMapperInAnyFile() =
         rewrite {
-            val makeAvailableCustomerDto: SourceSpecs =
-                java(readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerDto.java")) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
-                }
+            // Arrange
+            include("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerDto.java")
+            include("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerEntity.java")
 
-            val makeAvailableCustomerEntity: SourceSpecs =
-                java(readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerEntity.java")) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
-                }
-
-            val makeAvailableGeneratedClass =
-                java(
-                    readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerMapperImpl.java"),
-                    null as String?,
-                ) { spec ->
-                    spec.path(
-                        "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java",
-                    )
-                }
-
-            rewriteRun(
-                makeAvailableCustomerDto,
-                makeAvailableCustomerEntity,
-                makeAvailableGeneratedClass,
-                java(
-                    readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/before/CustomerMapper.java"),
-                    readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/after/CustomerMapper.java"),
-                ) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
-                },
-                java(
-                    readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/before/CustomerService.java"),
-                    readResource("fixtures/shouldReplaceMappersGetMapperInAnyFile/after/CustomerService.java"),
-                ) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/CustomerService.java")
-                },
+            // Act - Assert
+            delete("fixtures/shouldReplaceMappersGetMapperInAnyFile/context/CustomerMapperImpl.java")
+            transform(
+                "fixtures/shouldReplaceMappersGetMapperInAnyFile/before/CustomerMapper.java",
+                "fixtures/shouldReplaceMappersGetMapperInAnyFile/after/CustomerMapper.java",
+            )
+            transform(
+                "fixtures/shouldReplaceMappersGetMapperInAnyFile/before/CustomerService.java",
+                "fixtures/shouldReplaceMappersGetMapperInAnyFile/after/CustomerService.java",
             )
         }
 
