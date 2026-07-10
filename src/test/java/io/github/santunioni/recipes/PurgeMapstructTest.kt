@@ -1,18 +1,3 @@
-/*
- * Copyright 2025 the original author or authors.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.github.santunioni.recipes
 
 import org.junit.jupiter.api.Test
@@ -44,42 +29,19 @@ internal class PurgeMapstructTest : RewriteTest {
     @Test
     fun shouldReplaceInterfaceMapper() =
         rewrite {
-            val makeAvailableUserDto: SourceSpecs =
-                java(readResource("fixtures/shouldReplaceInterfaceMapper/context/UserDto.java")) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/UserDto.java")
-                }
+            // Arrange
+            include("fixtures/shouldReplaceInterfaceMapper/context/UserDto.java")
+            include("fixtures/shouldReplaceInterfaceMapper/context/UserEntity.java")
 
-            val makeAvailableUserEntity: SourceSpecs =
-                java(readResource("fixtures/shouldReplaceInterfaceMapper/context/UserEntity.java")) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/UserEntity.java")
-                }
-
-            val makeAvailableGeneratedClass =
-                java(
-                    readResource("fixtures/shouldReplaceInterfaceMapper/context/UserMapperImpl.java"),
-                    null as String?,
-                ) { spec ->
-                    spec.path(
-                        "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/UserMapperImpl.java",
-                    )
-                }
-
-            rewriteRun(
-                makeAvailableUserDto,
-                makeAvailableUserEntity,
-                makeAvailableGeneratedClass,
-                java(
-                    readResource("fixtures/shouldReplaceInterfaceMapper/before/UserService.java"),
-                    readResource("fixtures/shouldReplaceInterfaceMapper/after/UserService.java"),
-                ) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/UserService.java")
-                },
-                java(
-                    readResource("fixtures/shouldReplaceInterfaceMapper/before/UserMapper.java"),
-                    readResource("fixtures/shouldReplaceInterfaceMapper/after/UserMapper.java"),
-                ) { spec ->
-                    spec.path("src/main/java/com/santunioni/fixtures/UserMapper.java")
-                },
+            // Act - Assert
+            delete("fixtures/shouldReplaceInterfaceMapper/context/UserMapperImpl.java")
+            transform(
+                "fixtures/shouldReplaceInterfaceMapper/before/UserMapper.java",
+                "fixtures/shouldReplaceInterfaceMapper/after/UserMapper.java",
+            )
+            transform(
+                "fixtures/shouldReplaceInterfaceMapper/before/UserService.java",
+                "fixtures/shouldReplaceInterfaceMapper/after/UserService.java",
             )
         }
 
@@ -249,7 +211,7 @@ internal class PurgeMapstructTest : RewriteTest {
         rewriteRun(*ctx.sourceSpecs.toTypedArray())
     }
 
-    inner class RecipeTestSpecification {
+    class RecipeTestSpecification {
         val sourceSpecs = mutableListOf<SourceSpecs>()
 
         fun include(file: String) {
