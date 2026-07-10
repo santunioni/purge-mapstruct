@@ -329,39 +329,20 @@ internal class PurgeMapstructTest : RewriteTest {
 
     @DocumentExample
     @Test
-    fun shouldReplaceAbstractMapper() {
-        val makeAvailableCustomerDto: SourceSpecs =
-            java(readResource("fixtures/shouldReplaceAbstractMapper/context/CustomerDto.java")) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerDto.java")
-            }
+    fun shouldReplaceAbstractMapper() =
+        ctx {
+            // Arrange
+            include("fixtures/shouldReplaceAbstractMapper/context/CustomerDto.java")
+            include("fixtures/shouldReplaceAbstractMapper/context/CustomerEntity.java")
 
-        val makeAvailableCustomerEntity: SourceSpecs =
-            java(readResource("fixtures/shouldReplaceAbstractMapper/context/CustomerEntity.java")) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerEntity.java")
-            }
-
-        val makeAvailableGeneratedClass =
-            java(
-                readResource("fixtures/shouldReplaceAbstractMapper/context/CustomerMapperImpl.java"),
-                null as String?,
-            ) { spec ->
-                spec.path(
-                    "build/generated/annotationProcessor/main/java/com/santunioni/fixtures/CustomerMapperImpl.java",
-                )
-            }
-
-        rewriteRun(
-            makeAvailableCustomerDto,
-            makeAvailableCustomerEntity,
-            makeAvailableGeneratedClass,
-            java(
-                readResource("fixtures/shouldReplaceAbstractMapper/before/CustomerMapper.java"),
-                readResource("fixtures/shouldReplaceAbstractMapper/after/CustomerMapper.java"),
-            ) { spec ->
-                spec.path("src/main/java/com/santunioni/fixtures/CustomerMapper.java")
-            },
-        )
-    }
+            // Act - Assert
+            delete("fixtures/shouldReplaceAbstractMapper/context/CustomerMapperImpl.java")
+            transform(
+                "fixtures/shouldReplaceAbstractMapper/before/CustomerMapper.java",
+                "fixtures/shouldReplaceAbstractMapper/after/CustomerMapper.java",
+            )
+            assert()
+        }
 
     @Test
     fun shouldInlineDecoratedMapper() =
